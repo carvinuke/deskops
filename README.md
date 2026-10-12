@@ -10,7 +10,7 @@ Download `index.html` and double-click it. That's the whole game: no install, no
 
 ## Progress and reset
 
-Progress (points, tickets, history, chat and every change you make to the simulated environment) is saved in your browser's local storage on that machine, under `deskops-lab-v2`. Saves from version 1 are ignored, so you start a fresh shift.
+Progress (points, tickets, history, chat and every change you make to the simulated environment) is saved in your browser's local storage on that machine, under `deskops-lab-v3`. Saves from older versions are ignored, so you start a fresh shift.
 
 - **Reset:** click your name (top right) › **Reset progress…** and confirm.
 - If the browser blocks local storage, the game still runs and shows a banner saying progress lasts only until the tab closes.
@@ -25,11 +25,13 @@ Progress (points, tickets, history, chat and every change you make to the simula
 - **Voicemails:** transcripts of calls to the desk that match tickets in the queue.
 - **Rank and achievements:** Trainee, Bronze (40), Silver (100), Gold (180), Platinum (280), plus five achievements worked out from your shift.
 - **Ticket checks** read the shared environment state, so a ticket is only complete when the right entity is actually fixed and verified. **Check fix** lists what's done and what's missing; **hints** are free.
+- **Shifts:** tickets belong to a shift. When every ticket on the current shift is closed or escalated, the dashboard offers **Start next shift** with a briefing. Some tickets arrive as a Company Chat message or a voicemail and must be logged first.
+- **Consoles:** Directory (create/edit users, aliases, licences and pools, sessions, identity verification, starters/leavers), Server Room (topology, DHCP scopes and leases, volumes, shadow copies and previous versions, file audit, event logs, scheduled tasks, ISP faults), Remote Desktop (Wi-Fi, VPN, files, terminal with ipconfig/ping/nslookup/tracert, Settings › Display/Storage/Power, System Update, Device Manager, Office, restart), Computer Deployment (staged imaging from the PC Shelf), PC Shelf (reservations, wipes, accessories), Ship Manager (shipments and return labels), Asset Management (record health, lock, wipe, return to shelf, mobiles), Mail Admin (trace, mailboxes, shared mailboxes and permissions, lists, mobile devices, rules), Mail Security (quarantine, reported messages, purge, blocked senders), Company Chat (quick actions, #office-announcements).
 - **Scoring:** Low 10, Medium 15, High 22, Critical 30, up to +3 for useful notes, +12 for a correct security escalation; penalties for closing unresolved tickets, risky changes and needless escalations. Each ticket is capped at −20…+42.
 
 ## Checks performed
 
-- `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, including the wrong paths (password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, deleting the suspicious rule isn't rewarded) and the scoring rules. All 42 checks pass, including the chat replies, voicemails, rank thresholds and save schema.
+- `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, including the wrong paths (password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, deleting the suspicious rule isn't rewarded) and the scoring rules. All 127 checks pass, including the v3 consoles (deployment, shelf, shipping, DNS/DHCP, storage, shadow copies, mail permissions, chat confirmations, shifts), the chat replies, voicemails, rank thresholds and save schema.
 - Headless Chromium, opened from `file://`, with every non-file request and console error treated as a failure (none occurred):
   - first-run welcome, queue order (Critical first), claim/unclaim
   - closing unresolved shows the penalty and Cancel changes nothing
