@@ -25,7 +25,7 @@ Progress (points, tickets, history and every change you make to the simulated en
 
 ## Checks performed
 
-- `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, including the wrong paths (password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, deleting the suspicious rule isn't rewarded) and the scoring rules. All 36 checks pass.
+- `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, including the wrong paths (password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, deleting the suspicious rule isn't rewarded) and the scoring rules. All 33 checks pass.
 - Headless Chromium, opened from `file://`, with every non-file request and console error treated as a failure (none occurred):
   - first-run welcome, queue order (Critical first), claim/unclaim
   - closing unresolved shows the penalty and Cancel changes nothing
