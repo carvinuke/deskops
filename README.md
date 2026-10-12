@@ -47,7 +47,7 @@ Progress (points, tickets, notes, chat, and every change you make to the simulat
 
 ## Checks performed
 
-- **Self-test:** `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, and all 278 checks pass. They cover:
+- **Self-test:** `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, and all 302 checks pass. They cover:
   - wrong paths: a password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, and deleting the suspicious rule isn't rewarded;
   - scoring rules, and a model fix plus at least one tempting wrong action for every shift 2–3 ticket;
   - the consoles, chat replies, voicemails, shifts, ranks and save schema;
