@@ -538,7 +538,7 @@ const ANNOUNCE = [ // #office-announcements templates; full:true = impact + work
 const SHIFTS = { // briefing shown when a shift starts; ticket builders add entries for new shifts
   1:{title:'Shift 1 · Monday morning', brief:'A busy Monday: lockouts after the weekend, a floor outage and printing problems. Work critical tickets first.'},
   2:{title:'Shift 2 · Tuesday', brief:'Hardware day: new starters, replacements and shipments. Expect requests by chat and voicemail as well as the queue.'},
-  3:{title:'Shift 3 · Wednesday', brief:'Infrastructure and security: DNS, DHCP, storage, provider faults and suspicious mail.'}};
+  3:{title:'Shift 3 · Wednesday', brief:'Identity, infrastructure and security: joiners, leavers and name changes, MFA resets, DNS, DHCP, storage, provider faults and suspicious mail.'}};
 /* Deterministic DHCP lease list for a scope (exposed so ticket arrive() hooks can refill a scope). */
 function mkLeases(floor, active, stale){
   const out=[]; for (let i=0;i<active+stale;i++){ const on=i<active, n=String(i+1).padStart(3,'0');
@@ -547,6 +547,19 @@ function mkLeases(floor, active, stale){
   return out;
 }
 const svcUp = (s, srv, name) => s.net.servers[srv].services[name] === 'running';
+
+/* ----- Scenario helpers for shift 2+ tickets (function declarations so ticket objectives can reference them) ----- */
+function wsTag(s, tag){ return Object.values(s.workstations).find(w=>w.tag===tag); }
+function shelfDev(s, tag){ return s.shelf.devices.find(d=>d.tag===tag); }
+function addShelf(s, d){ if (!shelfDev(s,d.tag)) s.shelf.devices.push(Object.assign({spec:'Core i5 · 16 GB · 512 GB SSD', cond:'Refurbished', bay:'Shelf A3', status:'Available', reservedFor:null, note:'', wiped:true, image:null}, d)); }
+/* Adds a person (plus PC and mailbox) when a ticket arrives, topping up licence pools so each held licence keeps at least one free seat. */
+function addPerson(s, u, w, mb){
+  s.users[u.id]=u; if (w) s.workstations[w.host]=w; if (!s.mail.mailboxes[u.id]) s.mail.mailboxes[u.id]=mb||mbx(1);
+  u.licences.forEach(l=>{ const f=licFree(s,l); if (f<1) s.licences[l].total+=1-f; }); }
+function unwipedDeploy(s, tag){ return s.deploy.jobs.some(j=>j.device===tag && j.ok && j.warnings.some(x=>/wiped/.test(x))); }
+function nadiaLaptopOk(s){ const w=wsTag(s,'NSA-S120'); return !!w && w.owner==='nrahman' && w.image==='Northstar Finance 24.2' && w.state==='In use'; }
+function claraLaptop(s){ return Object.values(s.workstations).find(w=>w.host!=='NS-SALES-019' && w.owner==='ckeller' && /Northbook/.test(w.model) && w.image==='Northstar Sales 24.2' && w.state==='In use'); }
+function has65(s){ return s.workstations['NS-OPS-026'].accessories.includes('USB-C charger 65 W'); }
 
 const TICKETS = [
 {ref:'INC-1042', pri:'high', cat:'Access / Account lockout', req:'mchen', asset:'NS-FIN-014', assetType:'Windows workstation', created:'08:12',
@@ -665,7 +678,597 @@ const TICKETS = [
  keys:['ebrooks','evan','vpn','northstar-staff','ns-sales-008'],
  obj:[O(s=>s.workstations['NS-SALES-008'].vpn.profile==='Northstar-Staff', 'Current VPN profile selected', 'The VPN client still uses the retired profile'),
       O(s=>s.workstations['NS-SALES-008'].vpn.connected, 'VPN connected', 'The VPN isn’t connected'),
-      O(s=>s.workstations['NS-SALES-008'].netOk, 'Internal access verified', 'Internal access hasn’t been verified')]}
+      O(s=>s.workstations['NS-SALES-008'].netOk, 'Internal access verified', 'Internal access hasn’t been verified')]},
+
+/* ===== Shift 2 · hardware, starters, remote staff ===== */
+{ref:'INC-1052', shift:2, pri:'critical', cat:'Hardware / Desktop failure', req:'tnowak', asset:'NS-OPS-030', assetType:'Desk 24 workstation', created:'08:41',
+ arrive:s=>{ Object.assign(s.workstations['NS-OPS-030'], {power:false, warranty:'2026-03-31', site:'Floor 1 · dispatch desk',
+     lastEvent:'Oct 11, 22:47: unexpected power loss during the Facilities building power test (FAC-7781). No heartbeat or POST since.',
+     userData:'Folders redirected to \\\\FILE01\\Operations\\Profiles\\tnowak (nothing stored locally)',
+     stateNote:{'In repair':'Warranty ended 2026-03-31, so the vendor won’t collect it, and the dispatch desk is still down.'}});
+   addShelf(s,{tag:'NSA-S202', model:'Desk 24 workstation', spec:'Core i5 · 16 GB · 256 GB SSD', serial:'D24-30902', cond:'Refurbished', bay:'Shelf B2', note:'Wiped Oct 3 (certificate WC-5521)'}); },
+ title:'Dispatch desk PC is dead: no lights, no fans',
+ desc:'My desk PC is completely dead this morning. I press the power button and nothing happens: no lights, no fan noise, nothing. The courier dispatch board runs on that machine and drivers start calling in for their routes at 9.',
+ impact:'The only dispatch desk is down, so route allocation for the whole courier fleet stops at 09:00. No other users are affected.',
+ tried:'Tried a different wall socket and pushed the power cable back in. The monitor turns on fine on its own.',
+ hints:['The monitor powers on but the PC shows no lights at all. Check Asset Management for when the PC last reported in, and look at its warranty.',
+   'NS-OPS-030 lost power in last night’s building power test and is out of warranty. Tomasz’s files live on FILE01, so a clean spare is enough. In PC Shelf, read each desktop’s wipe status.',
+   'Deploy NSA-S202 (Northstar Standard 24.2) to Tomasz on Floor 1, set NS-OPS-030 to “Retired, awaiting disposal”, then ask Tomasz in Company Chat to confirm the dispatch board works.'],
+ model:'Confirmed the PC had no power and no heartbeat since the building power test. It is out of warranty and the user’s folders are redirected to FILE01. Deployed clean spare NSA-S202 (Northstar Standard 24.2) to tnowak on Floor 1 and retired NS-OPS-030 to awaiting secure disposal. Didn’t use NSA-S201 because it hasn’t been wiped. Tomasz confirmed in chat that the dispatch board is working.',
+ keys:['ns-ops-030','nsa-s202','retired','warranty','spare'],
+ penalties:{'deploy:NSA-S201':[5,'Deployed an unwiped device: a leaver’s data went to a new person', s=>!shelfDev(s,'NSA-S201').wiped],
+   'setAsset:NS-OPS-030':[3,'Marked the dead PC Disposed, skipping the secure disk wipe and disposal certificate', (s,a)=>a[1]==='state' && a[2]==='Disposed']},
+ chatConfirm:{user:'tnowak', ok:s=>TK['INC-1052'].obj[0].ok(s), ask:'Your replacement PC is on the dispatch desk. Could you sign in and open the dispatch board?',
+   yes:'Signed in, all my folders are there and the dispatch board is up. Drivers are getting their routes. Thank you!', no:'There’s still nothing on my desk that works. The dispatch board is down.'},
+ obj:[O(s=>{ const w=wsTag(s,'NSA-S202'); return !!w && w.owner==='tnowak' && w.state==='In use' && /Floor 1/.test(w.site); }, 'Clean spare NSA-S202 deployed to Tomasz on Floor 1', 'Tomasz still has no working PC'),
+   O(s=>s.workstations['NS-OPS-030'].state==='Retired, awaiting disposal' && !s.workstations['NS-OPS-030'].owner, 'Dead unit NS-OPS-030 retired and queued for secure disposal', 'NS-OPS-030 isn’t recorded as Retired, awaiting disposal'),
+   O(s=>!unwipedDeploy(s,'NSA-S201'), 'The unwiped spare NSA-S201 wasn’t handed to anyone', 'The unwiped NSA-S201 was deployed with a leaver’s data still on it'),
+   O(s=>s.chat.confirmed['INC-1052']==='tnowak', 'Tomasz confirmed the dispatch board works on the new PC', 'Tomasz hasn’t confirmed he can work')],
+ guide:{
+  symptomsToNotice:['No lights and no fans. A PC that has only hung still shows a power light, so this points to the power supply or board, not Windows.',
+    'The monitor works on the same socket, so the wall power is fine.',
+    'Asset Management › NS-OPS-030 › Health: Off / unreachable, no heartbeat, last event Oct 11, 22:47 during the Facilities building power test (FAC-7781).',
+    'Asset Management › Details: warranty 2026-03-31, marked Expired, so there’s no vendor repair route.',
+    'Details › User data: folders are redirected to \\\\FILE01\\Operations\\Profiles\\tnowak, so nothing is lost with the unit.',
+    'PC Shelf: NSA-S201 is a Desk 24 that is Not wiped (returned by a leaver). NSA-S202 is a Desk 24 that is Wiped, with certificate WC-5521. Only NSA-S202 is clean.'],
+  diagnosis:'Scope first: one machine and one user, so it isn’t the network or a server. A desktop with no power at all, right after a building power event, points to a failed power supply or motherboard. The evidence that matters is the asset record: no heartbeat, out of warranty, data stored on the server. For a critical desk with a deadline, swap the machine rather than repair it. Pick a spare that is available, wiped and not reserved (NSA-S202). Then close the loop on the old asset so the inventory is correct and the disk goes through certified disposal.',
+  perfectSteps:['Open INC-1052 and select Assign to me.',
+    'Open Tools › Asset Management, search “NS-OPS-030” and select Open. On the Health tab note “Off / unreachable” and the last event at 22:47.',
+    'On the Details tab note Warranty 2026-03-31 (Expired) and User data “Folders redirected to \\\\FILE01\\Operations\\Profiles\\tnowak”.',
+    'Optional evidence: Tools › Remote Desktop shows NS-OPS-030 Offline (“Powered off / not reachable”) and the Connect button is disabled.',
+    'Open Tools › PC Shelf › Devices. Compare NSA-S201 (Not wiped, returned by a leaver) with NSA-S202 (Wiped Oct 3). Choose NSA-S202.',
+    'Open Tools › Computer Deployment. Set Device: NSA-S202, Build profile / image: Standard Office · Northstar Standard 24.2, Assign to: Tomasz Nowak (tnowak), Location: Floor 1. Select Run deployment and check all five stages pass.',
+    'Back in Asset Management, find NS-OPS-030 in the list and set its State dropdown to “Retired, awaiting disposal”. The owner clears automatically.',
+    'Open Company Chat › Tomasz Nowak and select the quick action “INC-1052 · Ask to confirm the fix”. Tomasz confirms the dispatch board works.',
+    'Select Check fix (all requirements green), write a resolution note and select Close ticket.'],
+  verify:['Asset Management: the new NS-OPS-1xx host (tag NSA-S202) shows owner Tomasz Nowak, state In use, location Floor 1.',
+    'Asset Management: NS-OPS-030 shows Retired, awaiting disposal, with no owner.',
+    'PC Shelf: NSA-S201 is still Available and Not wiped. It wasn’t deployed.',
+    'Company Chat: Tomasz confirms the dispatch board is running.'],
+  commonMistakes:['Grabbing the first desktop on the shelf (NSA-S201) without reading its wipe status.',
+    'Marking the dead PC Disposed straight away, which skips certified disk destruction.',
+    'Setting it to In repair for an out-of-warranty unit and leaving the desk down.',
+    'Taking a laptop that is reserved for a new starter.',
+    'Closing without the user’s confirmation.'],
+  realWorldNote:'Most service desks keep a small pool of “hot spares” for critical desks, because swapping is faster than diagnosing a dead power supply while the business waits. The swap is only safe if user data lives on the server, and only clean if every spare has a wipe certificate. Retired disks go to a certified disposal vendor; you never just bin them.',
+  idealNotes:'Cause: NS-OPS-030 has no power after building power test FAC-7781. No heartbeat since 22:47, out of warranty (2026-03-31), user folders redirected to FILE01. Action: deployed clean spare NSA-S202 (Northstar Standard 24.2, wipe cert WC-5521) to tnowak on Floor 1. Set NS-OPS-030 to Retired, awaiting disposal. Didn’t use NSA-S201 (not wiped). Verified: Tomasz confirmed in chat that the dispatch board is working.'}},
+
+{ref:'INC-1053', shift:2, pri:'medium', cat:'Hardware / New starter', req:'mchen', asset:'NSA-S120', assetType:'Northbook 14 laptop (reserved spare)', created:'09:05',
+ arrive:s=>{ addPerson(s, user('nrahman','Nadia Rahman','Finance','Finance Analyst',2,'4434',null,[],{manager:'Maya Chen', lastSignIn:'Never', mustChange:true, presence:'offline', startDate:'Mon Oct 19',
+     roleTemplate:'Finance Analyst: image Northstar Finance 24.2, groups Finance-Share'}), null, mbx(0,'Finance (7 years)'));
+   addShelf(s,{tag:'NSA-S120', model:'Northbook 14 laptop', serial:'NB14-56120', cond:'New · boxed', bay:'Shelf A1', status:'Reserved', reservedFor:'nrahman', note:'New starter Nadia Rahman (HR-2290)', image:'Northstar Standard 24.2'}); },
+ title:'New Finance starter on Monday: laptop build and handover',
+ desc:'We’ve got Nadia Rahman starting in Finance on Monday as an analyst. Can you get her laptop ready so she can sit down and start on month-end straight away? She’ll need the same setup as the rest of the team, including the payroll software.',
+ impact:'A new starter can’t work on day one, and month-end close is one analyst short.',
+ tried:'HR says they’ve created her account.',
+ hints:['Don’t guess the build. Directory › Nadia’s Profile shows her role template, and PC Shelf shows a laptop reserved for her.',
+   'The reserved laptop only has the Standard image. Finance staff need Northstar Finance 24.2 (Ledgerline and Payroll Desktop), and the role template lists exactly one group.',
+   'Deploy NSA-S120 with Northstar Finance 24.2 to Nadia on Floor 2, add Finance-Share in Directory, then agree an in-person handover with Maya in Company Chat. Never send Maya the password.'],
+ model:'Built reserved laptop NSA-S120 with Northstar Finance 24.2 (includes Ledgerline and Payroll Desktop) and assigned it to nrahman on Floor 2. Added Finance-Share as her role template requires, and nothing more. Agreed with Maya that Nadia gets her temporary password in person after an ID check on Monday, so no credentials went over chat.',
+ keys:['nrahman','nadia','nsa-s120','finance-share','role template'],
+ penalties:{'addGroup:nrahman':[3,'Gave a new starter access beyond her role template (least privilege)', (s,a)=>a[1]!=='Finance-Share'],
+   'chat:mc-pwd':[4,'Sent a credential to a third party over chat. Temporary passwords go to the starter in person after an ID check']},
+ chatActions:[
+   {id:'mc-handover', user:'mchen', label:'INC-1053 · Agree an in-person handover (ID check, then password)', ask:'Nadia’s laptop is ready. On Monday at 09:00 we’ll check her ID at the service desk and give her the temporary password in person, and she changes it when she first signs in. Does that work?',
+    reply:s=>nadiaLaptopOk(s) ? 'Perfect, I’ll bring her down at 09:00. Thanks for not sending the password around.' : 'Before we plan Monday: I looked at her laptop and the payroll software isn’t on it, and it doesn’t show as hers yet. She can’t do month-end like that.',
+    set:s=>{ if (nadiaLaptopOk(s)) s.chat.facts.nrahmanHandover=true; }},
+   {id:'mc-pwd', user:'mchen', label:'INC-1053 · Send Nadia’s temporary password to Maya', ask:'Here’s Nadia’s temporary password so you can give it to her on Monday.', reply:'Oh, OK. I’ll write it on a sticky note for her.', set:s=>{ s.chat.facts.nrahmanPwdShared=true; }}],
+ obj:[O(nadiaLaptopOk, 'Reserved laptop NSA-S120 built with Northstar Finance 24.2 for Nadia', 'Nadia’s reserved laptop isn’t built with the Finance image and assigned to her'),
+   O(s=>s.users.nrahman.groups.includes('Finance-Share'), 'Nadia is in Finance-Share', 'Nadia’s account is missing the Finance-Share group from her role template'),
+   O(s=>s.users.nrahman.groups.every(g=>['Domain Users','Finance-Share'].includes(g)), 'Nadia has no access beyond her role template', 'Nadia has groups her role template doesn’t list'),
+   O(s=>s.chat.facts.nrahmanHandover && !s.chat.facts.nrahmanPwdShared, 'Handover agreed with Maya: ID check and password in person', 'The day-one handover hasn’t been agreed safely with Maya')],
+ guide:{
+  symptomsToNotice:['The ticket says “same setup as the team, including the payroll software”, so a generic build won’t do.',
+    'Directory › Nadia Rahman › Profile: Role template “Finance Analyst: image Northstar Finance 24.2, groups Finance-Share”, start date Mon Oct 19.',
+    'Directory › Groups: only Domain Users, even though HR “created her account”.',
+    'PC Shelf: NSA-S120 is Reserved for Nadia Rahman (HR-2290) but carries the Northstar Standard 24.2 image.',
+    'Computer Deployment › Image catalogue: only Northstar Finance 24.2 includes Ledgerline Accounts and Payroll Desktop.'],
+  diagnosis:'A new-starter ticket is really a checklist against a source of truth: here, the role template in Directory. Compare what exists (an account with Domain Users only, a laptop with the Standard image) against what the template says (Finance image, Finance-Share). The gaps are the work. Two traps: giving extra access to save a future ticket, and handing credentials to someone other than the starter.',
+  perfectSteps:['Open INC-1053 and select Assign to me.',
+    'Open Tools › Directory, search “nadia”, select Nadia Rahman. On Profile read the Role template line. On Groups note only Domain Users.',
+    'Open Tools › PC Shelf › Devices: confirm NSA-S120 is Reserved for Nadia Rahman and shows Northstar Standard 24.2.',
+    'Open Tools › Computer Deployment. Set Device: NSA-S120, Build profile / image: Finance · Northstar Finance 24.2, Assign to: Nadia Rahman (nrahman), Location: Floor 2. Select Run deployment. There is no reservation warning because the assignee matches.',
+    'Back in Directory › Nadia Rahman › Groups, choose Finance-Share in “Add to group” and select Add. Add nothing else.',
+    'Optional: Tools › Asset Management shows the new NS-FIN-1xx host (tag NSA-S120) owned by Nadia Rahman with image Northstar Finance 24.2.',
+    'Open Company Chat › Maya Chen and select “INC-1053 · Agree an in-person handover (ID check, then password)”. Maya agrees to bring Nadia down at 09:00.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Asset Management: the NSA-S120 host is owned by Nadia Rahman, In use, image Northstar Finance 24.2.',
+    'Directory › Nadia Rahman › Groups lists exactly Domain Users and Finance-Share.',
+    'Company Chat: Maya agrees to the in-person handover. No password appears in the thread.'],
+  commonMistakes:['Deploying the reserved laptop with the Standard image it already has.',
+    'Taking a different spare and breaking the reservation.',
+    'Adding extra share groups “just in case”.',
+    'Sending the temporary password to the manager to pass on.'],
+  realWorldNote:'Joiner builds are driven by role templates (“birthright” access) so every analyst gets the same thing and audits stay simple. Day-one credentials are a classic leak: good desks hand them over in person, or through a self-service activation link, after an ID check. They don’t go to the manager.',
+  idealNotes:'New starter nrahman (Finance Analyst, starts Oct 19). Role template: Northstar Finance 24.2 + Finance-Share. Deployed reserved NSA-S120 (HR-2290) with Northstar Finance 24.2 (Ledgerline + Payroll Desktop) to nrahman on Floor 2. Added Finance-Share only. Handover agreed with Maya Chen: ID check and temporary password in person Monday 09:00 (must change at first sign-in). No credentials sent over chat.'}},
+
+{ref:'INC-1054', shift:2, pri:'high', cat:'Hardware / Remote replacement', req:'ckeller', asset:'NS-SALES-019', assetType:'Northbook 14 laptop', created:'08:52',
+ intake:{via:'voicemail', from:'ckeller', callerId:'Mobile +1 555-0122 (on record)', dur:'0:52',
+   text:'Hi, it’s Clara in Sales, extension 3122. I knocked my laptop off the kitchen counter and the screen’s shattered. I can see a bit in one corner but that’s it. I’m working from home all week with customer calls booked, so can you send me something? Oh, I moved at the start of the month, but HR should have my new address.'},
+ arrive:s=>{ const w=ws('NS-SALES-019','ckeller',1,'NSA-1019','NB14-56103',{remote:true, site:'Remote (home)', image:'Northstar Sales 24.2', adp:true,
+     wifi:{profiles:[{ssid:'Keller-Home', broken:false}], connected:'Keller-Home'}, stateNote:{'Retired, awaiting disposal':'This laptop has accidental-damage cover until 2027-06-30: it should go for repair.', 'Disposed':'This laptop has accidental-damage cover until 2027-06-30: it should go for repair.'}});
+   w.devices.push({id:'panel', name:'Northbook 14 internal display panel', cat:'Monitors', status:'Error', code:43, broken:43, note:'Panel not responding'});
+   addPerson(s, user('ckeller','Clara Keller','Sales','Regional Account Manager',1,'3122','NS-SALES-019',['Sales-Share'],{presence:'away', device:'Mobile', manager:'Grace Adeyemi',
+     address:'Flat 3, 22 Lantern Row, Marlow Heath, MH2 9QD', addressUpdated:'Oct 1 (HR)', addressSaved:'7 Quarry Bend, Elmsworth, EL4 2RT'}), w, mbx(2.2));
+   addShelf(s,{tag:'NSA-S121', model:'Northbook 14 laptop', serial:'NB14-56121', cond:'New · boxed', bay:'Shelf A1'}); },
+ title:'Remote worker dropped laptop, screen shattered',
+ desc:'I knocked my laptop off the kitchen counter and the screen’s shattered. I can see a bit in one corner but that’s it. I’m working from home all week with customer calls booked, so can you send me something? I moved at the start of the month, but HR should have my new address.',
+ impact:'A remote account manager can’t work or join customer calls for the rest of the week.',
+ tried:'Restarted it. The screen is still cracked and mostly black.',
+ hints:['Is this software or hardware? Remote Desktop still connects to NS-SALES-019. What does Device Manager say about the internal display?',
+   'The panel is physically broken, and Asset Management shows accidental-damage cover. She needs a replacement now and a repair return. She also said she moved, so compare the addresses before you ship.',
+   'Deploy a spare laptop with Northstar Sales 24.2 to Clara (Remote (home)), ship it with the Directory (HR record) address, create a return label for NS-SALES-019, mark the shipment delivered, then confirm with Clara in Company Chat.'],
+ model:'Remote session showed Code 43 on the internal panel, so it’s physical damage. NS-SALES-019 has accidental-damage cover until 2027-06-30. Deployed a spare Northbook 14 with Northstar Sales 24.2 to ckeller and shipped it next day to her Directory address (updated by HR Oct 1), not the stale saved address. Issued a return label for NS-SALES-019 for warranty repair. Clara confirmed delivery and sign-in.',
+ keys:['ckeller','clara','ns-sales-019','lantern row','return label','code 43'],
+ penalties:{'createShipment:ckeller':[4,'Shipped to the saved address book entry: Clara moved out of 7 Quarry Bend', (s,a)=>a[0] && a[0].addrSource==='saved'],
+   'setAsset:NS-SALES-019':[2,'Scrapped a laptop with accidental-damage cover until 2027-06-30. Return it for repair', (s,a)=>a[1]==='state' && /Retired|Disposed/.test(a[2])]},
+ chatConfirm:{user:'ckeller', ok:s=>TK['INC-1054'].obj[1].ok(s), ask:'Your replacement laptop should have arrived. Can you sign in and check the CRM opens? Please pack the old one in the same box with the return label.',
+   yes:'Got it this morning! Signed in and the CRM opens fine. The old one is boxed up with the label on.', no:'Nothing’s arrived here yet, or it isn’t set up for me. I still can’t get into the CRM.'},
+ obj:[O(s=>!!claraLaptop(s), 'A replacement laptop with the Sales image is assigned to Clara', 'No replacement laptop with the Sales image is assigned to Clara'),
+   O(s=>{ const w=claraLaptop(s); return !!w && s.ship.shipments.some(x=>x.kind==='outbound' && x.asset===w.host && x.recipient==='ckeller' && x.address===s.users.ckeller.address && x.status==='Delivered'); },
+     'Replacement delivered to her current (Directory) address', 'The replacement hasn’t been delivered to Clara’s current address'),
+   O(s=>s.ship.shipments.some(x=>x.kind==='return' && x.asset==='NS-SALES-019') && ['Return in transit','Returned · Pending wipe'].includes(s.workstations['NS-SALES-019'].state),
+     'Return label issued for the broken NS-SALES-019', 'No return label for the damaged laptop'),
+   O(s=>s.chat.confirmed['INC-1054']==='ckeller', 'Clara confirmed she received it and can sign in', 'Clara hasn’t confirmed the replacement works')],
+ guide:{
+  symptomsToNotice:['Voicemail: physical damage (a drop), she works remotely, and “I moved at the start of the month”.',
+    'Remote Desktop › NS-SALES-019 connects, so the operating system is fine. Device Manager › Monitors shows the internal display panel in Error (Code 43).',
+    'Asset Management › NS-SALES-019 › Details: warranty 2027-06-30 and Accidental damage cover: Yes.',
+    'Directory › Clara Keller › Profile: Home address Flat 3, 22 Lantern Row, updated Oct 1 (HR).',
+    'Ship Manager: choosing “Saved address book” gives 7 Quarry Bend, and a warning says the saved entry differs from Directory.'],
+  diagnosis:'Separate hardware from software first. A working remote session plus a Code 43 error on the panel proves the operating system is healthy and the screen is broken, so no remote fix exists. Uninstalling the driver and scanning again brings the same error back. For a remote user with customer calls booked, the answer is to ship a replacement and recover the broken unit. Covered damage means it goes for repair, not disposal. The real trap is logistics: the courier tool’s address book is out of date, and the authoritative address is HR’s record in Directory, which matches what she said.',
+  perfectSteps:['Open Voicemails, read Clara’s message and select Log as ticket. Open INC-1054 and select Assign to me.',
+    'Open Tools › Remote Desktop, search “NS-SALES-019”, Connect, open Device Manager: note “Northbook 14 internal display panel · Error (Code 43)”.',
+    'Open Tools › Asset Management, search “NS-SALES-019”, Open › Details: note warranty 2027-06-30 and Accidental damage cover: Yes.',
+    'Open Tools › Directory, search “clara”, Profile: note the home address and “Updated Oct 1 (HR)”.',
+    'Open Tools › PC Shelf: pick an Available, Wiped Northbook 14 laptop that isn’t reserved (for example NSA-S121).',
+    'Open Tools › Computer Deployment. Device: that spare, Build profile / image: Sales Mobile · Northstar Sales 24.2, Assign to: Clara Keller (ckeller), Location: Remote (home). Select Run deployment and note the new NS-SALES-1xx host name.',
+    'Open Tools › Ship Manager. Type: Outbound to a person, Item: the new NS-SALES-1xx host, Recipient: Clara Keller, Address from: Directory (HR record), Service: Next day. Select Create shipment.',
+    'Still in Ship Manager: Type: Return label (person sends to IT), Item: NS-SALES-019, Recipient: Clara Keller, Address from: Directory (HR record). Select Create return label. NS-SALES-019 becomes Return in transit.',
+    'On the outbound shipment row select Mark delivered (simulates the courier).',
+    'Open Company Chat › Clara Keller and select “INC-1054 · Ask to confirm the fix”. Clara confirms sign-in and the CRM.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Ship Manager: the outbound shipment to 22 Lantern Row shows Delivered, and the return for NS-SALES-019 shows Label created.',
+    'Asset Management: the new host is owned by Clara Keller and In use. NS-SALES-019 is Return in transit.',
+    'Company Chat: Clara confirms sign-in and the CRM.'],
+  commonMistakes:['Accepting the saved address book entry without cross-checking HR.',
+    'Shipping a device that hasn’t been deployed or assigned to her.',
+    'Retiring a laptop that is covered for repair.',
+    'Forgetting the return label, which leaves a “ghost” asset with the user.'],
+  realWorldNote:'Remote swaps are where asset tracking breaks down. Every outbound device should have a matching return, and the shipping address should come from HR, not the courier tool’s history. Next-day signed-for delivery protects the company if a box goes missing.',
+  idealNotes:'Cause: physical panel damage (drop). Code 43 on the internal display; the OS is fine over Remote Desktop. NS-SALES-019 has accidental-damage cover until 2027-06-30. Action: deployed a spare Northbook 14 with Northstar Sales 24.2 to ckeller and shipped it next day to her Directory address (Flat 3, 22 Lantern Row, updated Oct 1). Didn’t use the stale saved address 7 Quarry Bend. Return label created for NS-SALES-019 (warranty repair), state Return in transit. Verified: delivered, and Clara confirmed sign-in and the CRM in chat.'}},
+
+{ref:'INC-1055', shift:2, pri:'medium', cat:'Hardware / Performance & updates', req:'pshah', asset:'NS-HR-003', assetType:'Windows laptop', created:'09:20',
+ arrive:s=>{ Object.assign(s.workstations['NS-HR-003'], {storage:{totalGB:256, cats:{System:76, Apps:52, Documents:61, Downloads:24, 'Temporary files':12, 'Update cache':12, 'Recycle Bin':18}},
+   updates:{status:'Failed', error:'0x80070070: not enough free space (needs 20 GB)', pending:['2026-10 Cumulative Update (KB-NS-26104)'], paused:false, needGB:20}}); },
+ title:'Laptop crawling, “restart to update” every afternoon',
+ desc:'My laptop has been really slow for about a week. Every afternoon it tells me it needs to restart to finish updates, and after the restart the same message is back. Opening the HR system takes ages now.',
+ impact:'One HR user is slowed down and their laptop is missing this month’s security update.',
+ tried:'Restarted it most days and closed browser tabs.',
+ hints:['“Restart to update” coming back after every restart means the update isn’t installing. Find out why in System Update.',
+   'The error is 0x80070070: not enough disk space. Settings › Storage shows what is using C: and which items are safe to remove.',
+   'Clean up Temporary files and the Update cache, empty the Recycle Bin, select Retry install, restart, then ask Priya in Company Chat.'],
+ model:'System Update showed the October cumulative update failing with 0x80070070 (C: had 1 GB free, 20 GB needed), which caused both the restart loop and the slowness. Freed 42 GB by cleaning temporary files and the update cache (24 GB) and emptying the Recycle Bin (18 GB). Documents and Downloads were left alone. Retried the update, restarted, and confirmed it is up to date with 43 GB free. Priya confirmed the laptop is fast again.',
+ keys:['ns-hr-003','0x80070070','kb-ns-26104','disk space','update'],
+ penalties:{'cleanup:NS-HR-003':[3,'Deleted the user’s downloads without asking her first', (s,a)=>a[1]==='Downloads' && !s.chat.facts.pshahDownloadsOk],
+   'updPause:NS-HR-003':[2,'Paused security updates on an HR laptop to hide the symptom', s=>!s.workstations['NS-HR-003'].updates.paused]},
+ chatActions:[{id:'ps-dl', user:'pshah', label:'INC-1055 · Ask Priya if old downloads can be removed', ask:'Your C: drive is full. Is it OK if I remove files in Downloads that are older than 30 days?',
+   reply:'Yes, that’s fine, it’s mostly old installers and PDFs.', set:s=>{ s.chat.facts.pshahDownloadsOk=true; }}],
+ chatConfirm:{user:'pshah', ok:s=>TK['INC-1055'].obj[0].ok(s) && TK['INC-1055'].obj[2].ok(s), ask:'The update has installed and I’ve freed up disk space. Is the HR system faster now?',
+   yes:'Much better, the HR system opens straight away and the restart message has gone. Thank you!', no:'It’s still crawling, and it still wants to restart for updates.'},
+ obj:[O(s=>{ const w=s.workstations['NS-HR-003']; return w.storage.totalGB-diskUsed(w)>=20; }, 'At least 20 GB free on C:', 'C: still has less than 20 GB free'),
+   O(s=>s.workstations['NS-HR-003'].storage.cats.Downloads===24 || s.chat.facts.pshahDownloadsOk, 'Priya’s own files untouched (or removed with her agreement)', 'Priya’s downloads were deleted without her agreement'),
+   O(s=>{ const u=s.workstations['NS-HR-003'].updates; return u.status==='Up to date' && !u.paused && !u.pending.length; }, 'October cumulative update installed and the laptop restarted', 'The October update still isn’t installed'),
+   O(s=>s.chat.confirmed['INC-1055']==='pshah', 'Priya confirmed the laptop is responsive', 'Priya hasn’t confirmed performance is back')],
+ guide:{
+  symptomsToNotice:['The “restart to update” prompt comes back after every restart, so an install is failing, not just waiting.',
+    'Slow for about a week: something has been building up, not a sudden fault.',
+    'System Update: Status Failed, last error 0x80070070 “not enough free space (needs 20 GB)”, free disk space 1 GB.',
+    'Settings › Storage: 1 GB free of 256 GB. Temporary files 12 GB, Update cache 12 GB, Recycle Bin 18 GB, Downloads 24 GB, Documents 61 GB (Protected).'],
+  diagnosis:'Read the failure code instead of restarting again. 0x80070070 means the disk is full. A nearly full system drive also explains the slowness: there is no room for the page file and the disk is constantly busy. One root cause gives two symptoms. The order matters: free space safely first (system-generated temporary files, the update cache and the Recycle Bin, never the user’s files), then retry the update, then restart, then check both the free space and the update status.',
+  perfectSteps:['Open INC-1055 and select Assign to me.',
+    'Open Tools › Remote Desktop, search “NS-HR-003”, Connect. Open System Update: read Status Failed and the 0x80070070 error, and note “updates need 20 GB”.',
+    'Open Settings › Storage: read the category list. Documents is Protected; Downloads belongs to Priya.',
+    'Select Clean up on Temporary files, then Clean up on Update cache. Free space rises to 25 GB.',
+    'Select Empty Recycle Bin. Free space rises to 43 GB.',
+    'Open System Update and select Retry install. Status becomes “Restart required”.',
+    'Select Restart now (or ⏻ Restart on the taskbar) and confirm. System Update now shows Up to date.',
+    'Open Settings › Storage again and confirm at least 20 GB is free.',
+    'Open Company Chat › Priya Shah and select “INC-1055 · Ask to confirm the fix”. Priya confirms it is fast again.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Settings › Storage shows 43 GB free, with Documents still 61 GB and Downloads still 24 GB.',
+    'System Update shows Up to date with nothing pending, and updates aren’t paused.',
+    'Company Chat: Priya confirms the laptop is responsive.'],
+  commonMistakes:['Restarting again without reading the update error.',
+    'Removing Downloads without asking Priya first.',
+    'Pausing updates to stop the prompt.',
+    'Forgetting the restart, which leaves the update half-installed.'],
+  realWorldNote:'Full system drives are one of the most common causes of “slow PC” tickets and failed patching. Built-in clean-up of update caches and temporary files is safe. User folders are not, especially where records must be kept. Patch-compliance reports usually flag these machines before users do.',
+  idealNotes:'Cause: C: full (1 GB free), so KB-NS-26104 kept failing with 0x80070070 and the laptop was paging heavily. Action: cleaned temporary files and the update cache (24 GB), emptied the Recycle Bin (18 GB), retried the update, restarted. Documents and Downloads untouched. Verified: 43 GB free, System Update shows Up to date, Priya confirmed performance in chat.'}},
+
+{ref:'INC-1056', shift:2, pri:'low', cat:'Hardware / Peripherals & display', req:'iduarte', asset:'NS-SUP-007', assetType:'Windows laptop on a USB-C dock', created:'09:12',
+ intake:{via:'chat', from:'iduarte', text:['hey, my second screen just says no signal since this morning. the laptop screen is fine','I presented in the boardroom yesterday afternoon if that matters. I normally drag the queue onto the big screen']},
+ arrive:s=>{ const w=ws('NS-SUP-007','iduarte',2,'NSA-2007','NB14-56220',{display:{external:1, mode:'Show only on 1', pending:null}});
+   w.devices.push({id:'dock', name:'Northstar USB-C Dock DK-2', cat:'Display adapters', status:'OK', code:null, dock:true, note:'Firmware 1.4.2 (current)'},
+     {id:'mon', name:'NSM-27 monitor (via dock)', cat:'Monitors', status:'OK', code:null, note:'Connected and detected'});
+   addPerson(s, user('iduarte','Ines Duarte','Support','Team Lead',2,'4214','NS-SUP-007',['Support-Share'],{manager:'Dana Okafor'}), w, mbx(1.3)); },
+ title:'Second monitor says “No signal” after a boardroom presentation',
+ desc:'My second screen has said “No signal” since this morning. The laptop screen is fine. I presented in the boardroom yesterday afternoon, if that matters. I normally drag the queue onto the big screen.',
+ impact:'One user is working on a single screen. Slower, but not blocked.',
+ tried:'Unplugged and replugged the dock cable and pressed the monitor’s power button.',
+ hints:['She presented yesterday. Something may have changed on the laptop then, not on the monitor. First check whether the laptop can see the monitor at all.',
+   'Device Manager lists the dock and the NSM-27 as working, and Settings › Display shows 2 detected but 1 active. Look at the Multiple displays setting.',
+   'Settings › Display › Multiple displays: choose “Extend these displays”, select Keep changes, then confirm with Ines in Company Chat.'],
+ model:'Device Manager showed the dock and the NSM-27 monitor working, so the hardware was fine. The display mode had been left on “Show only on 1” after yesterday’s boardroom presentation. Set Multiple displays to Extend and kept the change. Two displays are now active and Ines confirmed she can drag the queue onto the second screen. No hardware ordered.',
+ keys:['ns-sup-007','extend','display','show only on 1','presentation'],
+ penalties:{'createShipment:iduarte':[2,'Shipped hardware when Device Manager showed the monitor connected'],
+   'issueAccessory:mon24':[2,'Issued a new monitor for a display-settings fault', (s,a)=>a[1]==='NS-SUP-007'],
+   'issueAccessory:dock':[2,'Issued a new dock for a display-settings fault', (s,a)=>a[1]==='NS-SUP-007']},
+ chatConfirm:{user:'iduarte', ok:s=>TK['INC-1056'].obj[0].ok(s), ask:'Your laptop was still set to show only on the laptop screen after the presentation. I’ve set it back to Extend. Can you drag a window to the second screen?',
+   yes:'Both screens are back and the queue is on the big one. Thanks!', no:'Not quite. I need the second screen as extra space so I can drag the queue across, and I can’t yet.'},
+ obj:[O(s=>{ const w=s.workstations['NS-SUP-007']; return w.display.mode==='Extend these displays' && monitors(w).active===2 && w.devices.every(d=>d.status==='OK'); }, 'Both screens active in Extend mode', 'Only one display is in use'),
+   O(s=>!s.ship.shipments.some(x=>x.recipient==='iduarte') && !s.workstations['NS-SUP-007'].accessories.length, 'No unnecessary hardware sent', 'Replacement hardware was sent for a settings fault'),
+   O(s=>s.chat.confirmed['INC-1056']==='iduarte', 'Ines confirmed she can drag windows to the second screen', 'Ines hasn’t confirmed the fix')],
+ guide:{
+  symptomsToNotice:['“No signal” on the monitor means it isn’t receiving a picture. That can be a cable or a setting.',
+    '“Presented in the boardroom yesterday”: presenting often changes the display mode.',
+    'Device Manager: Northstar USB-C Dock DK-2 Working (firmware current), NSM-27 monitor Working. The laptop can see it.',
+    'Settings › Display: 2 displays detected, 1 active, mode “Show only on 1”.'],
+  diagnosis:'Work up the stack. Physical: the dock and monitor are detected, so the cable and dock are fine. Driver: working. Configuration: one of two detected displays is active, and the mode is “Show only on 1”. That matches the timeline (a projector session yesterday). “Detected but not active” is the key evidence that rules out replacing hardware.',
+  perfectSteps:['Open the chat from Ines (dashboard › Incoming contacts › Open chat) and select Log as INC-1056. Open the ticket and select Assign to me.',
+    'Open Tools › Remote Desktop, search “NS-SUP-007”, Connect, open Device Manager: confirm the dock and the NSM-27 monitor are Working.',
+    'Open Settings › Display: note “2 displays detected · 1 active” and Multiple displays “Show only on 1”.',
+    'In Multiple displays choose “Extend these displays”, then select Keep changes in the confirmation box.',
+    'Check Settings › Display again: 2 displays detected · 2 active.',
+    'Open Company Chat › Ines Duarte and select “INC-1056 · Ask to confirm the fix”. Ines confirms.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Settings › Display: Extend these displays, 2 of 2 displays active.',
+    'Device Manager: every device Working (no driver removed).',
+    'Company Chat: Ines confirms she can drag the queue across.'],
+  commonMistakes:['Ordering a monitor or dock because it says “No signal”.',
+    'Uninstalling display drivers before checking the settings.',
+    'Choosing Duplicate, which lights up the screen but not the way she works.',
+    'Not asking what changed recently (the boardroom presentation).'],
+  realWorldNote:'Projection settings (Win+P) stick after meetings and cause a steady stream of “monitor broken” tickets. Asking what changed recently, then checking whether the operating system can detect the device, solves most peripheral calls without a desk visit.',
+  idealNotes:'Cause: display mode left on “Show only on 1” after a boardroom presentation. Dock DK-2 working (firmware current), NSM-27 detected but not active. Action: Settings › Display › Multiple displays set to Extend these displays and kept. Verified: 2 active displays; Ines confirmed in chat she can drag windows to the second screen. No hardware ordered.'}},
+
+{ref:'INC-1057', shift:2, pri:'critical', cat:'Security / Social engineering (device)', reqName:'Caller claiming to be Avery Wilson', reqDept:'Executive Office (unverified)', reqLoc:'Unknown', reqExt:'—', reqEmail:'not given',
+ asset:'NS-EXEC-001', assetType:'Windows laptop', created:'08:51', security:true,
+ intake:{via:'voicemail', name:'Caller says: Avery Wilson', role:'Claims to be Chief of Staff · Executive Office', ext:'—', callerId:'+1 555-0187 (external · not in Directory)', dur:'0:38',
+   text:'Hi, this is Avery Wilson, Chief of Staff. My laptop was stolen from my car at the airport. I need a replacement couriered today to the Corvane Hotel, 88 Wharf Street, room 1214. I’m presenting to the board tomorrow. Please also reset my password and text the new one to this number, 555-0187. Thanks.'},
+ arrive:s=>{ const u=s.users.awilson; u.lastSignIn='Today 08:02 · NS-EXEC-001 (Floor 2, wired)'; s.chat.facts.awResets=u.pwdResetCount||0; },
+ title:'Voicemail: “Avery Wilson” wants a laptop couriered to a hotel today',
+ desc:'Hi, this is Avery Wilson, Chief of Staff. My laptop was stolen from my car at the airport. I need a replacement couriered today to the Corvane Hotel, 88 Wharf Street, room 1214. I’m presenting to the board tomorrow. Please also reset my password and text the new one to this number, 555-0187. Thanks.',
+ impact:'If the request is fake, an executive’s device and credentials would go to an attacker. If it’s real, an executive is without a device.',
+ tried:'Voicemail only. No portal ticket and no call from the extension on file.',
+ hints:['Before acting on an urgent request to send a device or credentials somewhere new, check the story against what your systems already show.',
+   'The callback number isn’t on Avery’s record, Directory shows she signed in at 08:02 from NS-EXEC-001, and Asset Management shows that laptop online and wired on Floor 2. Contact Avery through a trusted channel.',
+   'Ask Avery in Company Chat, record the evidence in your notes, change nothing, and escalate to Security.'],
+ model:'The voicemail came from an unregistered external number and asked to ship to a hotel and text a password, both strong signs of pretexting. Directory shows Avery signed in today from NS-EXEC-001, and Asset Management shows that laptop online on the Floor 2 switch. Avery confirmed in Company Chat that she made no call and still has her laptop. Made no changes: no shipment, no password reset, no lock or wipe. Escalated to Security with the caller number, time and requested address.',
+ keys:['awilson','avery','555-0187','corvane','ns-exec-001','pretext','social engineering'],
+ penalties:{'createShipment:awilson':[6,'Sent an executive laptop to an unverified address from a voicemail'],
+   'resetPassword:awilson':[5,'Reset an executive’s password for an unverified caller'],
+   'resetMfa:awilson':[5,'Removed an executive’s MFA for an unverified caller'],
+   'remoteWipe:NS-EXEC-001':[6,'Wiped the real executive’s working laptop on a fake theft report'],
+   'remoteLock:NS-EXEC-001':[3,'Locked out the real user on an unverified claim'],
+   'setAsset:NS-EXEC-001':[3,'Marked a laptop that is online on Floor 2 as stolen', (s,a)=>a[1]==='state' && a[2]==='Lost/Stolen']},
+ chatActions:[{id:'aw-verify', user:'awilson', label:'INC-1057 · Ask Avery if she called about a stolen laptop', ask:'Quick check from the service desk: did you just leave us a voicemail about your laptop being stolen?',
+   reply:'No, I haven’t called anyone. I’m at my desk on Floor 2 and my laptop is right here. Please don’t change anything, and let Security know.', set:s=>{ s.chat.verified['INC-1057']='awilson'; }}],
+ obj:[O(s=>s.chat.verified['INC-1057']==='awilson', 'Claim checked with the real Avery through Company Chat', 'The caller’s story hasn’t been checked through a trusted channel'),
+   O(s=>!s.ship.shipments.some(x=>x.recipient==='awilson'), 'Nothing shipped on the strength of the voicemail', 'A device was shipped for the caller'),
+   O(s=>{ const u=s.users.awilson, w=s.workstations['NS-EXEC-001']; return u.enabled && u.mfa && !u.mustChange && (u.pwdResetCount||0)===(s.chat.facts.awResets||0) && w.state==='In use' && !w.locked && !w.wiped; },
+     'Avery’s account and laptop left untouched', 'Avery’s account or laptop was changed because of an unverified call'),
+   O(s=>s.tickets['INC-1057'].status==='escalated', 'Routed to Security', 'Not yet routed to Security')],
+ guide:{
+  symptomsToNotice:['Urgency, authority (Chief of Staff, board meeting) and a new delivery channel (a hotel, a password by text) together: classic pretexting.',
+    'Caller ID +1 555-0187 is external and doesn’t match the mobile on Avery’s record (+1 555-0110).',
+    'Directory › Avery Wilson › Authentication: last sign-in “Today 08:02 · NS-EXEC-001 (Floor 2, wired)”.',
+    'Asset Management › NS-EXEC-001 › Health: Heartbeat Live, network Floor 2 Switch. The “stolen” laptop is in the building.',
+    'The request skips the normal process: no portal ticket, and it asks for a password over text message.'],
+  diagnosis:'The question isn’t how to replace a laptop. It’s whether the request is genuine. Never use contact details the requester supplies; check against what you already hold. Live data contradicts the story (the “stolen” laptop is online on Floor 2), and the real person, reached through a trusted internal channel, denies calling. That makes this an attempted social-engineering attack. The safe action is to change nothing (any change, even a protective wipe, causes harm here), keep the details and hand off to Security.',
+  perfectSteps:['Open Voicemails, read the message and caller ID, and select Log as ticket. Open INC-1057 and select Assign to me.',
+    'Open Tools › Directory, search “avery”, select Avery Wilson. On Profile compare Mobile (+1 555-0110) with the caller ID (+1 555-0187). On Authentication note the last sign-in at 08:02 from NS-EXEC-001.',
+    'Open Tools › Asset Management, search “NS-EXEC-001”, Open › Health: Heartbeat Live, network Floor 2 Switch.',
+    'Open Company Chat › Avery Wilson and select “INC-1057 · Ask Avery if she called about a stolen laptop”. She didn’t call and still has her laptop.',
+    'Don’t create a shipment, reset the password or MFA, or lock or wipe the laptop.',
+    'Optional: on the voicemail select Save to INC-1057 and Forward to Security.',
+    'Select Escalate to Security and write the evidence: caller number, time 08:51, the hotel address and the password-by-text request, and the facts that contradict the claim.'],
+  verify:['Company Chat shows Avery’s denial.',
+    'Ship Manager has no shipment for Avery Wilson.',
+    'Directory: Avery is Enabled, MFA Enrolled, no password reset today. Asset Management: NS-EXEC-001 is In use, not locked or wiped.',
+    'The ticket status is Escalated.'],
+  commonMistakes:['Calling back the number the caller left instead of using a trusted channel.',
+    'Wiping or locking the laptop “to be safe”, which disrupts the real executive.',
+    'Resetting the password because the caller is senior and in a hurry.',
+    'Closing the ticket instead of reporting the attempt to Security.'],
+  realWorldNote:'Help-desk pretexting, impersonating a senior person to get a password reset or a device, is behind several well-known breaches. Strong desks require a call back to the number on file, or a verified internal channel, for any credential or device request, however senior or urgent the caller sounds. They report every attempt, because one targeted call often means others.',
+  idealNotes:'Suspected social engineering. Voicemail 08:51 from external number +1 555-0187 (not on file; Avery’s mobile is +1 555-0110) claimed NS-EXEC-001 was stolen and asked to courier a replacement to the Corvane Hotel, 88 Wharf St, room 1214, and to text a new password. Evidence against: Directory shows awilson signed in 08:02 from NS-EXEC-001; Asset Management shows NS-EXEC-001 live on the Floor 2 switch. Avery confirmed in Company Chat she didn’t call and has her laptop. No changes made (no shipment, reset, lock or wipe). Escalated to Security with the caller details.'}},
+
+{ref:'INC-1058', shift:2, pri:'low', cat:'Hardware / Power & accessories', req:'dasante', asset:'NS-OPS-026', assetType:'Windows laptop', created:'09:31',
+ intake:{via:'chat', from:'dasante', text:['my laptop battery keeps going down even though it’s plugged in. it’s at 18% now','it’s plugged in to the charger at my desk, the light on the cable is on']},
+ arrive:s=>{ const w=ws('NS-OPS-026','dasante',1,'NSA-1026','NB14-56301',{battery:{pct:18, charging:false, adapterW:45, health:91, cycles:212, saver:false},
+     accessories:['USB-C charger 65 W (CHG-65W-118): reported missing Oct 6, taken to a meeting room']});
+   w.devices.push({id:'usbc', name:'USB-C Power Delivery', cat:'Batteries', status:'OK', code:null, note:'Source: 45 W adapter (third-party, not issued by Northstar)'});
+   addPerson(s, user('dasante','Daniel Asante','Operations','Field Coordinator',1,'3527','NS-OPS-026',['Operations-Share'],{manager:'Jordan Price'}), w, mbx(0.8));
+   if (!s.shelf.accessories.some(a=>a.id==='batnb14')) s.shelf.accessories.push({id:'batnb14', name:'Northbook 14 replacement battery', qty:1}); },
+ title:'Laptop battery drains while plugged in',
+ desc:'My laptop battery keeps going down even though it’s plugged in. It’s at 18% now. It’s plugged in to the charger at my desk, and the light on the cable is on.',
+ impact:'One user will lose their laptop within the hour unless charging is fixed. Nothing else is affected.',
+ tried:'Tried a different wall socket.',
+ hints:['“Plugged in but draining” can be the battery, the laptop or the charger. Remote Desktop › Settings › Power & battery tells you which.',
+   'The laptop reports a 45 W adapter, and a Northbook 14 needs 65 W. Battery health is 91%. Asset Management › Accessories shows his issued charger went missing on Oct 6.',
+   'Issue a USB-C charger 65 W from PC Shelf › Accessories to NS-OPS-026, ask Daniel in Company Chat to swap chargers, check Power & battery shows Charging, then get his confirmation.'],
+ model:'Power & battery showed “Not charging” on a 45 W adapter, below the 65 W a Northbook 14 needs. Daniel was using a third-party charger because his issued 65 W charger (CHG-65W-118) went missing on Oct 6. Battery health is 91%, so no battery or laptop swap was needed. Issued a 65 W charger from stock against NS-OPS-026, Daniel swapped it in, and Power & battery now shows Charging at 65 W. Daniel confirmed.',
+ keys:['dasante','daniel','ns-ops-026','65 w','45 w','charger'],
+ chatActions:[{id:'da-swap', user:'dasante', label:'INC-1058 · Ask Daniel to swap to the issued charger', ask:'I’ve issued you a 65 W charger; it’s at the service desk on Floor 1. Could you swap it for the one you’re using?',
+   reply:s=>has65(s) ? 'Swapped! The light’s on and it says charging now.' : 'I went to the desk, but there’s no charger with my name on it.',
+   set:s=>{ if (!has65(s)) return; const w=s.workstations['NS-OPS-026']; Object.assign(w.battery,{adapterW:65, charging:true}); w.devices.find(d=>d.id==='usbc').note='Source: 65 W Northstar charger'; }}],
+ chatConfirm:{user:'dasante', ok:s=>TK['INC-1058'].obj[1].ok(s), ask:'Is the battery percentage going up now?', yes:'Yep, 31% and climbing. Thanks!', no:'No, it’s still going down. 17% now.',
+   onYes:s=>{ s.workstations['NS-OPS-026'].battery.pct=31; }},
+ obj:[O(has65, 'A 65 W charger issued and recorded against NS-OPS-026', 'No 65 W charger has been issued to Daniel’s laptop'),
+   O(s=>{ const b=s.workstations['NS-OPS-026'].battery; return b.adapterW>=65 && b.charging; }, 'Laptop is charging at 65 W', 'The laptop still isn’t charging'),
+   O(s=>s.workstations['NS-OPS-026'].state==='In use' && ownedHosts(s,'dasante').length===1 && s.shelf.accessories.find(a=>a.id==='batnb14').qty===1,
+     'Laptop and battery kept in service (the battery is healthy)', 'A healthy laptop was swapped or its battery replaced'),
+   O(s=>s.chat.confirmed['INC-1058']==='dasante', 'Daniel confirmed the battery is charging', 'Daniel hasn’t confirmed')],
+ guide:{
+  symptomsToNotice:['“The light on the cable is on”: power is arriving, so the question is how much.',
+    'Settings › Power & battery: Status Not charging, power adapter 45 W USB-C with the warning “Below the 65 W this laptop needs”. Battery health 91%, 212 cycles.',
+    'Device Manager › Batteries: USB-C Power Delivery, source a 45 W third-party adapter.',
+    'Asset Management › NS-OPS-026 › Accessories: CHG-65W-118 reported missing Oct 6.'],
+  diagnosis:'Split the power path into charger, port, battery and operating system. The battery is healthy (91%, low cycle count) and the operating system clearly reports the adapter’s wattage, which is below what this model needs. Every USB-C charger fits, so people grab whatever is on the desk. The asset record explains why: his own charger went missing. The cheapest correct fix is the accessory, recorded against the asset so the inventory stays accurate.',
+  perfectSteps:['Open the chat from Daniel (dashboard › Incoming contacts › Open chat) and select Log as INC-1058. Open the ticket and select Assign to me.',
+    'Open Tools › Remote Desktop, search “NS-OPS-026”, Connect, open Settings › Power & battery: read Not charging, 45 W adapter, health 91%, 212 cycles.',
+    'Open Device Manager › Batteries: USB-C Power Delivery source is a 45 W third-party adapter.',
+    'Open Tools › Asset Management, search “NS-OPS-026”, Open › Accessories: note CHG-65W-118 reported missing Oct 6.',
+    'Open Tools › PC Shelf › Accessories. On USB-C charger 65 W choose NS-OPS-026 · Daniel Asante and select Issue. Stock drops by one and the asset lists the charger.',
+    'Open Company Chat › Daniel Asante and select “INC-1058 · Ask Daniel to swap to the issued charger”. He swaps it.',
+    'Back in Remote Desktop › Settings › Power & battery: Status Charging, power adapter 65 W.',
+    'In Company Chat select “INC-1058 · Ask to confirm the fix”. Daniel confirms the percentage is going up.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Power & battery shows Charging on a 65 W adapter.',
+    'Asset Management › NS-OPS-026 › Accessories lists USB-C charger 65 W. The replacement battery is still on the shelf.',
+    'Company Chat: Daniel confirms it’s charging.'],
+  commonMistakes:['Replacing the battery or the whole laptop without reading the battery health.',
+    'Issuing the 45 W charger, which is no better than the one he has.',
+    'Not recording the issued accessory against the asset.',
+    'Using Battery saver as a “fix”.'],
+  realWorldNote:'Under-powered USB-C chargers are a common modern cause of “battery won’t charge” tickets: the plug fits and the light comes on, but the wattage is too low. Tracking chargers and docks as accessories against the laptop saves money and finds the ones that walk off to meeting rooms.',
+  idealNotes:'Cause: under-powered 45 W third-party USB-C charger (a Northbook 14 needs 65 W). Issued charger CHG-65W-118 reported missing Oct 6. Battery health 91%, 212 cycles, no fault. Action: issued a USB-C charger 65 W from stock against NS-OPS-026 for dasante and asked him to swap. Verified: Power & battery shows Charging at 65 W; Daniel confirmed in chat.'}},
+
+/* ===== Shift 3 · joiners, movers, leavers and account security ===== */
+{ref:'INC-1059', shift:3, pri:'high', cat:'Identity / Joiner', req:'pshah', asset:'HR-2291', assetType:'HR starter record', created:'09:14',
+ arrive:s=>{ addPerson(s, user('rdelgado','Rosa Delgado','Sales','Sales Manager',1,'3101','NS-SALES-002',['Sales-Share'],{manager:'Grace Adeyemi'}), ws('NS-SALES-002','rdelgado',1,'NSA-1002','NB14-55110',{image:'Northstar Sales 24.2'}), mbx(2.0));
+   addPerson(s, user('kmensah','Kwame Mensah','Operations','Operations Coordinator',1,'3533',null,['Operations-Share'],{enabled:false, presence:'offline', lastSignIn:'Mar 14 2025, 16:58', licences:[], startDate:'2019-06-03'}),
+     null, mbx(3.1,'Leaver hold (7 years)',{enabled:false}));
+   s.hr.leavers.push({id:'HR-LVR-0031', user:'kmensah', lastDay:'Fri Mar 14 2025', manager:'Jordan Price', notes:'Left in 2025. Mailbox is on a 7-year legal hold. Keep the account disabled. Never reuse it or its username.'});
+   s.hr.starters.push({id:'HR-2291', first:'Kofi', last:'Mensah', dept:'Sales', title:'Account Executive', manager:'Rosa Delgado', startDate:'Tomorrow 09:00', roleTemplate:'Sales · same access as the rest of the Sales team',
+     floor:1, ext:'3113', personalEmail:'kofi.m.home@mailbox.example', mobile:'+1 555-0163', equipment:'Standard Sales laptop',
+     notes:'Licences: Office Suite (Standard) and Sales Hub CRM. Needs to sign in and see the Sales files on day one. Rosa will meet him at reception.'});
+   s.licences.crm.total=licUsed(s,'crm').length+1; ['office','endpoint'].forEach(l=>{ const f=licFree(s,l); if (f<2) s.licences[l].total+=2-f; });
+   addShelf(s,{tag:'NSA-S131', model:'Northbook 14 laptop', serial:'NB14-56131', cond:'New · boxed', bay:'Shelf A1'}); },
+ title:'New starter tomorrow: Sales account, laptop and licences',
+ desc:'Hi IT, Kofi Mensah starts in Sales tomorrow at 09:00 and nothing is set up yet. Sorry, the starter form got stuck in my drafts. The full details are on starter record HR-2291. He needs to be able to sign in and see the Sales files on day one. Rosa is meeting him at reception.',
+ impact:'A new hire arrives tomorrow morning with no account, mailbox or laptop. The Sales manager has blocked out the morning for onboarding.',
+ tried:'HR filled in starter record HR-2291 (Directory › Starters). Nothing else.',
+ hints:['Open the HR starter record first. Then read the Username standard in Documentation before you type anything into Create user.',
+   'Search Directory for “mensah”: a 2025 leaver already holds kmensah. Follow the standard for the next name, and copy the group set from his manager, Rosa Delgado.',
+   'Create komensah (Sales, manager Rosa Delgado, Sales-Share). Assign Office Suite and Sales Hub CRM, deploy a laptop with Northstar Sales 24.2, reset the password with must-change sent to his manager, run Test sign-in, then confirm with Priya.'],
+ model:'Processed starter HR-2291 for Kofi Mensah. kmensah belongs to a 2025 leaver on a legal hold, so I left it disabled and created komensah under the Username standard (no middle initial, so the next letter of the first name). Set Sales / Account Executive with manager Rosa Delgado and matched Rosa’s groups (Domain Users, Sales-Share). Assigned Office Suite (which provisioned the mailbox) and the last free Sales Hub CRM seat. Deployed a Northbook 14 with Northstar Sales 24.2. Issued a temporary password that must change at first sign-in and sent it to Rosa through Company Chat, not the personal address on the form. The sign-in test passed and Priya confirmed in chat.',
+ keys:['komensah','kofi','hr-2291','username standard','sales-share','kmensah'],
+ penalties:{'enable:kmensah':[4,'Re-enabled a 2025 leaver’s account: Kofi would get a stranger’s mailbox and Operations access'],
+   'editUser:kmensah':[4,'Repurposed a leaver’s account instead of creating a new one'],
+   'renameUsername:kmensah':[4,'Repurposed a leaver’s account instead of creating a new one'],
+   'resetPassword:komensah':[4,'Sent a temporary password to a personal email address, outside the company', (s,a)=>a[2]==='personal']},
+ chatConfirm:{user:'pshah', ok:s=>TK['INC-1059'].obj.slice(0,6).every(o=>o.ok(s)) && s.users.komensah.signInOk,
+   ask:'Kofi Mensah’s account, laptop and licences are ready for tomorrow, and Rosa has his first-day password. Can you tick off HR-2291 on your side?',
+   yes:'Perfect, HR-2291 is ticked off. Thank you, and sorry again for the late form!', no:'I checked the starter checklist and something’s still missing for Kofi. Can you look again?'},
+ obj:[O(s=>{ const u=s.users.komensah; return !!u && !u.deleted && u.name==='Kofi Mensah' && u.dept==='Sales' && u.manager==='Rosa Delgado'; }, 'Account komensah created for Kofi Mensah in Sales, managed by Rosa Delgado', 'There’s no account for Kofi that follows the Username standard'),
+   O(s=>!s.users.kmensah.enabled && s.users.kmensah.name==='Kwame Mensah' && !s.users.kmensah.renamed, 'The 2025 leaver account kmensah is untouched and disabled', 'The leaver account kmensah was re-enabled or changed'),
+   O(s=>{ const u=s.users.komensah; return !!u && u.groups.slice().sort().join()==='Domain Users,Sales-Share'; }, 'Groups match the Sales team: Domain Users and Sales-Share', 'Kofi’s groups don’t match the Sales team'),
+   O(s=>{ const u=s.users.komensah; return !!u && ['office','crm'].every(l=>u.licences.includes(l)) && !!s.mail.mailboxes.komensah; }, 'Office Suite and Sales Hub CRM assigned, mailbox provisioned', 'Kofi is missing a licence or a mailbox'),
+   O(s=>Object.values(s.workstations).some(w=>w.owner==='komensah' && /Northbook/.test(w.model) && w.state==='In use' && w.image==='Northstar Sales 24.2'), 'A laptop with Northstar Sales 24.2 is deployed to Kofi', 'No Sales laptop has been deployed to Kofi'),
+   O(s=>{ const u=s.users.komensah; return !!u && u.mustChange && u.credsTo==='manager'; }, 'Temporary password must change at first sign-in and went to his manager', 'The first-day password isn’t set up securely'),
+   O(s=>{ const u=s.users.komensah; return !!u && u.signInOk && s.chat.confirmed['INC-1059']==='pshah'; }, 'Sign-in test passed and Priya confirmed the starter is ready', 'The new account hasn’t been tested or confirmed with HR')],
+ guide:{
+  symptomsToNotice:['Only a name is given. The ticket never states a username, so you have to work it out from the standard.',
+    'The starter record says access should be “the same as the rest of the Sales team”. That is vague, so compare against a real Sales account instead of guessing.',
+    'The record has a personal email address. It is there to tempt you into sending credentials to it.',
+    'Licence pools › Sales Hub CRM shows exactly 1 free seat.',
+    'The PC Shelf has a faulty laptop (NSA-S305) that can’t be deployed.'],
+  diagnosis:'This joiner ticket checks whether you follow the identity standard instead of improvising. Searching Directory for “mensah” returns kmensah (Kwame Mensah), disabled since 2025, with a leaver record that says the mailbox is on a 7-year hold. The Username standard (Documentation) says: first initial + surname; if taken, add the middle initial, or with no middle initial the next letter of the first name. Kofi has no middle initial, so the account is komensah. Never reuse the leaver: Kofi would get a former employee’s mailbox, groups and audit trail. “Same as the team” means the minimum set a peer holds: Rosa Delgado, his manager, has Domain Users + Sales-Share. Licences come from the starter record; Office Suite provisions the mailbox. The first-day password goes to the manager through an internal channel, never to a personal mailbox. Verify with a sign-in test, then close the loop with HR, who own the joiner process.',
+  perfectSteps:['Open INC-1059 and select Assign to me.',
+    'Open Tools › Directory › Starters, select Kofi Mensah (HR-2291) and note dept Sales, title Account Executive, manager Rosa Delgado, floor 1, ext 3113, licences Office Suite + Sales Hub CRM.',
+    'Open Tools › Documentation, search “username” and read “Username standard”.',
+    'In Directory › Users search “mensah”: kmensah is Kwame Mensah, Disabled. Directory › Leavers › HR-LVR-0031 says never reuse it. Change nothing.',
+    'Search “delgado”, select Rosa Delgado › Groups: Domain Users + Sales-Share is the team baseline.',
+    'Directory › Starters › HR-2291 › Create account from this record…. Change Username to komensah (the hint turns green). Keep Department Sales, Manager Rosa Delgado. Tick Sales Hub CRM as well as Office Suite and Endpoint Protection, keep “Add the department share group” ticked, and select Create user.',
+    'Check komensah › Groups (Domain Users, Sales-Share) and › Licences (Office Suite, Sales Hub CRM assigned; the flash said the mailbox was provisioned).',
+    'Open Tools › Computer Deployment. Device: an Available, Wiped Northbook 14 (for example NSA-S131), image Sales Mobile · Northstar Sales 24.2, Assign to: Kofi Mensah (komensah), Location: Floor 1. Select Run deployment. Leave the faulty NSA-S305 alone.',
+    'Directory › komensah › Authentication › Reset password…: keep “User must change password at next sign-in” ticked and set delivery to “Company Chat to their manager”. Select Reset password.',
+    'Select Test sign-in. Expect “Sign-in test passed for komensah. They’ll be asked to choose a new password.”',
+    'Open Company Chat › Priya Shah and select “INC-1059 · Ask to confirm the fix”. Priya ticks off HR-2291.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Directory › komensah › Authentication: Enabled, Not locked, Must change at next sign-in, sent via Company Chat to their manager, last sign-in test Passed.',
+    'Directory › komensah › Groups lists exactly Domain Users and Sales-Share.',
+    'Directory › Licence pools › Sales Hub CRM shows 0 free, with Kofi as a holder.',
+    'Asset Management lists a NS-SALES-1xx laptop owned by Kofi Mensah, In use, image Northstar Sales 24.2.',
+    'Directory › kmensah still shows Disabled · Kwame Mensah.',
+    'Company Chat shows Priya’s confirmation.'],
+  commonMistakes:['Typing kmensah without searching first, then “fixing” the conflict by re-enabling the leaver.',
+    'Inventing a username (kmensah2) instead of following the written standard.',
+    'Copying groups from someone in another department, or adding every share “just in case”.',
+    'Sending the password to the personal email because it is the only address on the form.',
+    'Forgetting Sales Hub CRM, or the Office licence, so there is no mailbox on day one.',
+    'Skipping the sign-in test and the confirmation with HR.'],
+  realWorldNote:'In real joiner/mover/leaver processes, account reuse is one of the most common audit findings. A new hire who shares a surname with a leaver can inherit their mailbox, files and access. Most organisations make usernames permanent and never recycle them. First-day credentials usually go to the line manager, or through a temporary access pass, so they never pass through personal email.',
+  idealNotes:'Starter HR-2291 Kofi Mensah (Sales, AE, manager Rosa Delgado, start tomorrow 09:00). kmensah is held by leaver Kwame Mensah (disabled, 7-year hold), so I left it untouched and created komensah under the Username standard. Groups match Rosa: Domain Users, Sales-Share. Licences: Office Suite (mailbox kofi.mensah@northstar.example provisioned) plus Sales Hub CRM (last free seat). Laptop deployed with Northstar Sales 24.2. Temp password must change at first sign-in, sent to Rosa via Company Chat, not the personal address. Sign-in test passed. Priya (HR) confirmed in chat.'}},
+
+{ref:'INC-1060', shift:3, pri:'low', cat:'Identity / Profile change', req:'hclarke', asset:'hannah.clarke@northstar.example', assetType:'Account and mailbox', created:'09:40',
+ arrive:s=>{ addPerson(s, user('hclarke','Hannah Clarke','Finance','Accounts Payable Clerk',2,'4438','NS-FIN-024',['Finance-Share'],{hrName:'Hannah Osei', manager:'Rafael Ortiz'}),
+     ws('NS-FIN-024','hclarke',2,'NSA-2024','NB14-55870',{image:'Northstar Finance 24.2'}), mbx(2.4,'Finance (7 years)'));
+   [['07:55','invoices@tidewater-paper.example','Tidewater Paper','Invoice TP-88412'],['08:14','billing@kestrel-couriers.example','Kestrel Couriers','September courier statement'],
+    ['08:37','ar@fernhill-catering.example','Fernhill Catering','Invoice FC-2093: boardroom lunches'],['08:58','accounts@brightmoor-print.example','Brightmoor Print','Remittance query'],
+    ['09:12','invoices@tidewater-paper.example','Tidewater Paper','Invoice TP-88431'],['09:31','billing@ashgrove-cleaning.example','Ashgrove Cleaning','October cleaning invoice']].forEach(([t,f,n,sub],i)=>
+     s.mail.messages.push({id:'mhc'+(i+1), time:t, from:f, fromName:n, to:'hannah.clarke@northstar.example', subject:sub, status:'Delivered', detail:'Delivered to inbox', resolve:true})); },
+ title:'Name changed after marriage but email still shows old name',
+ desc:'Hi, I got married last month and HR updated my surname to Osei on payroll (HR-CHG-0417), but my email, chat and the address book all still say Hannah Clarke. Could you switch everything over to my new name? Suppliers email me invoices all day, so I really can’t afford to miss anything.',
+ impact:'One user. Cosmetic but visible to suppliers, with a risk to accounts-payable mail flow if it’s done wrong.',
+ tried:'Changed my email signature myself. Nothing else.',
+ hints:['Open Hannah’s Directory profile and read the Pending HR change banner. Then run a Message trace for her old address. Who still sends there?',
+   'Change what people see (display name and primary address), not what she signs in with. Read the Username standard in Documentation.',
+   'Edit profile: display name Hannah Osei. Add hannah.osei@northstar.example and make it primary, keep the old address as an alias, send a test to the old address, then ask Hannah to confirm in Company Chat.'],
+ model:'Verified the legal name change against HR record HR-CHG-0417. Changed the display name to Hannah Osei and made hannah.osei@northstar.example the primary address. Kept hannah.clarke@northstar.example as an alias, because today’s trace shows suppliers still invoicing the old address. Left the sign-in username hclarke unchanged so her Windows profile and mapped drives keep working. A test to the old address was delivered to her mailbox, and Hannah confirmed the change in chat.',
+ keys:['hclarke','hannah','osei','alias','hr-chg-0417'],
+ penalties:{'renameUsername:hclarke':[3,'Renamed the sign-in username: NS-FIN-024 now creates a new empty profile and mapped drives fail'],
+   'removeAlias:hclarke':[3,'Removed the old address: supplier invoices to hannah.clarke@ now bounce', (s,a)=>a[1]==='hannah.clarke@northstar.example'],
+   'createUser:*':[3,'Created a second identity for Hannah instead of updating her account', (s,a)=>a[0] && /^hannah$/i.test(String(a[0].first||'').trim())],
+   'createDuplicate:*':[3,'Created a second identity for Hannah instead of updating her account', (s,a)=>a[0] && /^hannah$/i.test(String(a[0].first||'').trim())]},
+ chatConfirm:{user:'hclarke', ok:s=>TK['INC-1060'].obj.slice(0,4).every(o=>o.ok(s)), ask:'I’ve updated your name and email address. Can you check how it looks in the address book and on a new email?',
+   yes:'It says Hannah Osei everywhere now, and invoices are still coming in. Thank you!', no:'It still looks wrong on my side. My name or email hasn’t changed properly yet.'},
+ obj:[O(s=>s.users.hclarke.name==='Hannah Osei', 'Display name updated to Hannah Osei', 'The display name still shows the old surname'),
+   O(s=>s.users.hclarke.email==='hannah.osei@northstar.example', 'Primary email is hannah.osei@northstar.example', 'The primary address hasn’t changed'),
+   O(s=>s.users.hclarke.aliases.includes('hannah.clarke@northstar.example'), 'Old address kept as an alias so supplier mail still arrives', 'hannah.clarke@ isn’t an alias, so supplier mail would bounce'),
+   O(s=>!s.users.hclarke.renamed && loginOf(s.users.hclarke)==='hclarke', 'Sign-in username left unchanged', 'The sign-in username was renamed, so Hannah’s profile and drives will break'),
+   O(s=>s.mail.mailboxes.hclarke.aliasTestOk && s.users.hclarke.aliases.includes('hannah.clarke@northstar.example'), 'Test mail to the old address delivered to Hannah’s mailbox', 'Delivery to the old address hasn’t been tested since the change'),
+   O(s=>s.chat.confirmed['INC-1060']==='hclarke', 'Hannah confirmed the new name looks right', 'Hannah hasn’t confirmed the change')],
+ guide:{
+  symptomsToNotice:['HR has already recorded the change (the Pending HR change banner), so the request is legitimate and authorised.',
+    'Message trace for “clarke” shows 6 supplier messages to hannah.clarke@ today. Removing that address would bounce real invoices.',
+    'Her username hclarke is what her laptop NS-FIN-024 and her mapped drives use.'],
+  diagnosis:'A name change touches three different identifiers: the display name (what people see), the email addresses (where mail goes) and the sign-in name (what devices and apps rely on). Only the first two should change. The message trace shows active external senders, so the old address must stay as an alias or invoices will bounce. The Username standard explains why the username stays: renaming it breaks saved sign-ins, mapped drives and scripts, for a cosmetic gain nobody sees. The HR record is the authority for the new legal name, so no extra approval is needed. Test the risky part, mail to the old address, and confirm the visible part with Hannah.',
+  perfectSteps:['Open INC-1060 and select Assign to me.',
+    'Open Tools › Directory, search “hannah”, select Hannah Clarke. Profile shows “Pending HR change: HR records this person as Hannah Osei”.',
+    'Open Tools › Mail Admin › Message trace, type “clarke” and select Search. Note the supplier invoices delivered to hannah.clarke@ today.',
+    'Optional: Tools › Documentation › “Username standard”.',
+    'Back in Directory › Hannah Clarke › Profile, select Edit profile…, set Display name to Hannah Osei, leave Username as hclarke, and select Save changes.',
+    'Open the Email addresses tab, type hannah.osei@northstar.example and select Add address, then select Make primary on it. hannah.clarke@ is kept as an alias. Leave it there.',
+    'Open Mail Admin › Mailboxes, choose Hannah’s mailbox, set “Send test to” to hannah.clarke@northstar.example and select Send test message. Expect “delivered to Hannah Osei’s mailbox”.',
+    'Open Company Chat › Hannah Osei and select “INC-1060 · Ask to confirm the fix”. She confirms.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Directory Profile: Display name Hannah Osei, Username hclarke, Email hannah.osei@northstar.example; Email addresses lists hannah.clarke@ as an alias.',
+    'Mail Admin: the mailbox shows “Alias delivers”.',
+    'Re-run the trace for “clarke”: the supplier mail still shows Delivered (alias).',
+    'Hannah’s confirmation appears in Company Chat.'],
+  commonMistakes:['Renaming the username for consistency. It breaks the profile, drives and sign-in links.',
+    'Removing the old address as housekeeping and silently bouncing supplier invoices.',
+    'Creating a fresh account under the new name.',
+    'Asking for more approval when the HR record already authorises the change. Not an error, but it wastes time.'],
+  realWorldNote:'Most organisations treat the sign-in name as permanent and keep previous email addresses as aliases indefinitely, or at least for a year. Legal name changes can be sensitive (marriage, divorce, transition), so handle them promptly and discreetly, and never ask for justification beyond the HR record.',
+  idealNotes:'Name change per HR-CHG-0417: Hannah Clarke to Hannah Osei. Display name updated, primary address now hannah.osei@northstar.example, old hannah.clarke@ kept as an alias (6 supplier invoices to the old address today, per trace). Username hclarke deliberately unchanged to protect the NS-FIN-024 profile and mapped drives. Test to the old address delivered via alias. User confirmed in chat.'}},
+
+{ref:'INC-1061', shift:3, pri:'high', cat:'Identity / Leaver', req:'pshah', asset:'mhale', assetType:'Leaver account, mailbox and laptop', created:'08:52',
+ arrive:s=>{ addPerson(s, user('mhale','Marcus Hale','Operations','Operations Coordinator',1,'3534','NS-OPS-024',['Operations-Share'],{manager:'Jordan Price', presence:'offline',
+     lastSignIn:'Today 07:51 · web mail · home broadband (81.2.69.160)', licences:['office','endpoint','design'],
+     sessions:[{id:'mh1', device:'Web browser', app:'Web mail', loc:'Home broadband (81.2.69.160)', t:'Today 07:51'},{id:'mh2', device:'Personal phone', app:'Mobile mail app', loc:'Mobile network', t:'Sep 30'}],
+     signins:[{t:'Today 07:51', host:'Web browser', loc:'Home broadband (81.2.69.160)', app:'Web mail', result:'Success'},{t:'Fri 16:40', host:'NS-OPS-024', loc:'Northstar HQ · Floor 1', app:'Desktop sign-in', result:'Success'}]}),
+     ws('NS-OPS-024','mhale',1,'NSA-1024','NB14-55702',{site:'Floor 1 · reception (handed in)'}), mbx(2.2));
+   s.hr.leavers.push({id:'HR-LVR-0088', user:'mhale', lastDay:'Fri Oct 9, 17:00', manager:'Jordan Price',
+     notes:'Mailbox: convert to shared; Jordan Price gets Full Access for 90 days. Auto-reply: “Marcus has left Northstar. Please contact jordan.price@northstar.example.” Do NOT forward mail. Laptop NSA-1024 handed in at reception for wiping. Don’t delete the account: 2-year retention.'}); },
+ title:'Leaver offboarding: Operations coordinator finished Friday',
+ desc:'Marcus Hale’s last day was Friday and his leaver form is HR-LVR-0088. Please could you close him down? Jordan needs to keep an eye on supplier emails that come to Marcus for a while. Marcus dropped his laptop at reception this morning.',
+ impact:'A departed employee still has working credentials and access to Operations data and supplier contracts.',
+ tried:'HR completed the leaver form. Reception has the laptop.',
+ hints:['Read leaver record HR-LVR-0088 in full: it says what happens to the mailbox, the laptop and the account. Then check Marcus’s sign-in log. When did he last sign in?',
+   'Order matters. Cut access first (disable and revoke sessions), then convert the mailbox to shared before you remove licences.',
+   'Disable, revoke sessions, remove Operations-Share. In Mail Admin convert to shared, grant Jordan Full Access and set the auto-reply. Remove the licences, return NS-OPS-024 to the shelf, then run Test sign-in and Test access as Jordan.'],
+ model:'Actioned leaver HR-LVR-0088 for Marcus Hale. He had an active web mail session from home at 07:51 today, after his leaving date, so I disabled the account and revoked both web and mobile sessions first. Removed Operations-Share. Converted the mailbox to shared, granted Jordan Price Full Access for 90 days and set HR’s auto-reply, with no forwarding. Removed the Office, Endpoint and Design licences only after the conversion, so the mailbox is kept, and kept the account for the 2-year retention. Returned laptop NS-OPS-024 (NSA-1024) to the shelf for wiping. Verified the sign-in test is blocked and Jordan can open the shared mailbox.',
+ keys:['mhale','marcus','hr-lvr-0088','shared mailbox','revoke','ns-ops-024'],
+ penalties:{'deleteUser:mhale':[6,'Deleted the account and mailbox: HR-LVR-0088 requires 2-year retention and Jordan loses the supplier mail']},
+ obj:[O(s=>!s.users.mhale.enabled, 'Account disabled', 'Marcus’s account is still enabled'),
+   O(s=>s.users.mhale.sessions.length===0, 'Active web and mobile sessions revoked', 'Marcus still has active sessions (web mail at 07:51 today)'),
+   O(s=>s.users.mhale.groups.every(g=>g==='Domain Users'), 'Removed from Operations-Share', 'Marcus still has department access'),
+   O(s=>{ const m=s.mail.mailboxes.mhale; return m.type==='shared' && m.perms.some(p=>p.who==='jprice' && p.right==='Full Access') && m.autoReply.on && !m.forward && !m.pendingDelete; },
+     'Mailbox converted to shared, Jordan has Full Access, auto-reply on, no forwarding', 'The mailbox isn’t handled the way HR asked'),
+   O(s=>s.users.mhale.licences.length===0 && !s.users.mhale.deleted, 'Licences reclaimed and the account kept for retention', 'Licences are still assigned, or the account was deleted'),
+   O(s=>{ const w=s.workstations['NS-OPS-024']; return ['Returned · Pending wipe','In stock'].includes(w.state) && !w.owner; }, 'Laptop NS-OPS-024 returned to IT for wiping', 'The laptop is still recorded as Marcus’s'),
+   O(s=>s.users.mhale.leaverVerified && s.mail.mailboxes.mhale.accessTests.jprice===true, 'Verified: Marcus can’t sign in and Jordan can open the mailbox', 'The offboarding hasn’t been verified')],
+ guide:{
+  symptomsToNotice:['Last sign-in Today 07:51 from home broadband, after employment ended. Treat this as urgent, not routine.',
+    'Sessions shows two: web mail and a mobile mail app on a personal phone.',
+    'HR’s form says don’t forward and don’t delete, and asks for 2-year retention.',
+    'The mailbox is still a user mailbox, so removing the Office licence first would start a 30-day deletion.'],
+  diagnosis:'Offboarding comes down to cutting access first, keeping data, then reclaiming resources, all to HR’s written instructions rather than habit. Directory shows Marcus signed in after he left, so the first moves are disable plus session revoke: disabling stops new sign-ins, but existing web and mobile sessions keep working until revoked. The leaver record is the authority: convert to shared (which needs no licence) so Jordan can work the supplier mail, set an auto-reply, and don’t forward, because forwarding hides the mail trail and is against the form. The trap is the order of operations: a user mailbox without an Office licence goes into 30-day deletion, so convert before you reclaim. Deleting the account destroys retained data. Finish by returning the laptop so it gets wiped and reissued, then verify both sides: the leaver is blocked and the manager has access.',
+  perfectSteps:['Open INC-1061 and select Assign to me.',
+    'Open Tools › Directory › Leavers › Marcus Hale (HR-LVR-0088) and read the HR instructions.',
+    'Select Open account. On Authentication read the sign-in log: web mail at 07:51 today from home broadband.',
+    'Select Disable account and confirm.',
+    'Open the Sessions tab and select Revoke all sessions. Both sessions disappear.',
+    'Open Groups and select Remove beside Operations-Share. Domain Users stays.',
+    'Open Tools › Mail Admin › Mailboxes, choose Marcus’s mailbox and select Convert to shared, then Convert.',
+    'Under Permissions choose Jordan Price, Full Access, expiry “90 days (Jan 10)”, and select Grant. Don’t add Send As.',
+    'Under Automatic replies choose On, paste HR’s text and select Save. Leave Forwarding empty.',
+    'Back in Directory › Marcus Hale › Licences, select Remove on Office Suite (Standard), Endpoint Protection and Design Studio. No deletion warning appears because the mailbox is shared.',
+    'Open Tools › Asset Management, search “NS-OPS-024”, Open › Health › Return to shelf, and confirm. It becomes Returned · Pending wipe with no owner.',
+    'In Directory › Marcus Hale › Authentication select Test sign-in. “Sign-in test failed: the account is disabled” is the expected result for a leaver.',
+    'In Mail Admin › Marcus’s mailbox › Test access as…, choose Jordan Price and select Test access. Expect “jprice can open …”.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Authentication: Disabled, no active sessions, sign-in test failed (blocked as expected).',
+    'Groups: Domain Users only.',
+    'Mailbox: Type Shared, Jordan Price Full Access, automatic replies On, Forwarding None, no deletion warning.',
+    'Licences: none; Licence pools gain the seats back.',
+    'Asset Management: NS-OPS-024 Returned · Pending wipe, unassigned.'],
+  commonMistakes:['Disabling without revoking sessions, so the leaver keeps reading mail on a phone.',
+    'Deleting the account for tidiness and destroying retained mail.',
+    'Removing licences first and starting a 30-day mailbox deletion.',
+    'Forwarding everything to the manager instead of shared access, against HR’s instruction.',
+    'Forgetting the laptop, which then sits unwiped in a drawer.'],
+  realWorldNote:'Sign-ins after someone has left are a classic insider-risk signal and a common audit finding. In most cloud suites the sequence is block sign-in, revoke sessions, convert to shared, then remove licences. Shared mailboxes under the size limit need no licence. Keep the disabled account for as long as the retention policy requires.',
+  idealNotes:'Leaver HR-LVR-0088 Marcus Hale (Ops). He signed in to web mail at 07:51 today after his Oct 9 leaving date, so I disabled the account and revoked 2 sessions (web mail, mobile mail app). Removed Operations-Share. Mailbox converted to shared, Full Access for Jordan Price (90 days), HR auto-reply on, no forwarding per HR. Licences removed after conversion and returned to the pools. Account kept for the 2-year policy, not deleted. NS-OPS-024 returned to the shelf, pending wipe. Verified: sign-in blocked; Jordan can open the shared mailbox.'}},
+
+{ref:'INC-1062', shift:3, pri:'high', cat:'Security / MFA reset', req:'jprice', asset:'NSM-0098', assetType:'Company phone (Pixelon 7a)', created:'07:38',
+ intake:{via:'voicemail', from:'jprice', callerId:'+1 555-0418 (not on record)', dur:'0:31',
+   text:'Hi, it’s Jordan Price from Operations. I lost my phone on the tram last night, so the authenticator app’s gone and I can’t get into anything that asks for approval. Can someone reset my MFA? Call me back on 555-0418. It’s my partner’s phone, mine’s gone. Cheers.'},
+ arrive:s=>{ const u=s.users.jprice; u.presence='away';
+   u.verifyFail=['code-mobile','manager'];
+   u.verifyText={'code-mobile':`No response. The code went to ${u.mobile}, the phone that was lost.`,
+     'callback-record':'You called Jordan’s desk extension on record (x3520). He answered and quoted employee ID E35201, which matches Directory. Verified.',
+     'callback-given':'Someone answered at 555-0418 and said they were Jordan, but that number isn’t on his record, so it proves nothing.',
+     'manager':'Dana Okafor replied in chat that she is in back-to-back meetings and can’t vouch for anyone today. Not verified.'};
+   u.sessions.push({id:'jp-mob', device:'NSM-0098 (Pixelon 7a)', app:'Mobile mail app', loc:'Mobile network', t:'Oct 2'});
+   const m=s.mail.mobiles.find(x=>x.id==='mob3'); if (m) m.lastSync='Yesterday 18:02'; },
+ title:'Voicemail: lost phone, can’t approve sign-ins',
+ desc:'I lost my phone on the tram last night, so the authenticator app’s gone and I can’t get into anything that asks for approval. Can someone reset my MFA? Call me back on 555-0418. It’s my partner’s phone, mine’s gone.',
+ impact:'An operations lead can’t reach MFA-protected apps. A lost company phone may still have mail synced on it.',
+ tried:'Tried signing in on the web and got stuck at the approval prompt.',
+ hints:['A voicemail proves nothing about who called. Compare the callback number with Jordan’s record in Directory before you change his account.',
+   'A code to the registered phone can’t work: that phone is lost. Use a callback to a number that was already on his record.',
+   'Verify identity… › Callback to number on record (his desk extension). Then Reset MFA…, set phone NSM-0098 to Lost/Stolen, revoke its session, and ask Jordan in Company Chat to re-enrol and confirm.'],
+ model:'Received a voicemail asking for an MFA reset from an off-record number (555-0418) and didn’t call it. Called Jordan on his desk extension on record (x3520); he gave employee ID E35201, which matches Directory. After verifying, reset his MFA, marked company phone NSM-0098 Lost/Stolen and revoked its mail session. Jordan re-enrolled the authenticator on his replacement phone and confirmed in Company Chat that he can sign in.',
+ keys:['jprice','jordan','callback','nsm-0098','mfa','e35201'],
+ penalties:{'resetMfa:jprice':[5,'Removed a security factor for a caller who wasn’t verified through a number on record', s=>s.users.jprice.verified!=='callback-record']},
+ chatConfirm:{user:'jprice', ok:s=>s.users.jprice.mfaResetBy==='callback-record', ask:'I’ve reset your MFA. Could you sign in on your replacement phone, set up the authenticator again and tell me when you’re in?',
+   yes:'Done. Authenticator set up on the new phone and I’m signed in. Thanks for calling me on my desk line.', no:'It still asks me to approve on my old phone, so I can’t get in.',
+   onYes:s=>{ const u=s.users.jprice; u.mfa=true; u.mfaReenrolled=true; }},
+ obj:[O(s=>s.users.jprice.verified==='callback-record' || s.users.jprice.mfaResetBy==='callback-record', 'Identity verified by calling back a number on record', 'Jordan’s identity hasn’t been verified through a trusted channel'),
+   O(s=>s.users.jprice.mfaResetBy==='callback-record', 'MFA reset after verification', 'Jordan’s MFA is still tied to the lost phone, or was reset before he was verified'),
+   O(s=>{ const m=s.mail.mobiles.find(x=>x.id==='mob3'); return m.assetState==='Lost/Stolen' && !s.users.jprice.sessions.some(x=>/NSM-0098/.test(x.device)); }, 'Lost phone NSM-0098 marked Lost/Stolen and its session revoked', 'The lost phone is still trusted and signed in'),
+   O(s=>s.users.jprice.mfaReenrolled && s.chat.confirmed['INC-1062']==='jprice', 'Jordan re-enrolled MFA and confirmed he can sign in', 'Jordan hasn’t confirmed re-enrolment')],
+ guide:{
+  symptomsToNotice:['A voicemail is not proof of identity. Anyone can say “it’s Jordan”.',
+    'The callback number in the message (555-0418) differs from the mobile on record. The caller explains why, but you still can’t trust it.',
+    'The registered phone is the lost device, so a code sent to it proves nothing and reaches no one.',
+    'A company phone is lost with an active mail session: that is a data exposure, separate from the access problem.'],
+  diagnosis:'An MFA reset removes a security factor, so it is one of the riskiest service-desk actions and a favourite target of social engineers. The request came through an unauthenticated channel (voicemail) with a new callback number, which is exactly the pattern attackers use. It sounds plausible, and that is the point: plausible is not verified. Directory › Profile lists his mobile and his desk extension x3520. The only trusted channels are ones already on record before the request. The mobile is lost, so the desk extension is the right callback (his manager can’t vouch today). Once identity is confirmed, reset MFA so Jordan re-enrols, and separately contain the lost device: mark it Lost/Stolen and revoke its session so mail stops syncing to a phone on a tram. Verify with Jordan’s own confirmation after he re-enrols.',
+  perfectSteps:['Open Voicemails and read the 07:38 message from Jordan Price. Select Log as ticket, then Save to INC-1062 so the transcript is on the ticket.',
+    'Open INC-1062 and select Assign to me.',
+    'Open Tools › Directory, search “jordan”, select Jordan Price. On Profile note the Mobile, Ext. 3520 and Employee ID. The voicemail number doesn’t match.',
+    'Select Verify identity…, choose “Callback to number on record” and select Run check. The flash confirms Jordan quoted his employee ID.',
+    'On Authentication select Reset MFA… and confirm.',
+    'Open Sessions and select Revoke beside NSM-0098 (Pixelon 7a) · Mobile mail app.',
+    'Open Tools › Asset Management › Mobiles and set the state of NSM-0098 to Lost/Stolen. Optional: Queue remote wipe.',
+    'Open Company Chat › Jordan Price and select “INC-1062 · Ask to confirm the fix”. Jordan re-enrols and confirms he can sign in.',
+    'Select Check fix, write a resolution note (include the verification method) and select Close ticket.'],
+  verify:['Directory › Authentication: Identity check “Callback to number on record”, MFA Enrolled again after Jordan’s confirmation.',
+    'Sessions: no session from NSM-0098.',
+    'Asset Management › Mobiles: NSM-0098 is Lost/Stolen.',
+    'Company Chat shows Jordan’s confirmation, and the notes record how he was verified.'],
+  commonMistakes:['Calling the number from the voicemail and treating whoever answers as verified.',
+    'Resetting MFA first and planning to verify later.',
+    'Sending a code to the lost phone and waiting.',
+    'Fixing access but forgetting that the lost phone still syncs company mail.',
+    'Not recording which verification method was used.'],
+  realWorldNote:'Help-desk MFA resets after a phone call were the way in for several well-known breaches: attackers research the target, then phone the service desk claiming a lost phone. Mature desks require verification through a channel already on record (a call back to a known number, manager confirmation, in-person ID or a video check) and log the method on the ticket.',
+  idealNotes:'Voicemail 07:38 asked for an MFA reset and gave callback 555-0418, which is NOT on record; I didn’t use it. Verified Jordan by calling his desk extension x3520 on record; he gave employee ID E35201, which matches Directory. Then reset MFA. Lost company phone NSM-0098 marked Lost/Stolen and its mail session revoked. Jordan re-enrolled on his replacement phone and confirmed sign-in in chat. Voicemail saved to the ticket.'}}
 ];
 const TK = Object.fromEntries(TICKETS.map(t=>[t.ref,t]));
 
@@ -690,18 +1293,32 @@ const KB = [
   steps:['If every printer is stuck, suspect the print server, not a printer.','Server Room › Servers › PRINT01 › Services.','Restart the Print Spooler service.','Send a test page to confirm jobs flow.']},
  {id:'kb10', cat:'Network', title:'VPN profile invalid', tools:['Remote Desktop'], rel:['INC-1051'],
   steps:['If home internet works but company resources don’t, look at the VPN client.','The Northstar-Legacy profile points to a retired gateway. Select Northstar-Staff.','Connect, then verify by opening a mapped drive or pinging FILE01.']},
- {id:'kb11', cat:'Identity', title:'Username standard', tools:['Directory'], rel:[],
+ {id:'kb11', cat:'Identity', title:'Username standard', tools:['Directory'], rel:['INC-1059','INC-1060'],
   steps:['Usernames are the first initial plus the surname, all lowercase, no spaces or accents: Maya Chen → mchen.','If that username is taken, add the middle initial (mjchen). If there is no middle initial, add the next letter of the first name (machen).','Never reuse a leaver’s username while their account is still in the recycle bin.','The email address is first.last@northstar.example and is generated from the display name when the account is created.','Don’t rename a username for a name change. Add the new email address as an alias, make it primary and keep the old address so mail still arrives.']},
- {id:'kb12', cat:'Hardware', title:'Deploying a computer from the PC Shelf', tools:['PC Shelf','Computer Deployment','Asset Management'], rel:[],
+ {id:'kb12', cat:'Hardware', title:'Deploying a computer from the PC Shelf', tools:['PC Shelf','Computer Deployment','Asset Management'], rel:['INC-1052','INC-1053','INC-1054','INC-1059'],
   steps:['PC Shelf: pick an Available device. Respect reservations: a Reserved device belongs to someone else’s request.','Unwiped returns must be wiped before they go to a new person.','Computer Deployment: choose the device, the image that matches the person’s role, the assignee and the location, then Run deployment.','Every stage (image, domain join, apps, encryption, hand-over) must pass. Domain join needs a domain controller.','Asset Management shows the new record. Return the old device to the shelf, or send a return label if the person is remote.']},
- {id:'kb13', cat:'Hardware', title:'Shipping hardware to remote staff', tools:['Ship Manager','Directory'], rel:[],
+ {id:'kb13', cat:'Hardware', title:'Shipping hardware to remote staff', tools:['Ship Manager','Directory'], rel:['INC-1054'],
   steps:['Check the address in Directory before shipping. The Ship Manager address book can be out of date.','New shipment › choose the asset, the recipient and the address source.','Send a return label for the old or faulty device at the same time.','Advance tracking as the carrier updates it, then mark it delivered and update Asset Management.']},
- {id:'kb14', cat:'Identity', title:'Verifying a caller’s identity', tools:['Directory'], rel:[],
+ {id:'kb14', cat:'Identity', title:'Verifying a caller’s identity', tools:['Directory'], rel:['INC-1057','INC-1062'],
   steps:['Never reset a password or MFA for an unverified caller.','Preferred: call back the number on record, or send a code to the registered mobile.','A number the caller gives you proves nothing: an attacker can give their own number.','Manager attestation is acceptable when the registered phone is lost, but only through a channel you trust (Company Chat).','Deliver temporary passwords on the verified call. Don’t send them by chat or to personal email.']},
  {id:'kb15', cat:'Server', title:'DNS, DHCP and name resolution', tools:['Server Room','Remote Desktop'], rel:[],
   steps:['“Can’t find host” for names while IP addresses work means DNS. Check the DNS Server service on DC01.','After fixing DNS, run ipconfig /flushdns on affected PCs, then nslookup the name again.','A 169.254.x.x address means the PC got no DHCP lease. Check the scope in Server Room › DHCP.','Delete inactive leases first. Deleting all leases disrupts every working device on the floor.','Then run ipconfig /renew on the affected PC and ping the gateway.']},
  {id:'kb16', cat:'Email', title:'Reported phishing: analyse, purge, block', tools:['Mail Security','Mail Admin'], rel:[],
-  steps:['Never click a link in a reported message. Use Analyze.','Message Trace shows who else received the same campaign.','Search & purge every copy across all recipients, then block the sender.','Report to Security if anyone clicked or entered credentials.']}
+  steps:['Never click a link in a reported message. Use Analyze.','Message Trace shows who else received the same campaign.','Search & purge every copy across all recipients, then block the sender.','Report to Security if anyone clicked or entered credentials.']},
+ {id:'kb17', cat:'Hardware', title:'Dead PC: swap or repair?', tools:['Asset Management','PC Shelf','Computer Deployment'], rel:['INC-1052'],
+  steps:['No lights and no fans means power supply or board, not Windows. Check Asset Management › Health for the last heartbeat and event.','Details shows the warranty and where the user’s data lives. If it’s redirected to a server, a swap loses nothing.','Out of warranty or business-critical: deploy a clean spare (Available and Wiped) instead of waiting for a repair.','Set the dead unit to “Retired, awaiting disposal” so the disk goes through certified destruction. Never jump straight to Disposed.']},
+ {id:'kb18', cat:'Hardware', title:'Updates fail and the PC is slow (full disk)', tools:['Remote Desktop'], rel:['INC-1055'],
+  steps:['If “restart to update” keeps coming back, read the error in System Update instead of restarting again.','0x80070070 means there isn’t enough free space. Settings › Storage shows what uses the disk.','Clean up Temporary files and the Update cache, and empty the Recycle Bin. Documents are protected; ask before removing Downloads.','Retry install, restart, then check System Update says Up to date. Never pause updates to hide the prompt.']},
+ {id:'kb19', cat:'Hardware', title:'Second screen shows “No signal”', tools:['Remote Desktop'], rel:['INC-1056'],
+  steps:['Ask what changed: a presentation or projector often leaves the laptop on one screen.','Device Manager: if the dock and monitor are Working, the hardware is fine.','Settings › Display: compare displays detected with displays active.','Set Multiple displays to “Extend these displays” and select Keep changes. Duplicate mirrors the screen, which isn’t what most people want at a desk.']},
+ {id:'kb20', cat:'Hardware', title:'Laptop not charging while plugged in', tools:['Remote Desktop','PC Shelf','Asset Management'], rel:['INC-1058'],
+  steps:['Settings › Power & battery shows the adapter wattage, battery health and cycle count.','A Northbook needs a 65 W charger. Any USB-C plug fits, so a weaker charger lights up but can’t keep up.','Healthy battery (above 80%, few cycles)? Don’t replace the battery or the laptop.','Issue the right charger from PC Shelf › Accessories against the device, so the asset record stays accurate, then ask the user to swap and confirm.']},
+ {id:'kb21', cat:'Security', title:'Urgent requests to send devices or passwords somewhere new', tools:['Directory','Asset Management','Company Chat'], rel:['INC-1057'],
+  steps:['Urgency + authority + a new address or phone number is the classic pretexting pattern.','Never use contact details the requester gives you. Check against what you already hold.','Look for evidence: does Directory show a recent sign-in? Is the “lost” device online in Asset Management?','Contact the real person through a trusted channel such as Company Chat.','If it’s fake, change nothing (no shipment, reset, lock or wipe) and escalate to Security with the caller details.']},
+ {id:'kb22', cat:'Identity', title:'Offboarding a leaver', tools:['Directory','Mail Admin','Asset Management'], rel:['INC-1061'],
+  steps:['Follow the HR leaver record in Directory › Leavers, not habit.','Cut access first: Disable account, then Sessions › Revoke all sessions. Disabling alone leaves existing sessions working.','Remove department groups.','Convert the mailbox to shared and grant the manager Full Access before removing licences, or the mailbox is deleted in 30 days.','Set the auto-reply. Don’t forward unless HR asks for it, and don’t delete accounts under retention.','Return the laptop to the shelf for wiping, then verify: Test sign-in fails and Test access as the manager works.']},
+ {id:'kb23', cat:'Identity', title:'Lost phone and MFA reset', tools:['Directory','Asset Management'], rel:['INC-1062'],
+  steps:['Verify first. A code to the registered phone won’t work if that phone is lost, and a number the caller gives proves nothing.','Use Verify identity… › Callback to number on record (desk extension or another number already on file).','Only then select Reset MFA…. The user re-enrols at next sign-in.','Contain the lost device: revoke its session and set it to Lost/Stolen in Asset Management › Mobiles.','Record the verification method in the ticket notes.']}
 ];
 
 const DEPT_LIC = {Sales:['crm'], Marketing:['design']};
@@ -1039,7 +1656,7 @@ const ENV = {
   resetPassword(s,id,must,to){ const u=s.users[id]; u.pwdExpired=false; u.mustChange=!!must; u.signInOk=false; u.pwdResetCount=(u.pwdResetCount||0)+1; u.credsTo=to||'tech';
     return `Temporary password Lab-Temp-${++tempSeq} issued for ${loginOf(u)}` + (must?' (must change at next sign-in)':'') + ` · delivery: ${CREDS_TO[u.credsTo]||u.credsTo}.` +
       (u.locked?' The account is still locked: a password reset doesn’t clear a lockout.':''); },
-  resetMfa(s,id){ const u=s.users[id]; u.mfa=false; u.mfaReenrolled=false; u.signInOk=false; return `${u.name}’s MFA registration was cleared. They’ll re-enrol at next sign-in.`; },
+  resetMfa(s,id){ const u=s.users[id]; u.mfa=false; u.mfaReenrolled=false; u.signInOk=false; u.mfaResetBy=u.verified||null; return `${u.name}’s MFA registration was cleared. They’ll re-enrol at next sign-in.`; },
   sendCode(s,id){ return `A one-time verification code was sent to ${first(s.users[id].name)}’s registered phone (simulated).`; },
   testSignIn(s,id){ const u=s.users[id];
     if (u.deleted) { u.signInOk=false; return `Sign-in test failed: ${loginOf(u)} doesn’t exist (it’s in the recycle bin).`; }
@@ -1205,12 +1822,13 @@ const ENV = {
     return `Display set to “${w.display.mode}”: ${m.active} of ${m.detected} displays active.`; },
   displayRevert(s,host){ const w=s.workstations[host]; w.display.pending=null; return 'Display change reverted.'; },
   devUninstall(s,host,id){ const w=s.workstations[host], d=w.devices.find(x=>x.id===id); d.status='Removed'; d.code=null; return `${d.name}: driver uninstalled. Scan for hardware changes to reinstall it.`; },
-  devScan(s,host){ const w=s.workstations[host], fixed=w.devices.filter(d=>d.status==='Removed'); fixed.forEach(d=>{ d.status='OK'; d.code=null; });
+  devScan(s,host){ const w=s.workstations[host], fixed=w.devices.filter(d=>d.status==='Removed'); fixed.forEach(d=>{ d.status=d.broken?'Error':'OK'; d.code=d.broken||null; }); // d.broken = hardware fault code that a driver reinstall can't clear
     return fixed.length ? `Scan complete: reinstalled ${fixed.map(d=>d.name).join(', ')}.` + (w.display.external?` ${monitors(w).detected} displays detected.`:'') : 'Scan complete: no hardware changes found.'; },
   updRetry(s,host){ const u=s.workstations[host].updates, w=s.workstations[host];
     if (u.paused) return 'Updates are paused. Resume them first.';
     if (!u.pending.length) { u.status='Up to date'; return 'No updates to install.'; }
-    if (w.storage.totalGB-diskUsed(w) < 10) { u.status='Failed'; u.error='0x80070070: not enough free space (needs 10 GB)'; return 'Install failed: 0x80070070 not enough disk space.'; }
+    const need=u.needGB||10, free=w.storage.totalGB-diskUsed(w);
+    if (free < need) { u.status='Failed'; u.error=`0x80070070: not enough free space (needs ${need} GB)`; return `Install failed: 0x80070070 not enough disk space (${free} GB free, ${need} GB required).`; }
     u.status='Restart required'; u.error=null; return `${u.pending.length} update${u.pending.length>1?'s':''} installed. Restart to finish.`; },
   updPause(s,host){ const u=s.workstations[host].updates; u.paused=!u.paused; if (u.paused) u.status='Paused';
     else u.status = u.pending.length ? (u.error?'Failed':'Ready to install') : 'Up to date';
@@ -1359,7 +1977,10 @@ const ENV = {
   unblockSender(s,addr){ s.mail.blocked=s.mail.blocked.filter(x=>x!==addr); return `${addr} unblocked.`; },
 
   /* ----- Assets, shelf, deployment, shipping ----- */
-  setAsset(s,host,field,val){ const w=s.workstations[host]; w[field]=val; hist(w, `${field==='state'?'State':'Location'} set to ${val}`); return `${host}: ${field==='state'?'state':'location'} set to ${val}.`; },
+  /* Retired/Disposed clears the owner. w.stateNote[val] adds scripted feedback (e.g. why a repair route won't work). */
+  setAsset(s,host,field,val){ const w=s.workstations[host]; w[field]=val; hist(w, `${field==='state'?'State':'Location'} set to ${val}`);
+    if (field==='state' && /^(Retired|Disposed)/.test(val) && w.owner){ ENV.setOwner(s,host,''); }
+    return `${host}: ${field==='state'?'state':'location'} set to ${val}.` + (field==='state' && w.stateNote && w.stateNote[val] ? ' '+w.stateNote[val] : ''); },
   setOwner(s,host,uid){ const w=s.workstations[host], u=uid?s.users[uid]:null; w.owner=u?u.id:null; hist(w, u?`Owner set to ${u.name}`:'Owner cleared');
     if (u && !u.host) u.host=host; Object.values(s.users).forEach(x=>{ if (x.host===host && x!==u) x.host=null; });
     return `${host}: owner ${u?'set to '+u.name:'cleared'}.`; },
@@ -1973,7 +2594,7 @@ function createUserDialog(stId){
         startDate:st.startDate||null, roleTemplate:st.roleTemplate||null, licences:[...document.querySelectorAll('.cuLic:checked')].map(x=>x.value)};
       if ($('cuGrp').checked && DEPT_GROUP[f.dept]) f.groups=[DEPT_GROUP[f.dept]];
       const full=(f.first+' '+f.last).trim().toLowerCase(), dup=Object.values(S.users).some(u=>!u.deleted && u.name.toLowerCase()===full);
-      act('Directory', String(f.id).toLowerCase(), dup?'createDuplicate':'createUser', s=>ENV.createUser(s,f));
+      act('Directory', String(f.id).toLowerCase(), dup?'createDuplicate':'createUser', s=>ENV.createUser(s,f), [f]);
       if (S.users[String(f.id).toLowerCase()]) { S.ui.sel.dir=String(f.id).toLowerCase(); S.ui.tab.dirl='users'; S.ui.tab.dir='profile'; render(); } });
 }
 function loginHint(id){ const x=Object.values(S.users).find(u=>u.id===id||u.login===id);
@@ -2221,7 +2842,7 @@ function settingsBody(w){
       <table><tbody>${Object.entries(w.storage.cats).map(([k,v])=>`<tr><td><span class="legend" style="background:${CAT_COL[k]||'#666'}"></span>${k}</td><td class="mono">${v} GB</td><td style="text-align:right">${
         ['System','Apps','Documents'].includes(k) ? (k==='Documents'?'<span class="small muted">Protected</span>':'') : envBtn('cleanup',[w.host,k], k==='Downloads'?'Remove downloads older than 30 days':k==='Recycle Bin'?'Empty Recycle Bin':'Clean up','',{dis:!v})}</td></tr>`).join('')}</tbody></table>
       <div class="note">Documents are the user’s own files. Clean-up never touches them. Ask the user to move files to their Northstar Drive instead.</div>`; }
-  if (t==='power' && w.battery){ const b=w.battery, slow=b.adapterW<45;
+  if (t==='power' && w.battery){ const b=w.battery, slow=b.adapterW<65;
     p=`<h3>Power &amp; battery</h3>${kv([['Battery level',`${b.pct}% ${usedBar(b.pct,100,b.pct<20).replace('margin-top:4px','margin-top:4px;max-width:200px')}`],
       ['Status', b.charging ? (slow?stat(0,'Slow charging',1):stat(1,'Charging')) : stat(0,'Not charging')],['Power adapter', b.adapterW?`${b.adapterW} W USB-C${slow?' <span class="chip warn">Below the 65 W this laptop needs</span>':''}`:'Not connected'],
       ['Battery health', `${b.health}% of design capacity`],['Charge cycles', b.cycles],['Battery saver', b.saver?'On':'Off']])}
@@ -2254,7 +2875,7 @@ function appBody(w, a){
   if (a==='settings') return settingsBody(w);
   if (a==='update'){ const u=w.updates, free=w.storage.totalGB-diskUsed(w);
     return `${kv([['Status', u.status==='Up to date'?stat(1,u.status):u.status==='Failed'?stat(0,u.status):stat(0,u.status,1)],['Pending', u.pending.length?esc(u.pending.join(', ')):'Nothing pending'],
-        ['Last error', u.error?`<span class="mono" style="color:var(--down)">${esc(u.error)}</span>`:'—'],['Free disk space', `${free} GB (updates need 10 GB)`]])}
+        ['Last error', u.error?`<span class="mono" style="color:var(--down)">${esc(u.error)}</span>`:'—'],['Free disk space', `${free} GB (updates need ${u.needGB||10} GB)`]])}
       <div class="row">${envBtn('updRetry',[w.host],'Retry install','primary',{dis:!u.pending.length||u.status==='Restart required'})}${envBtn('updPause',[w.host],u.paused?'Resume updates':'Pause updates for 7 days')}
         ${u.status==='Restart required'?envBtn('restartWs',[w.host],'Restart now','primary'):''}</div>
       ${u.status==='Restart required'?'<div class="note warn">Updates are installed but need a restart to finish. Check with the user that their work is saved.</div>':''}`; }
@@ -2384,11 +3005,11 @@ function assetRecord(w){
   let p='';
   if (t==='health') p=kv([['Power',w.power?stat(1,'On'):stat(0,'Off / unreachable')],['Heartbeat',n.up?stat(1,'Live · just now'):stat(0,'No heartbeat · '+esc(n.why))],['IP address',`<span class="mono">${wsAddr(w)}</span>`],
       ['Network',w.remote?(w.vpn.connected?'VPN tunnel':'Home internet'):sw?`${sw.name} · port Gi1/0/${Number(w.tag.slice(-2))||1} ${stat(sw.status==='online',sw.status)}`:'—'],['Disk encryption',stat(1,'On')],
-      ['Remote lock',w.locked?stat(0,'Locked',1):'<span class="muted">Not locked</span>'],['Remote wipe',w.wiped?stat(0,'Wiped'):'<span class="muted">Not wiped</span>'],['Battery',w.battery?`${w.battery.health}% health · ${w.battery.cycles} cycles`:'Desktop (no battery)']]) +
+      ['Remote lock',w.locked?stat(0,'Locked',1):'<span class="muted">Not locked</span>'],['Remote wipe',w.wiped?stat(0,'Wiped'):'<span class="muted">Not wiped</span>'],['Battery',w.battery?`${w.battery.health}% health · ${w.battery.cycles} cycles`:'Desktop (no battery)'],...(w.lastEvent?[['Last event',esc(w.lastEvent)]]:[])]) +
     `<div class="row">${envBtn('remoteLock',[w.host],'Remote lock','',{dis:w.locked})}${envBtn('remoteWipe',[w.host],'Remote wipe','danger',{dis:w.wiped, confirm:`Everything on ${w.host} is erased, including files not yet synced. Use this only for a lost or stolen device, or when Security asks.`, title:`Wipe ${w.host}?`, ok:'Wipe device'})}
       ${envBtn('returnToShelf',[w.host],'Return to shelf','',{dis:w.state==='Returned · Pending wipe'||w.state==='In stock', confirm:`${w.host} is unassigned from ${w.owner?uName(w.owner):'its owner'}, marked Returned · Pending wipe and added to the PC Shelf.`, title:'Return to the shelf?', ok:'Return to shelf'})}</div>`;
   if (t==='details') p=kv([['Asset tag',`<span class="mono">${w.tag}</span>`],['Serial',`<span class="mono">${w.serial}</span>`],['Model',esc(w.model)],['Image',esc(w.image)],['Owner',esc(uName(w.owner))],['State',esc(w.state)],['Location',esc(w.site)],
-      ['Warranty',`${w.warranty}${w.warranty<new Date().toISOString().slice(0,10)?' <span class="chip bad">Expired</span>':''}`],['Accidental damage cover',w.adp?stat(1,'Yes'):'<span class="muted">No</span>']]);
+      ['Warranty',`${w.warranty}${w.warranty<new Date().toISOString().slice(0,10)?' <span class="chip bad">Expired</span>':''}`],['Accidental damage cover',w.adp?stat(1,'Yes'):'<span class="muted">No</span>'],...(w.userData?[['User data',esc(w.userData)]]:[])]);
   if (t==='acc') p=`<table><tbody>${w.accessories.map(a=>`<tr><td>${esc(a)}</td></tr>`).join('')||'<tr><td class="muted">No accessories recorded.</td></tr>'}</tbody></table>
     <div class="row" style="margin-top:10px">${plainSel('accSel',S.shelf.accessories.map(a=>[a.id,`${a.name} (${a.qty} in stock)`]),'','Accessory')}${envBtn('issueAccessory',['$val:accSel',w.host],'Issue from shelf')}</div>`;
   if (t==='hist') p=`<ul class="log">${w.history.map(h=>`<li><span class="tm">${esc(h.t)}</span><span>${esc(h.text)}</span></li>`).join('')||'<li class="sys"><span class="tm">—</span><span class="muted">No history yet.</span></li>'}</ul>`;
@@ -2490,15 +3111,15 @@ const CONSOLE = {directory:cDirectory, server:cServer, rdp:cRdp, deploy:cDeploy,
    7. EVENTS — one delegated click/input/keydown handler each.
    All environment mutations funnel through act().
    ===================================================================== */
-/* Penalties: T.penalties['<action>:<entity>' or '<action>:*'] = [pts, why, when?]. when(s) is checked BEFORE the action runs. */
-function penaltyHits(s, action, entity){
+/* Penalties: T.penalties['<action>:<entity>' or '<action>:*'] = [pts, why, when?]. when(s, args) is checked BEFORE the action runs; args are the ENV call's arguments when known. */
+function penaltyHits(s, action, entity, args){
   const key=action+':'+entity, hits=[];
   TICKETS.forEach(T=>{ const P=T.penalties||{}, p=P[key]||P[action+':*'], t=s.tickets[T.ref];
-    if (p && t.status==='assigned' && !t.penalties[key] && (!p[2] || p[2](s))) hits.push([T.ref,key,p]); });
+    if (p && t.status==='assigned' && !t.penalties[key] && (!p[2] || p[2](s, args||[]))) hits.push([T.ref,key,p]); });
   return hits;
 }
-function act(tool, entity, action, fn){
-  const hits = penaltyHits(S, action, entity);
+function act(tool, entity, action, fn, args){
+  const hits = penaltyHits(S, action, entity, args);
   const text = fn(S);
   const ref = S.ui.ticket && S.tickets[S.ui.ticket] && S.tickets[S.ui.ticket].status==='assigned' ? S.ui.ticket : null;
   if (text) { logEntry(S, tool, entity, text, ref); S.ui.flash = {tool, text}; }
@@ -2556,10 +3177,10 @@ const ACT = {
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mustChk" checked> User must change password at next sign-in</label>
       <label class="fld" style="margin-top:12px">Deliver the temporary password<select id="credTo">${Object.entries(CREDS_TO).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label>
       ${u.verified?`<p class="small" style="margin-top:8px">${stat(1,'Caller verified')} ${VERIFY[u.verified]}</p>`:'<div class="note warn">This caller hasn’t been verified yet. Use Verify identity first.</div>'}`, 'Reset password', false,
-      ()=>{ const must=$('mustChk').checked, to=$('credTo').value; act('Directory', id, 'resetPassword', s=>ENV.resetPassword(s,id,must,to)); });
+      ()=>{ const must=$('mustChk').checked, to=$('credTo').value; act('Directory', id, 'resetPassword', s=>ENV.resetPassword(s,id,must,to), [id,must,to]); });
     run(d.arg); },
   dirGroup(d){ const [op,g]=splitArg(d.arg), grp = op==='add' ? $('grpSel').value : g;
-    act('Directory', d.id, op+'Group', s=>op==='add' ? ENV.addGroup(s,d.id,grp) : ENV.removeGroup(s,d.id,grp)); },
+    act('Directory', d.id, op+'Group', s=>op==='add' ? ENV.addGroup(s,d.id,grp) : ENV.removeGroup(s,d.id,grp), [d.id,grp]); },
   dev(d){ const x=S.net.devices[d.id], run=()=>act('Server Room', d.id, d.arg, s=>ENV[d.arg](s,d.id));
     if ((x.kind==='router'||x.kind==='firewall') && d.arg!=='on') return danger(`${d.arg==='off'?'Power off':'Reboot'} ${x.name}?`, `Every floor depends on the ${x.name}. ${d.arg==='off'?'Powering it off cuts the whole office off':'A reboot drops the whole office for about two minutes'}.`, d.arg==='off'?'Power off':'Reboot anyway', run);
     if (d.arg==='off' && x.kind!=='printer') return danger(`Power off ${x.name}?`, `Everything connected through ${x.name} will lose its network.`, 'Power off', run);
@@ -2592,7 +3213,7 @@ const ACT = {
     const args=JSON.parse(d.arg||'[]').map(a=> typeof a!=='string' ? a : a.startsWith('$form:') ? Object.assign({}, F(a.slice(6))) : a.startsWith('$val:') ? val(a.slice(5)) : a);
     const a0=args[0], ent = a0 && typeof a0==='object' ? String(a0.id||a0.src||a0.recipient||'') : String(a0==null?'':a0);
     const tool = d.tool || (S.ui.view==='tool' ? TOOLS[S.ui.tool].name : 'Service Desk');
-    const run=()=>act(tool, ent, fn, s=>ENV[fn](s,...args));
+    const run=()=>act(tool, ent, fn, s=>ENV[fn](s,...args), args);
     if (d.confirm) return confirmDlg(d.title||'Are you sure?', `<p>${esc(d.confirm)}</p>`, d.ok||'Continue', true, run);
     run(); },
   chatConfirm(d){ act('Company Chat', d.id, 'chatAskConfirm', s=>ENV.chatAskConfirm(s,d.id)); },
@@ -2627,9 +3248,9 @@ const BIND = {
     $('prev').innerHTML = prevHtml(scoreFor(S, ref, el.dataset.esc?'escalate':'close', el.value));
     if (el.dataset.esc) $('closeGo').disabled = el.value.trim().length<15; },
   vpnProfile(el){ act('Remote Desktop', el.dataset.id, 'vpnProfile', s=>ENV.vpnProfile(s, el.dataset.id, el.value)); },
-  asset(el){ act('Asset Management', el.dataset.id, 'setAsset', s=>ENV.setAsset(s, el.dataset.id, el.dataset.arg, el.value)); },
+  asset(el){ act('Asset Management', el.dataset.id, 'setAsset', s=>ENV.setAsset(s, el.dataset.id, el.dataset.arg, el.value), [el.dataset.id, el.dataset.arg, el.value]); },
   owner(el){ act('Asset Management', el.dataset.id, 'setOwner', s=>ENV.setOwner(s, el.dataset.id, el.value)); },
-  mobState(el){ act('Asset Management', el.dataset.id, 'setMobileState', s=>ENV.setMobileState(s, el.dataset.id, el.value)); },
+  mobState(el){ act('Asset Management', el.dataset.id, 'setMobileState', s=>ENV.setMobileState(s, el.dataset.id, el.value), [el.dataset.id, el.value]); },
   disp(el){ act('Remote Desktop', el.dataset.id, 'displayMode', s=>ENV.displayMode(s, el.dataset.id, el.value)); },
   form(el){ F(el.dataset.id)[el.dataset.arg]=el.value; render(); },
   cuCheck(el){ const v=el.value.trim().toLowerCase(); $('cuHint').innerHTML = v ? loginHint(v) : 'Usernames follow the Username standard.'; }
@@ -2821,6 +3442,108 @@ function selfTest(){
   s=seed(); const all1=TICKETS.filter(T=>(T.shift||1)===1); all1.forEach(T=>{ s.tickets[T.ref].status='closed'; });
   ok(shiftDone(s),'shift: done when every shift ticket is closed');
   ok(penaltyHits(s,'nope','x').length===0,'penalties: no match, no hit');
+  // --- shift 2/3 tickets (batch 1: INC-1052…1062) ---
+  const asg=(s,r)=>{ s.tickets[r].status='assigned'; return s; }, objOk=(s,r,i)=>TK[r].obj[i].ok(s);
+  s=seed(); TICKETS.filter(T=>(T.shift||1)===1).forEach(T=>{ s.tickets[T.ref].status='closed'; }); ENV.nextShift(s);
+  ok(s.shift===2 && ['INC-1052','INC-1053','INC-1055','INC-1057'].every(r=>['open','intake'].includes(s.tickets[r].status)) && s.tickets['INC-1056'].status==='intake' && s.voicemails.some(v=>v.ref==='INC-1054'),'shift 2: tickets, chat and voicemail intakes arrive');
+  ok(s.tickets['INC-1059'].status==='waiting','shift 3 tickets wait during shift 2');
+  TICKETS.filter(T=>T.shift===2).forEach(T=>{ s.tickets[T.ref].status='closed'; }); ENV.nextShift(s);
+  ok(s.shift===3 && ['INC-1059','INC-1060','INC-1061'].every(r=>s.tickets[r].status==='open') && s.tickets['INC-1062'].status==='intake','shift 3: tickets arrive');
+  ok(Object.keys(LICS).every(l=>licFree(s,l)>=0) && licFree(s,'crm')===1 && validSave(JSON.parse(JSON.stringify(s))),'shifts 2–3: licence pools never negative, state JSON-safe');
+  ok(TICKETS.filter(T=>(T.shift||1)>1).every(T=>T.guide && ['symptomsToNotice','diagnosis','perfectSteps','verify','commonMistakes','realWorldNote','idealNotes'].every(k=>T.guide[k])),'every shift 2+ ticket carries a full guide');
+  // 1052 dead desktop
+  s=fresh('INC-1052'); ok(!done(s,'INC-1052') && !netState(s,s.workstations['NS-OPS-030']).up,'1052 not complete; dead PC unreachable');
+  asg(s,'INC-1052'); ok(penaltyHits(s,'deploy','NSA-S201').length===1,'1052 deploying unwiped NSA-S201 is penalised');
+  ENV.deploy(s,{src:'NSA-S201', image:'Northstar Standard 24.2', user:'tnowak', site:'Floor 1'}); ENV.setAsset(s,'NS-OPS-030','state','Retired, awaiting disposal'); ENV.chatAskConfirm(s,'INC-1052');
+  ok(!done(s,'INC-1052') && !objOk(s,'INC-1052',2),'1052 unwiped spare does not complete it');
+  ok(penaltyHits(s,'setAsset','NS-OPS-030',['NS-OPS-030','state','Disposed']).length===1 && !penaltyHits(s,'setAsset','NS-OPS-030',['NS-OPS-030','state','In repair']).length,'1052 Disposed penalised, In repair not');
+  s=fresh('INC-1052'); ENV.deploy(s,{src:'NSA-S202', image:'Northstar Standard 24.2', user:'tnowak', site:'Floor 1'});
+  ok(ENV.setAsset(s,'NS-OPS-030','state','In repair').includes('Warranty ended') && !done(s,'INC-1052'),'1052 In repair is not the fix');
+  ENV.setAsset(s,'NS-OPS-030','state','Retired, awaiting disposal'); ok(!s.workstations['NS-OPS-030'].owner && !done(s,'INC-1052'),'1052 retiring clears the owner; still needs confirmation');
+  ENV.chatAskConfirm(s,'INC-1052'); ok(done(s,'INC-1052'),'1052 complete: clean spare + retire + confirm');
+  // 1053 new starter build
+  s=fresh('INC-1053'); ok(!done(s,'INC-1053'),'1053 not complete at arrival');
+  ENV.chatAction(s,'INC-1053','mc-handover'); ok(!s.chat.facts.nrahmanHandover,'1053 handover refused before the laptop is ready');
+  ENV.deploy(s,{src:'NSA-S120', image:'Northstar Standard 24.2', user:'nrahman', site:'Floor 2'}); ok(!objOk(s,'INC-1053',0) && !s.deploy.jobs[0].warnings.length,'1053 reserved laptop with Standard image is not enough');
+  ENV.deploy(s,{src:'host:'+s.users.nrahman.host, image:'Northstar Finance 24.2', user:'nrahman', site:'Floor 2'}); ENV.addGroup(s,'nrahman','Finance-Share');
+  asg(s,'INC-1053'); ok(penaltyHits(s,'addGroup','nrahman',['nrahman','Executive-Share']).length===1 && !penaltyHits(s,'addGroup','nrahman',['nrahman','Finance-Share']).length,'1053 extra groups penalised');
+  ENV.chatAction(s,'INC-1053','mc-handover'); ok(done(s,'INC-1053'),'1053 complete: Finance build + group + handover');
+  ENV.chatAction(s,'INC-1053','mc-pwd'); ok(!done(s,'INC-1053'),'1053 sending the password to the manager fails it');
+  // 1054 remote replacement
+  s=fresh('INC-1054'); ok(!done(s,'INC-1054'),'1054 not complete at arrival');
+  ENV.devUninstall(s,'NS-SALES-019','panel'); ENV.devScan(s,'NS-SALES-019'); ok(s.workstations['NS-SALES-019'].devices.find(d=>d.id==='panel').code===43,'1054 driver reinstall cannot fix a broken panel');
+  ENV.deploy(s,{src:'NSA-S121', image:'Northstar Sales 24.2', user:'ckeller', site:'Remote (home)'}); let nh2=s.users.ckeller.host;
+  asg(s,'INC-1054'); ok(penaltyHits(s,'createShipment','ckeller',[{addrSource:'saved'}]).length===1,'1054 saved address penalised');
+  ENV.createShipment(s,{kind:'outbound', asset:nh2, recipient:'ckeller', addrSource:'saved', service:'Next day'}); ENV.deliverShipment(s,s.ship.shipments[0].id);
+  ENV.createShipment(s,{kind:'return', asset:'NS-SALES-019', recipient:'ckeller', addrSource:'directory'}); ENV.chatAskConfirm(s,'INC-1054');
+  ok(!done(s,'INC-1054') && !objOk(s,'INC-1054',1),'1054 shipping to the stale saved address does not complete it');
+  s=fresh('INC-1054'); ENV.deploy(s,{src:'NSA-S121', image:'Northstar Sales 24.2', user:'ckeller', site:'Remote (home)'}); nh2=s.users.ckeller.host;
+  ENV.createShipment(s,{kind:'outbound', asset:nh2, recipient:'ckeller', addrSource:'directory', service:'Next day'}); const outShp=s.ship.shipments[0];
+  ENV.createShipment(s,{kind:'return', asset:'NS-SALES-019', recipient:'ckeller', addrSource:'directory'}); ENV.chatAskConfirm(s,'INC-1054'); ok(!done(s,'INC-1054'),'1054 not complete before delivery');
+  ENV.deliverShipment(s,outShp.id); ENV.chatAskConfirm(s,'INC-1054'); ok(done(s,'INC-1054'),'1054 complete: Sales laptop shipped to HR address + return label + confirm');
+  // 1055 full disk / update
+  s=fresh('INC-1055'); ok(!done(s,'INC-1055'),'1055 not complete at arrival');
+  ENV.updRetry(s,'NS-HR-003'); ok(s.workstations['NS-HR-003'].updates.status==='Failed','1055 retry fails before freeing space');
+  ENV.cleanup(s,'NS-HR-003','Recycle Bin'); ENV.updRetry(s,'NS-HR-003'); ok(s.workstations['NS-HR-003'].updates.status==='Failed','1055 Recycle Bin alone is not enough (needs 20 GB)');
+  asg(s,'INC-1055'); ok(penaltyHits(s,'cleanup','NS-HR-003',['NS-HR-003','Downloads']).length===1 && penaltyHits(s,'updPause','NS-HR-003').length===1,'1055 downloads without consent and pausing are penalised');
+  ENV.updPause(s,'NS-HR-003'); ENV.chatAskConfirm(s,'INC-1055'); ok(!done(s,'INC-1055'),'1055 pausing updates does not complete it'); ENV.updPause(s,'NS-HR-003');
+  ENV.cleanup(s,'NS-HR-003','Temporary files'); ENV.cleanup(s,'NS-HR-003','Update cache'); ENV.updRetry(s,'NS-HR-003'); ENV.restartWs(s,'NS-HR-003'); ENV.chatAskConfirm(s,'INC-1055');
+  ok(done(s,'INC-1055') && s.workstations['NS-HR-003'].storage.cats.Documents===61,'1055 complete: cleanup + update + restart + confirm');
+  // 1056 second screen
+  s=fresh('INC-1056'); ok(!done(s,'INC-1056') && monitors(s.workstations['NS-SUP-007']).detected===2,'1056 not complete; monitor detected');
+  ENV.displayMode(s,'NS-SUP-007','Duplicate these displays'); ENV.displayKeep(s,'NS-SUP-007'); ENV.chatAskConfirm(s,'INC-1056'); ok(!done(s,'INC-1056'),'1056 Duplicate is not the fix');
+  ENV.displayMode(s,'NS-SUP-007','Extend these displays'); ENV.displayKeep(s,'NS-SUP-007'); ENV.devUninstall(s,'NS-SUP-007','gpu'); ENV.chatAskConfirm(s,'INC-1056'); ok(!done(s,'INC-1056'),'1056 removed display driver breaks it');
+  ENV.devScan(s,'NS-SUP-007'); ENV.chatAskConfirm(s,'INC-1056'); ok(done(s,'INC-1056'),'1056 complete: Extend + keep + confirm');
+  ENV.issueAccessory(s,'mon24','NS-SUP-007'); ok(!done(s,'INC-1056'),'1056 issuing a monitor fails the no-hardware objective');
+  // 1057 social engineering
+  s=fresh('INC-1057'); ok(!done(s,'INC-1057'),'1057 not complete at arrival');
+  ENV.chatAction(s,'INC-1057','aw-verify'); s.tickets['INC-1057'].status='escalated'; ok(done(s,'INC-1057'),'1057 complete: verified in chat + escalated, nothing changed');
+  s=fresh('INC-1057'); ENV.chatAction(s,'INC-1057','aw-verify'); ENV.remoteWipe(s,'NS-EXEC-001'); s.tickets['INC-1057'].status='escalated'; ok(!done(s,'INC-1057'),'1057 wiping the real laptop fails it');
+  s=fresh('INC-1057'); ENV.chatAction(s,'INC-1057','aw-verify'); ENV.resetPassword(s,'awilson',true,'personal'); s.tickets['INC-1057'].status='escalated'; ok(!done(s,'INC-1057'),'1057 password reset for the caller fails it');
+  s=fresh('INC-1057'); ok(penaltyHits(asg(s,'INC-1057'),'createShipment','awilson').length===1,'1057 shipping to the caller is penalised');
+  // 1058 charger
+  s=fresh('INC-1058'); ok(!done(s,'INC-1058'),'1058 not complete at arrival');
+  ENV.chatAction(s,'INC-1058','da-swap'); ok(!s.workstations['NS-OPS-026'].battery.charging,'1058 swap without an issued charger does nothing');
+  ENV.issueAccessory(s,'chg45','NS-OPS-026'); ENV.chatAction(s,'INC-1058','da-swap'); ok(!s.workstations['NS-OPS-026'].battery.charging,'1058 a 45 W charger is not the fix');
+  ENV.issueAccessory(s,'batnb14','NS-OPS-026'); ok(!objOk(s,'INC-1058',2),'1058 replacing a healthy battery fails an objective');
+  s=fresh('INC-1058'); ENV.batterySaver(s,'NS-OPS-026'); ok(!done(s,'INC-1058'),'1058 battery saver is not the fix');
+  ENV.issueAccessory(s,'chg65','NS-OPS-026'); ENV.chatAction(s,'INC-1058','da-swap'); ENV.chatAskConfirm(s,'INC-1058'); ok(done(s,'INC-1058'),'1058 complete: 65 W charger issued + swapped + confirmed');
+  // 1059 joiner
+  s=fresh('INC-1059'); ok(!done(s,'INC-1059') && licFree(s,'crm')===1,'1059 not complete; one CRM seat free');
+  ok(ENV.createUser(s,{first:'Kofi', last:'Mensah', id:'kmensah'}).includes('already taken'),'1059 kmensah is taken by the leaver');
+  asg(s,'INC-1059'); ok(penaltyHits(s,'enable','kmensah').length===1 && penaltyHits(s,'resetPassword','komensah',['komensah',true,'personal']).length===1,'1059 reusing the leaver / personal email penalised');
+  s2=fresh('INC-1059'); ENV.enable(s2,'kmensah'); ENV.editUser(s2,'kmensah',{name:'Kofi Mensah', dept:'Sales'}); ok(!done(s2,'INC-1059') && !objOk(s2,'INC-1059',1),'1059 re-enabling the leaver does not complete it');
+  const kofi={first:'Kofi', last:'Mensah', id:'komensah', dept:'Sales', title:'Account Executive', manager:'Rosa Delgado', floor:1, ext:'3113', licences:['office','endpoint','crm'], groups:['Sales-Share']};
+  ENV.createUser(s,kofi); ok(s.mail.mailboxes.komensah && licFree(s,'crm')===0,'1059 create user takes the last CRM seat + mailbox');
+  ENV.deploy(s,{src:'NSA-S131', image:'Northstar Sales 24.2', user:'komensah', site:'Floor 1'}); ENV.resetPassword(s,'komensah',true,'personal'); ENV.testSignIn(s,'komensah'); ENV.chatAskConfirm(s,'INC-1059');
+  ok(!done(s,'INC-1059'),'1059 password to personal email does not complete it');
+  ENV.resetPassword(s,'komensah',true,'manager'); ENV.chatAskConfirm(s,'INC-1059'); ok(!done(s,'INC-1059'),'1059 needs a sign-in test after the reset');
+  ENV.testSignIn(s,'komensah'); ENV.chatAskConfirm(s,'INC-1059'); ok(done(s,'INC-1059'),'1059 complete: komensah + groups + licences + laptop + creds to manager + test + HR confirm');
+  // 1060 name change
+  s=fresh('INC-1060'); ok(!done(s,'INC-1060'),'1060 not complete at arrival');
+  ENV.editUser(s,'hclarke',{name:'Hannah Osei', login:'hosei'}); ENV.addAlias(s,'hclarke','hannah.osei@northstar.example'); ENV.makePrimary(s,'hclarke','hannah.osei@northstar.example');
+  ENV.testMailTo(s,'hclarke','hannah.clarke@northstar.example'); ENV.chatAskConfirm(s,'INC-1060'); ok(!done(s,'INC-1060') && !objOk(s,'INC-1060',3),'1060 renaming the username fails it');
+  s=fresh('INC-1060'); ENV.editUser(s,'hclarke',{name:'Hannah Osei'}); ENV.addAlias(s,'hclarke','hannah.osei@northstar.example'); ENV.makePrimary(s,'hclarke','hannah.osei@northstar.example');
+  ENV.removeAlias(s,'hclarke','hannah.clarke@northstar.example'); ok(msg(s,(ENV.trace(s,{who:'clarke'}),'mhc1')).status==='Failed' && !objOk(s,'INC-1060',2),'1060 removing the old alias bounces supplier mail');
+  s=fresh('INC-1060'); ENV.editUser(s,'hclarke',{name:'Hannah Osei'}); ENV.addAlias(s,'hclarke','hannah.osei@northstar.example'); ENV.makePrimary(s,'hclarke','hannah.osei@northstar.example');
+  ENV.testMailTo(s,'hclarke','hannah.clarke@northstar.example'); ENV.chatAskConfirm(s,'INC-1060'); ok(done(s,'INC-1060') && msg(s,(ENV.trace(s,{who:'clarke'}),'mhc1')).status==='Delivered','1060 complete: display name + primary + alias kept + alias test + confirm');
+  // 1061 leaver
+  s=fresh('INC-1061'); ok(!done(s,'INC-1061'),'1061 not complete at arrival');
+  ENV.disable(s,'mhale'); ok(s.users.mhale.sessions.length===2 && !done(s,'INC-1061'),'1061 disabling alone leaves sessions');
+  ['office','endpoint','design'].forEach(l=>ENV.removeLicence(s,'mhale',l)); ok(s.mail.mailboxes.mhale.pendingDelete,'1061 removing licences before converting starts mailbox deletion');
+  ENV.setForward(s,'mhale','jordan.price@northstar.example'); ENV.revokeSessions(s,'mhale'); ENV.removeGroup(s,'mhale','Operations-Share'); ENV.returnToShelf(s,'NS-OPS-024'); ENV.testSignIn(s,'mhale');
+  ok(!done(s,'INC-1061'),'1061 forwarding instead of a shared mailbox does not complete it');
+  ENV.convertShared(s,'mhale'); ENV.setForward(s,'mhale',''); ENV.grantPerm(s,'mhale','jprice','Full Access','2027-01-10'); ENV.setAutoReply(s,'mhale',true,'Marcus has left Northstar.'); ENV.testAccess(s,'mhale','jprice');
+  ok(done(s,'INC-1061'),'1061 complete: disable + revoke + groups + shared mailbox + licences + laptop + verify');
+  ENV.deleteUser(s,'mhale'); ok(!done(s,'INC-1061'),'1061 deleting the account fails retention');
+  // 1062 MFA reset
+  s=fresh('INC-1062'); ok(!done(s,'INC-1062'),'1062 not complete at arrival');
+  ok(ENV.verifyIdentity(s,'jprice','code-mobile').includes('lost') && s.users.jprice.verified===null,'1062 code to the lost phone fails');
+  ENV.verifyIdentity(s,'jprice','callback-given'); asg(s,'INC-1062'); ok(penaltyHits(s,'resetMfa','jprice').length===1,'1062 MFA reset after a callback to the given number is penalised');
+  ENV.resetMfa(s,'jprice'); ENV.revokeSession(s,'jprice','jp-mob'); ENV.setMobileState(s,'mob3','Lost/Stolen'); ENV.chatAskConfirm(s,'INC-1062'); ok(!done(s,'INC-1062'),'1062 unverified reset does not complete it');
+  s=fresh('INC-1062'); ENV.verifyIdentity(s,'jprice','callback-record'); ok(!penaltyHits(asg(s,'INC-1062'),'resetMfa','jprice').length,'1062 reset after callback to record is not penalised');
+  ENV.resetMfa(s,'jprice'); ENV.chatAskConfirm(s,'INC-1062'); ok(!done(s,'INC-1062'),'1062 lost phone still needs containing');
+  ENV.revokeSession(s,'jprice','jp-mob'); ENV.setMobileState(s,'mob3','Lost/Stolen'); ok(done(s,'INC-1062') && s.users.jprice.mfa,'1062 complete: verify + reset + contain phone + confirm re-enrol');
   return {pass: out.every(r=>r[0]), results: out};
 }
 window.selfTest = selfTest;
