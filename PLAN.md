@@ -131,16 +131,16 @@ The close dialog shows a preview; Past Tickets shows the breakdown.
 - Export/import save
 
 ### Milestones
-- [ ] **M1 Shell:** skeleton, tokens/CSS, top bar, Tools popover, router, dialog/toast helpers, seed + save/load/reset + storage fallback, first run, dashboard.
-- [ ] **M2 Game logic:**
+- [x] **M1 Shell:** skeleton, tokens/CSS, top bar, Tools popover, router, dialog/toast helpers, seed + save/load/reset + storage fallback, first run, dashboard.
+- [x] **M2 Game logic:**
   - all ENV mutators, the scenario registry and the arrival chain
   - penalties and scoring
   - ticket page with claim, hints, Check Fix, close and escalate
   - Past Tickets and `selfTest()`
-- [ ] **M3 Directory + Server Room** (1042–1045 and 1050 playable).
-- [ ] **M4 Mail Admin + Mail Security + Documentation** (1047–1049).
-- [ ] **M5 Remote Desktop + Asset Management** (1044 verify, 1046, 1051).
-- [ ] **M6 Polish + QA:**
+- [x] **M3 Directory + Server Room** (1042–1045 and 1050 playable).
+- [x] **M4 Mail Admin + Mail Security + Documentation** (1047–1049).
+- [x] **M5 Remote Desktop + Asset Management** (1044 verify, 1046, 1051).
+- [x] **M6 Polish + QA:**
   - split view/tabs; layouts at 1366, 1024 and 390 px
   - focus/Esc and reduced motion
   - README: how to run, how to reset, checks done, unfinished items

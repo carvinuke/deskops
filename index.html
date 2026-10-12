@@ -147,7 +147,7 @@ tr.sel td{background:var(--blue-bg)}
 
 /* ===== Split view ===== */
 .split{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
-.split-tabs{display:none}
+.split>.split-tabs{display:none}
 .tside .card>.bd{padding:14px 16px}
 .tside .ttitle{font-size:18px}
 
@@ -225,7 +225,7 @@ dialog::backdrop{background:rgba(20,30,40,.35)}
 /* ===== Responsive ===== */
 @media (max-width:1099px){
   .split{grid-template-columns:1fr}
-  .split-tabs{display:flex;gap:4px;margin-bottom:12px}
+  .split>.split-tabs{display:flex;gap:4px;margin-bottom:4px}
   .split.pane-tool .tside,.split.pane-ticket .tmain{display:none}
   .tgrid{grid-template-columns:1fr}
   .dash{grid-template-columns:1fr}
@@ -244,7 +244,7 @@ dialog::backdrop{background:rgba(20,30,40,.35)}
 @media (max-width:640px){
   .wrap{padding:16px}
   #topbar{padding:0 10px;gap:0}
-  .brand span,.who small,.navtxt{display:none}
+  .brand span,.who small,.navtxt,#navDash{display:none}
   .brand{margin-right:6px}
   .topright{gap:8px}
   h1{font-size:23px}
@@ -263,7 +263,7 @@ dialog::backdrop{background:rgba(20,30,40,.35)}
     <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="1" width="26" height="26" rx="6" fill="#EDF8FE" stroke="#0098D7"/><rect x="6" y="7" width="12" height="9" rx="1.5" fill="none" stroke="#0098D7" stroke-width="1.6"/><rect x="10" y="11" width="12" height="9" rx="1.5" fill="#fff" stroke="#0098D7" stroke-width="1.6"/></svg>
     <span>DeskOps Lab</span>
   </button>
-  <button class="nav" id="navDash" data-act="go" data-id="dash"><span class="navtxt">Dashboard</span><span aria-hidden="true" class="mobonly"></span></button>
+  <button class="nav" id="navDash" data-act="go" data-id="dash">Dashboard</button>
   <button class="nav" id="navTools" popovertarget="toolsPop">Tools ▾</button>
   <button class="nav" data-act="guide"><span class="navtxt">Shift </span>Guide</button>
   <div class="topright">
@@ -936,7 +936,7 @@ function vTicket(){
 function ticketSide(ref){
   const T=TK[ref], r=reqInfo(T), t=S.tickets[ref];
   return `<section class="card"><div class="bd">
-    <div class="row"><span class="mono" style="color:var(--blue)">${ref}</span>${priTag(T.pri)}<span class="chip">${statusWord(ref)}</span></div>
+    <div class="row"><span class="mono" style="color:var(--blue)">${ref}</span>${priTag(T.pri)}<span class="chip ${isResolved(S,ref)?'ok':''}">${statusWord(ref)}</span></div>
     <h2 class="ttitle">${esc(T.title)}</h2>
     <div class="small muted">${esc(r.name)} · ${esc(r.dept)} · <span class="mono">${esc(T.asset)}</span></div>
     <p style="margin-top:10px">“${esc(T.desc)}”</p>
