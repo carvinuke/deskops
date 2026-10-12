@@ -1,0 +1,1415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeskOps Lab</title>
+<!--
+  DeskOps Lab — an offline IT service-desk training sandbox.
+  Everything (styles, data, icons, logic) lives in this one file. No network, no login.
+  Every account, device, mailbox and command is fictional local game state.
+-->
+<style>
+/* ===== Tokens ===== */
+:root{
+  --bg:#F6F8FA; --surface:#fff; --text:#20252B; --text2:#66717D; --muted:#6B7682; --line:#DFE4E8;
+  --blue:#0098D7; --blue-d:#0083BA; --blue-bg:#EDF8FE;
+  --crit:#C8262E; --high:#B9531B; --med:#93650A; --low:#7A6C22;
+  --ok:#1F7A54; --warn:#94600F; --off:#7E8892; --down:#B4363C;
+  --r:6px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+/* ===== Base ===== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:28px;line-height:1.2}
+h2{font-size:18px}
+h3{font-size:15px}
+p{margin:.3em 0}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mono{font-family:var(--mono);font-size:12.5px}
+.muted{color:var(--text2)}
+.small{font-size:12px}
+.label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.label.blue{color:var(--blue)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+.hide{display:none!important}
+.btn{border:1px solid var(--line);background:#fff;border-radius:var(--r);padding:7px 14px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:#c6ced5;background:#fafbfc}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:var(--blue-d)}
+.btn.danger{color:var(--crit);border-color:#efc3c5}
+.btn.danger.solid{background:var(--crit);color:#fff;border-color:var(--crit)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn:disabled{color:var(--off);background:#f3f5f7;border-color:var(--line);cursor:not-allowed}
+.linkbtn{background:none;border:0;color:var(--blue);cursor:pointer;padding:4px 0;font-weight:500}
+input[type=text],input[type=search],select,textarea{border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;background:#fff;min-width:0}
+textarea{width:100%;resize:vertical}
+input[type=search]{width:100%}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.card>.hd{padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+.card>.bd{padding:16px 20px}
+.card+.card{margin-top:16px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--off);flex:none}
+.dot.ok{background:var(--ok)}.dot.bad{background:var(--crit)}.dot.warn{background:var(--warn)}
+.st{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.st.ok{color:var(--ok)}.st.bad{color:var(--down)}.st.warn{color:var(--warn)}.st.off{color:var(--muted)}
+.pri{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
+.pri::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor}
+.pri.critical{color:var(--crit)}.pri.high{color:var(--high)}.pri.medium{color:var(--med)}.pri.low{color:var(--low)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);background:#fff}
+.chip.blue{background:var(--blue-bg);border-color:#bfe3f5;color:#0077a8}
+.chip.ok{background:#eaf6f0;border-color:#bfe2d0;color:var(--ok)}
+.chip.bad{background:#fdeeee;border-color:#f2c6c8;color:var(--down)}
+.chip.warn{background:#fdf5e8;border-color:#efd9b3;color:var(--warn)}
+.note{border-left:3px solid var(--blue);background:var(--blue-bg);padding:10px 12px;border-radius:4px;margin:10px 0}
+.note.warn{border-color:var(--warn);background:#fdf6ea}
+.note.bad{border-color:var(--crit);background:#fdf0f0}
+.note.ok{border-color:var(--ok);background:#ecf7f1}
+.bar{height:6px;background:#eef1f4;border-radius:3px;overflow:hidden;min-width:60px}
+.bar>i{display:block;height:100%;background:var(--blue)}
+.bar.hot>i{background:var(--crit)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr.sel td{background:var(--blue-bg)}
+.tablewrap{overflow-x:auto}
+.empty{padding:28px 20px;text-align:center;color:var(--text2)}
+
+/* ===== Top bar ===== */
+#topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 20px;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;margin-right:22px;background:none;border:0;cursor:pointer;padding:0}
+.brand svg{flex:none}
+.nav{background:none;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;color:var(--text2);font-weight:500}
+.nav:hover{color:var(--text);background:#f2f4f6}
+.nav.on{color:var(--blue)}
+.topright{margin-left:auto;display:flex;align-items:center;gap:14px}
+#pts{color:var(--blue);font-weight:600;white-space:nowrap}
+.who{text-align:right;line-height:1.2;background:none;border:0;cursor:pointer;padding:4px 6px;border-radius:6px}
+.who:hover{background:#f2f4f6}
+.who b{display:block;font-size:13px}
+#memNote{background:#fdf6ea;border-bottom:1px solid #efd9b3;color:#7a5410;font-size:12.5px;padding:6px 20px}
+
+/* ===== Popovers / menus ===== */
+[popover]{margin:0;inset:auto;border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;box-shadow:0 8px 28px rgba(20,30,40,.12);max-width:calc(100vw - 16px);color:var(--text)}
+.menu button{display:flex;width:100%;text-align:left;gap:12px;align-items:flex-start;background:none;border:0;padding:8px 10px;border-radius:6px;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--blue-bg)}
+.menu .grp{padding:10px 10px 4px;border-top:1px solid var(--line);margin-top:4px}
+.menu .grp:first-child{border-top:0;margin-top:0}
+.toolsgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;width:560px}
+.toolsgrid .grp{grid-column:span 1}
+.tico{width:30px;height:30px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;flex:none;color:var(--blue)}
+.menu .tn{font-weight:600;display:block}
+.menu .td{font-size:12px;color:var(--text2)}
+.prof{width:290px;padding:14px}
+.prof label{display:flex;gap:8px;align-items:center;margin:8px 0}
+
+/* ===== Layout ===== */
+#app{min-height:calc(100vh - 56px)}
+.wrap{max-width:1220px;margin:0 auto;padding:24px}
+.dash{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;margin-top:22px;align-items:start}
+.qhead{display:flex;justify-content:space-between;align-items:end}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto 16px;gap:14px;align-items:center;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--line);padding:11px 20px;cursor:pointer}
+.qrow:hover,.qrow:focus-visible{background:#f8fbfd}
+.qrow:last-child{border-bottom:0}
+.qrow .t{font-weight:600;display:block;margin:1px 0}
+.qrow .chev{color:var(--muted)}
+.svc{display:flex;align-items:center;gap:10px;padding:6px 0}
+.svc span:nth-child(2){flex:1}
+.act-item{font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.act-item:last-child{border-bottom:0}
+
+/* ===== Ticket ===== */
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;margin-top:20px;align-items:start}
+.thead{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ttitle{font-size:26px;margin:8px 0 10px}
+.avatar{width:28px;height:28px;border-radius:50%;background:#e9eef2;display:inline-grid;place-items:center;font-size:11px;font-weight:700;color:var(--text2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.two>div+div{border-left:1px solid var(--line);padding-left:20px}
+.objs{list-style:none;padding:0;margin:8px 0}
+.objs li{display:flex;gap:10px;align-items:flex-start;padding:4px 0}
+.objs .ck{width:16px;height:16px;border-radius:50%;border:1.5px solid #c3ccd4;flex:none;margin-top:2px;display:grid;place-items:center;font-size:10px;color:#fff}
+.objs .ck.y{background:var(--ok);border-color:var(--ok)}
+.hints{margin:8px 0 0;padding-left:18px}
+.hints li{margin:4px 0}
+.log{list-style:none;padding:0;margin:0}
+.log li{display:flex;gap:10px;padding:5px 0;font-size:13px}
+.log li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue);margin-top:7px;flex:none}
+.log li.sys::before{background:#c8d0d6}
+.log .tm{color:var(--muted);font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.banner{border-radius:8px;padding:12px 16px;margin-top:14px;display:flex;gap:12px;align-items:center}
+.banner.ok{background:#ecf7f1;border:1px solid #bfe2d0}
+
+/* ===== Split view ===== */
+.split{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+.split-tabs{display:none}
+.tside .card>.bd{padding:14px 16px}
+.tside .ttitle{font-size:18px}
+
+/* ===== Consoles ===== */
+.console{background:#fff;border:1px solid var(--line);border-radius:8px;min-height:520px}
+.chd{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.chd h2{font-size:17px;display:flex;gap:10px;align-items:center}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;cursor:pointer;color:var(--text2);font-weight:500;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.cbody{padding:18px}
+.flash{margin:12px 18px 0;padding:9px 12px;border-radius:6px;background:var(--blue-bg);border:1px solid #c7e7f6;font-size:13px}
+.flash.warn{background:#fdf6ea;border-color:#efd9b3}
+.dir{display:grid;grid-template-columns:240px 150px minmax(0,1fr);min-height:470px}
+.dir>div{padding:14px}
+.dir>div+div{border-left:1px solid var(--line)}
+.ulist{list-style:none;margin:10px 0 0;padding:0}
+.ulist button{width:100%;text-align:left;background:none;border:0;padding:8px;border-radius:6px;cursor:pointer}
+.ulist button:hover{background:#f4f6f8}
+.ulist button.on{background:var(--blue-bg)}
+.ulist small{display:block;color:var(--text2)}
+.vtabs button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;color:var(--text2)}
+.vtabs button.on{background:var(--blue-bg);color:var(--blue);font-weight:600}
+.kv{display:grid;grid-template-columns:170px 1fr;gap:6px 14px;margin:10px 0}
+.kv dt{color:var(--text2)}
+.kv dd{margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.stat b{display:block;font-size:20px;margin:4px 0 2px}
+.topo{width:100%;height:auto;max-width:820px;display:block;margin:0 auto}
+.topo .node{cursor:pointer}
+.topo .node:focus{outline:none}
+.topo .node:focus rect,.topo .node:hover rect{stroke:var(--blue);stroke-width:2}
+.kb{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:470px}
+.kb>div{padding:16px}
+.kb>div+div{border-left:1px solid var(--line)}
+.steps li{margin:6px 0}
+.mailpane{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:8px;align-items:end;margin-bottom:14px}
+.mailpane label{font-size:12px;color:var(--text2);display:grid;gap:3px}
+
+/* ===== Remote desktop ===== */
+.rdp{border:1px solid #1d3a4c;border-radius:8px;overflow:hidden;background:#123}
+.rdp.max{position:fixed;inset:8px;z-index:20;display:flex;flex-direction:column}
+.rdpbar{display:flex;gap:10px;align-items:center;background:#0d2433;color:#d6e6ef;padding:7px 12px;font-size:12.5px;flex-wrap:wrap}
+.rdpbar .btn{background:#17384b;border-color:#2b5068;color:#e5f1f7}
+.desk{position:relative;min-height:470px;flex:1;background:linear-gradient(160deg,#1b4a63 0%,#123a4f 45%,#0e2d3e 100%);padding:16px}
+.desk::after{content:"";position:absolute;right:-60px;bottom:-60px;width:320px;height:320px;border-radius:50%;border:40px solid rgba(255,255,255,.04);pointer-events:none}
+.icons{display:grid;grid-template-columns:repeat(auto-fill,84px);gap:8px;position:relative;z-index:1}
+.dicon{background:none;border:0;color:#eaf4f9;display:grid;justify-items:center;gap:5px;padding:8px 4px;border-radius:6px;cursor:pointer;font-size:12px;text-align:center}
+.dicon:hover,.dicon:focus-visible{background:rgba(255,255,255,.1)}
+.dicon .tico{background:rgba(255,255,255,.92);border:0;width:38px;height:38px}
+.win{position:absolute;z-index:2;left:120px;top:24px;right:24px;bottom:56px;background:#fff;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
+.win .wt{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-weight:600;font-size:13px;gap:8px}
+.win .wb{padding:14px;overflow:auto;flex:1}
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:40px;background:rgba(6,20,29,.85);display:flex;align-items:center;gap:6px;padding:0 10px;color:#d6e6ef;font-size:12px;z-index:3}
+.taskbar .tb{background:none;border:0;color:#d6e6ef;padding:6px 10px;border-radius:4px;cursor:pointer}
+.taskbar .tb.on{background:rgba(255,255,255,.14)}
+.term{background:#0f1a22;color:#cfe3ee;font-family:var(--mono);font-size:12.5px;border-radius:6px;padding:10px;min-height:240px;white-space:pre-wrap;overflow:auto;max-height:320px}
+.termin{display:flex;gap:6px;align-items:center;margin-top:8px;font-family:var(--mono);font-size:12.5px}
+.termin input{flex:1;font-family:var(--mono)}
+
+/* ===== Dialog / toasts ===== */
+dialog{border:1px solid var(--line);border-radius:10px;padding:0;width:min(560px,calc(100vw - 24px));box-shadow:0 18px 50px rgba(20,30,40,.22);color:var(--text)}
+dialog::backdrop{background:rgba(20,30,40,.35)}
+.dh{padding:18px 22px 6px}
+.db{padding:6px 22px 14px}
+.df{padding:12px 22px 18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.prev{border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin-top:10px}
+.prev div{display:flex;justify-content:space-between;gap:12px;padding:2px 0;font-size:13px}
+.prev .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:700}
+#toasts{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;z-index:50;max-width:min(380px,calc(100vw - 32px))}
+.toast{background:#20252B;color:#fff;border-radius:8px;padding:10px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.warn{background:#7a4a0c}
+
+/* ===== Responsive ===== */
+@media (max-width:1099px){
+  .split{grid-template-columns:1fr}
+  .split-tabs{display:flex;gap:4px;margin-bottom:12px}
+  .split.pane-tool .tside,.split.pane-ticket .tmain{display:none}
+  .tgrid{grid-template-columns:1fr}
+  .dash{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .dir,.kb{grid-template-columns:1fr}
+  .dir>div+div,.kb>div+div{border-left:0;border-top:1px solid var(--line)}
+  .stats{grid-template-columns:1fr 1fr}
+  .mailpane{grid-template-columns:1fr 1fr}
+  .toolsgrid{grid-template-columns:1fr;width:min(340px,calc(100vw - 16px))}
+  .two{grid-template-columns:1fr}
+  .two>div+div{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}
+  .win{left:8px;right:8px;top:8px}
+  .kv{grid-template-columns:120px 1fr}
+}
+@media (max-width:640px){
+  .wrap{padding:16px}
+  #topbar{padding:0 10px;gap:0}
+  .brand span,.who small,.navtxt{display:none}
+  .brand{margin-right:6px}
+  .topright{gap:8px}
+  h1{font-size:23px}
+  .ttitle{font-size:21px}
+  td,th{padding:8px 6px}
+  .qrow{padding:11px 14px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .btn,.qrow,.nav,.tab{transition:background-color .15s,border-color .15s,color .15s}
+}
+</style>
+</head>
+<body>
+<header id="topbar">
+  <button class="brand" data-act="go" data-id="dash" aria-label="DeskOps Lab dashboard">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="1" width="26" height="26" rx="6" fill="#EDF8FE" stroke="#0098D7"/><rect x="6" y="7" width="12" height="9" rx="1.5" fill="none" stroke="#0098D7" stroke-width="1.6"/><rect x="10" y="11" width="12" height="9" rx="1.5" fill="#fff" stroke="#0098D7" stroke-width="1.6"/></svg>
+    <span>DeskOps Lab</span>
+  </button>
+  <button class="nav" id="navDash" data-act="go" data-id="dash"><span class="navtxt">Dashboard</span><span aria-hidden="true" class="mobonly"></span></button>
+  <button class="nav" id="navTools" popovertarget="toolsPop">Tools ▾</button>
+  <button class="nav" data-act="guide"><span class="navtxt">Shift </span>Guide</button>
+  <div class="topright">
+    <span id="pts" aria-live="polite">0 pts</span>
+    <button class="who" popovertarget="profPop" aria-label="Profile and settings"><small class="label">Local technician</small><b id="who">Technician</b></button>
+  </div>
+</header>
+<div id="memNote" class="hide" role="status">This browser is blocking local storage, so progress lives in memory and will be lost when the tab closes.</div>
+<div id="toolsPop" popover class="menu"></div>
+<div id="profPop" popover class="menu prof"></div>
+<main id="app"></main>
+<dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+<div id="toasts" aria-live="polite"></div>
+<script>
+'use strict';
+/* =====================================================================
+   1. SEED — static content (tickets, articles) and the initial world.
+   Ticket text/objectives live here in code; only mutable state is saved.
+   ===================================================================== */
+const PRI = {
+  critical:{w:'Critical', rank:0, pts:30, pen:20},
+  high:    {w:'High',     rank:1, pts:22, pen:15},
+  medium:  {w:'Medium',   rank:2, pts:15, pen:10},
+  low:     {w:'Low',      rank:3, pts:10, pen:10}
+};
+const GROUPS = ['Domain Users','Finance-Share','Sales-Share','HR-Share','Support-Share','Operations-Share','Executive-Share'];
+const SHARES = [
+  {path:'\\\\FILE01\\Finance', group:'Finance-Share', files:['Payroll_Oct.xlsx','Supplier_Payments.xlsx','Month_End_Checklist.docx']},
+  {path:'\\\\FILE01\\Sales', group:'Sales-Share', files:['Pipeline_Q4.xlsx','Pricing_2026.pdf','Client_Notes']},
+  {path:'\\\\FILE01\\HR', group:'HR-Share', files:['Onboarding','Policies','Starters_October.xlsx']},
+  {path:'\\\\FILE01\\Support', group:'Support-Share', files:['Runbooks','Escalation_Contacts.docx']},
+  {path:'\\\\FILE01\\Operations', group:'Operations-Share', files:['Facilities_Rota.xlsx','Vendors']},
+  {path:'\\\\FILE01\\Executive', group:'Executive-Share', files:['Board_Packs','Strategy_2027.pptx']},
+  {path:'\\\\FILE01\\Public', group:'Domain Users', files:['Office_Map.pdf','Canteen_Menu.pdf']}
+];
+const HOSTS = { // name resolution for the simulated terminal
+  'edge':'10.0.0.1','gateway':'10.0.0.1','firewall':'10.0.0.254','dc01':'10.0.0.10','dc02':'10.0.0.11','file01':'10.0.0.20',
+  'mail01':'10.0.0.25','print01':'10.0.0.30','intranet.northstar.local':'10.0.0.40','northstar.example':'203.0.113.40','web.example':'198.51.100.7'
+};
+const O = (ok, done, todo) => ({ok, done, todo});
+const svcUp = (s, srv, name) => s.net.servers[srv].services[name] === 'running';
+
+const TICKETS = [
+{ref:'INC-1042', pri:'high', cat:'Access / Account lockout', req:'mchen', asset:'NS-FIN-014', assetType:'Windows workstation', created:'08:12',
+ title:'Account locked after returning from vacation',
+ desc:'Hi, I’m back from vacation and my account says it’s locked. I can’t open the Finance share and payroll is due this afternoon. My colleague can still open it.',
+ impact:'One Finance employee is blocked from payroll work. Other staff can still reach the share.',
+ tried:'Restarted the laptop twice. Same message.',
+ hints:['Because a colleague can reach the share, start with Maya’s account rather than the network.','Search for Maya in Directory and open the Authentication tab.','Unlock mchen.'],
+ model:'Verified the requester’s account, cleared the lockout in Directory, asked the requester to sign in again and confirmed Finance share access.',
+ keys:['mchen','maya','ns-fin-014'],
+ obj:[O(s=>!s.users.mchen.locked && s.users.mchen.enabled, 'Maya’s account is unlocked', 'Maya’s account is still locked')]},
+
+{ref:'INC-1043', pri:'high', cat:'Access / Password', req:'ebrooks', asset:'NS-SALES-008', assetType:'Windows laptop', created:'08:20',
+ title:'Locked out after the password expired',
+ desc:'I can’t get into my laptop or Sales Hub this morning. Yesterday it kept telling me to change my password, and now it says the account is locked.',
+ impact:'A sales rep can’t reach pipeline notes before a customer meeting.',
+ tried:'Tried the old password a bunch of times.',
+ hints:['Locked and expired are two separate problems on the same account.','Open Evan’s Authentication tab in Directory and read every flag.','Unlock ebrooks, reset the password with “must change at next sign-in”, then run a sign-in test.'],
+ model:'Checked the account state, unlocked the user, reset the expired password, required a change at the next sign-in and verified access with a sign-in test.',
+ keys:['ebrooks','evan','ns-sales-008'],
+ obj:[O(s=>!s.users.ebrooks.locked, 'Evan’s account is unlocked', 'Evan’s account is still locked'),
+      O(s=>!s.users.ebrooks.pwdExpired, 'Expired password was reset', 'Evan’s password is still expired'),
+      O(s=>s.users.ebrooks.mustChange, 'Must change password at next sign-in', 'The new password isn’t set to change at next sign-in'),
+      O(s=>s.users.ebrooks.signInOk, 'Sign-in test passed after the fix', 'Sign-in hasn’t been tested since the fix')]},
+
+{ref:'INC-1044', pri:'medium', cat:'Access / Permissions', req:'mchen', asset:'NS-FIN-014', assetType:'Windows workstation', created:'10:05', after:'INC-1042',
+ arrive:s=>{ const u=s.users.mchen; u.groups=u.groups.filter(g=>g!=='Finance-Share'); u.tokenStale=false; },
+ title:'Finance share says Access Denied',
+ desc:'My login works now, but I get Access Denied when I open \\\\FILE01\\Finance. My teammate can still open the same folder.',
+ impact:'One user is blocked from a critical departmental share. Sign-in is healthy.',
+ tried:'Restarted File Explorer and signed out and in once.',
+ hints:['The login works, so this is about authorization, not authentication.','Compare Maya’s group membership in Directory with what the Finance share needs.','Add mchen to Finance-Share, then have her sign out and back in so the change applies.'],
+ model:'Confirmed identity, restored the missing Finance-Share group membership, had the user refresh her session and verified the share opens.',
+ keys:['mchen','maya','finance-share'],
+ obj:[O(s=>s.users.mchen.groups.includes('Finance-Share'), 'Maya is a member of Finance-Share', 'Maya isn’t a member of Finance-Share'),
+      O(s=>s.users.mchen.groups.includes('Finance-Share') && !s.users.mchen.tokenStale, 'Group change applied to Maya’s session', 'Maya’s session hasn’t picked up the group change')]},
+
+{ref:'INC-1045', pri:'critical', cat:'Network / Outage', reqName:'Multiple users', reqDept:'Floor 3 · Marketing & Design', reqLoc:'Floor 3', reqExt:'4900', reqEmail:'floor3-leads@northstar.example', asset:'Floor 3 network', assetType:'Shared network segment', created:'08:31',
+ title:'Nobody on the third floor can reach the network',
+ desc:'Nobody on the third floor can reach the internet or shared drives. Floors one and two are fine. It started about five minutes ago.',
+ impact:'Multi-user business interruption, isolated to Floor 3.',
+ tried:'Users reconnected to Wi-Fi and restarted PCs. No change.',
+ hints:['The impact is one floor while the others work. Look for the narrowest shared component.','In Server Room, trace the topology down to the Floor 3 branch.','Restore the Floor 3 Switch (10.0.3.1).'],
+ model:'Compared the outage scope with the topology, identified the failed Floor 3 switch, restored it and confirmed the segment came back online.',
+ keys:['floor 3','switch','10.0.3.1'],
+ penalties:{'reboot:edge':[4,'Rebooted the edge router — every floor dropped briefly'],'off:edge':[4,'Powered off the edge router — every floor lost access'],'reboot:fw':[4,'Rebooted the main firewall — every floor dropped briefly'],'off:fw':[4,'Powered off the firewall — every floor lost access']},
+ obj:[O(s=>s.net.devices.sw3.status==='online', 'Floor 3 Switch is back online', 'Floor 3 Switch is still down')]},
+
+{ref:'INC-1046', pri:'medium', cat:'Network / Wi-Fi', req:'jprice', asset:'NS-OPS-021', assetType:'Windows laptop', created:'08:47',
+ title:'Wi-Fi keeps dropping during calls',
+ desc:'My Wi-Fi keeps disconnecting during calls. People sitting around me seem fine, and the rest of the office is working.',
+ impact:'One user has intermittent connectivity. Shared network devices are healthy.',
+ tried:'Forgot the Wi-Fi network from the taskbar and rejoined.',
+ hints:['One device fails while nearby colleagues work: look at the workstation, not the network.','Remote into NS-OPS-021 and inspect its saved Wi-Fi profiles.','Forget the broken Northstar-Staff profile, reconnect, then ping the gateway (10.0.0.1) from Terminal.'],
+ model:'Verified the wider network was healthy, removed the corrupt saved Wi-Fi profile on the workstation, reconnected to Northstar-Staff and confirmed gateway reachability.',
+ keys:['jprice','jordan','ns-ops-021','wi-fi','wifi'],
+ penalties:{'reboot:edge':[4,'Rebooted the edge router for a single-user Wi-Fi problem'],'off:edge':[4,'Powered off the edge router for a single-user Wi-Fi problem']},
+ obj:[O(s=>!s.workstations['NS-OPS-021'].wifi.profiles.some(p=>p.broken), 'Broken saved Wi-Fi profile removed', 'A broken saved Wi-Fi profile is still on NS-OPS-021'),
+      O(s=>s.workstations['NS-OPS-021'].wifi.connected==='Northstar-Staff', 'Connected to Northstar-Staff', 'NS-OPS-021 isn’t connected to Northstar-Staff'),
+      O(s=>s.workstations['NS-OPS-021'].netOk, 'Internal connectivity tested', 'Connectivity hasn’t been tested from NS-OPS-021')]},
+
+{ref:'INC-1047', pri:'high', cat:'Email / Delivery', req:'pshah', asset:'priya.shah@northstar.example', assetType:'Mailbox', created:'08:39',
+ title:'Supplier email is missing from the inbox',
+ desc:'A supplier sent today’s onboarding spreadsheet, but it never arrived. They say they got no bounce. I checked Junk and it isn’t there.',
+ impact:'HR onboarding for Monday’s starters is delayed.',
+ tried:'Checked Junk and asked the supplier to resend once.',
+ hints:['No bounce and not in Junk: find out where the message stopped.','Run a Message Trace in Mail Admin for Priya’s address. “Quarantined” means the filter is holding it.','Release the matching legitimate message in Mail Security, then re-run the trace to confirm delivery.'],
+ model:'Traced the message, confirmed the filtering service quarantined it, released the verified legitimate item and confirmed delivery in Message Trace.',
+ keys:['pshah','priya','quarantine','brightpath'],
+ penalties:{'release:q2':[6,'Released a phishing message into a user’s inbox']},
+ obj:[O(s=>msg(s,'m1').status==='Delivered', 'Supplier message released', 'The supplier message is still quarantined'),
+      O(s=>msg(s,'m1').verified, 'Delivery confirmed in Message Trace', 'Delivery hasn’t been confirmed in Message Trace')]},
+
+{ref:'INC-1048', pri:'medium', cat:'Email / Mailbox', req:'awilson', asset:'avery.wilson@northstar.example', assetType:'Mailbox', created:'09:02',
+ title:'Mailbox is full and new mail bounces',
+ desc:'People get a bounce when they email me, with a “mailbox full” message. I can still sign in to webmail and read old messages.',
+ impact:'The Executive Office can’t receive new messages.',
+ tried:'Signed out of webmail and tried again.',
+ hints:['Sign-in still works, so this is mailbox delivery, not identity.','Open Avery’s mailbox in Mail Admin › Mailbox Admin and look at storage.','Enable the online archive (or raise the quota to the approved 10 GB), then send a test message.'],
+ model:'Checked mailbox properties, found quota enforcement blocking delivery, enabled the approved archive remedy and confirmed delivery with a test message.',
+ keys:['awilson','avery','quota','archive'],
+ obj:[O(s=>canReceive(s.mail.mailboxes.awilson), 'Mailbox has room to receive mail', 'Avery’s mailbox is still full'),
+      O(s=>s.mail.mailboxes.awilson.testOk, 'Test message delivered', 'No test message has been delivered yet')]},
+
+{ref:'INC-1049', pri:'critical', cat:'Security / Mailbox', req:'lmartinez', asset:'leo.martinez@northstar.example', assetType:'Mailbox', created:'08:58', security:true,
+ title:'Unknown forwarding address in my mailbox',
+ desc:'A coworker says some replies to my password-reset emails are disappearing. I found a forwarding address I don’t recognize in my mailbox settings.',
+ impact:'Possible account compromise and data exfiltration.',
+ tried:'I did not create any new rules.',
+ hints:['A rule that forwards everything outside the company is a security concern.','Inspect Leo’s inbox rules in Mail Admin. Preserve the evidence: this is not housekeeping.','Escalate the ticket to Security with the rule details in your notes.'],
+ model:'Inspected the inbox rule, documented the external forwarding evidence, avoided destroying it and escalated to Security for containment.',
+ keys:['lmartinez','leo','external-archive','outside.example','forward'],
+ penalties:{'deleteRule:r1':[4,'Deleted the suspicious rule and destroyed evidence']},
+ obj:[O(s=>rule(s,'r1').inspected, 'Forwarding rule inspected', 'The suspicious rule hasn’t been inspected'),
+      O(s=>!rule(s,'r1').deleted, 'Rule preserved as evidence', 'The rule was deleted, so evidence is lost'),
+      O(s=>s.tickets['INC-1049'].status==='escalated', 'Routed to Security', 'Not yet routed to Security')]},
+
+{ref:'INC-1050', pri:'high', cat:'Server / Printing', reqName:'Multiple users', reqDept:'Office-wide · All departments', reqLoc:'All floors', reqExt:'4000', reqEmail:'office-managers@northstar.example', asset:'PRINT01', assetType:'Print server', created:'08:25',
+ title:'Shared printers are stuck on “Printing”',
+ desc:'Everyone in the office gets “Printing” forever, and nothing is coming out of the shared printers. The printers themselves are powered on.',
+ impact:'Company-wide printing is unavailable. All printer models are affected.',
+ tried:'Power-cycled one printer. It didn’t help.',
+ hints:['Every printer at once means a shared dependency.','Inspect the print server in Server Room › Servers.','Restart the Print Spooler on PRINT01, then send a test page.'],
+ model:'Identified the shared print server rather than a single printer, restarted the stopped spooler service and confirmed a test page printed.',
+ keys:['print01','spooler'],
+ obj:[O(s=>svcUp(s,'PRINT01','Print Spooler'), 'Print Spooler running on PRINT01', 'Print Spooler on PRINT01 is still stopped'),
+      O(s=>s.net.servers.PRINT01.testPageOk, 'Test page printed', 'No test page has printed')]},
+
+{ref:'INC-1051', pri:'high', cat:'Network / VPN', req:'ebrooks', asset:'NS-SALES-008', assetType:'Windows laptop', created:'11:20', after:'INC-1043',
+ title:'VPN profile invalid when working from home',
+ desc:'I’m at home and the VPN says my connection profile is invalid. The internet works and I can browse normal websites, but I can’t reach the company drive.',
+ impact:'A remote worker can’t reach internal resources.',
+ tried:'Restarted the laptop and checked the home router.',
+ hints:['Public internet works, so the fault is in the tunnel or client profile.','Remote into NS-SALES-008 and open the VPN Client.','Select the current Northstar-Staff profile, connect, and verify by opening the S: drive or pinging FILE01.'],
+ model:'Confirmed ordinary internet worked, replaced the obsolete VPN profile with the current one, connected and verified internal access.',
+ keys:['ebrooks','evan','vpn','northstar-staff','ns-sales-008'],
+ obj:[O(s=>s.workstations['NS-SALES-008'].vpn.profile==='Northstar-Staff', 'Current VPN profile selected', 'The VPN client still uses the retired profile'),
+      O(s=>s.workstations['NS-SALES-008'].vpn.connected, 'VPN connected', 'The VPN isn’t connected'),
+      O(s=>s.workstations['NS-SALES-008'].netOk, 'Internal access verified', 'Internal access hasn’t been verified')]}
+];
+const TK = Object.fromEntries(TICKETS.map(t=>[t.ref,t]));
+
+const KB = [
+ {id:'kb1', cat:'Identity', title:'Unlocking a locked account', tools:['Directory'], rel:['INC-1042','INC-1043'],
+  steps:['Confirm the caller’s identity (username or employee ID) before changing anything.','Directory › search the user › Authentication.','Check every flag: locked, disabled, password expired and MFA are separate states.','Select Unlock. A password reset does not clear a lockout.','Ask the user to sign in again, or run a sign-in test.']},
+ {id:'kb2', cat:'Identity', title:'Resetting an expired password', tools:['Directory'], rel:['INC-1043'],
+  steps:['Directory › user › Authentication.','Reset password issues a temporary password. Keep “User must change password at next sign-in” ticked.','Unlock the account too if it’s locked.','Run Test sign-in to confirm the account can authenticate.']},
+ {id:'kb3', cat:'Identity', title:'Share access denied (group membership)', tools:['Directory','Remote Desktop'], rel:['INC-1044'],
+  steps:['If sign-in works but a share says Access Denied, check authorization, not the password.','Directory › user › Groups: compare with the group the share requires (e.g. Finance-Share).','Add the missing group.','Group changes apply at next sign-in: use “Ask user to sign out & back in”.','Optionally verify with File Explorer in a Remote Desktop session.']},
+ {id:'kb4', cat:'Network', title:'Triage a floor-wide outage', tools:['Server Room'], rel:['INC-1045'],
+  steps:['Scope first: one user, one floor, or everyone?','Server Room › Topology: follow the path from ISP to the affected area.','If other floors work, the edge router and firewall are probably fine. Don’t reboot them.','Restore the narrowest failed shared device (usually the floor switch) and confirm it reports Online.']},
+ {id:'kb5', cat:'Network', title:'Fixing a broken Wi-Fi profile', tools:['Remote Desktop'], rel:['INC-1046'],
+  steps:['If only one device drops, inspect that device.','Remote Desktop › connect › Network & Wi-Fi.','Forget a saved profile marked as failing authentication.','Connect to Northstar-Staff again (guest Wi-Fi has no internal access).','Terminal: ping 10.0.0.1 to confirm the gateway answers.']},
+ {id:'kb6', cat:'Email', title:'Finding and releasing quarantined mail', tools:['Mail Admin','Mail Security'], rel:['INC-1047'],
+  steps:['Mail Admin › Message Trace: filter by recipient and search.','Status Quarantined means the filtering service is holding the message.','Mail Security › Quarantine: confirm sender, subject and reason. Only release legitimate business mail.','Phishing or malware stays blocked. Report it to Security instead.','Re-run the trace and confirm the status is Delivered.']},
+ {id:'kb7', cat:'Email', title:'Mailbox over quota', tools:['Mail Admin'], rel:['INC-1048'],
+  steps:['If webmail sign-in works but senders get “mailbox full”, it’s storage, not identity.','Mail Admin › Mailbox Admin › select the mailbox.','Approved remedies: enable the online archive, or raise the quota to 10 GB for executive mailboxes.','Send a test message to confirm delivery.']},
+ {id:'kb8', cat:'Security', title:'Suspicious inbox forwarding rules', tools:['Mail Admin'], rel:['INC-1049'],
+  steps:['A rule that forwards all mail outside the organization is a compromise indicator.','Inspect the rule (Mail Admin › Inbox Rules › View details) and note its name, condition, target and creation time.','Do not delete it: Security needs it as evidence and will contain the account.','Escalate the ticket to Security with the evidence in your notes.']},
+ {id:'kb9', cat:'Server', title:'Print jobs stuck for everyone', tools:['Server Room'], rel:['INC-1050'],
+  steps:['If every printer is stuck, suspect the print server, not a printer.','Server Room › Servers › PRINT01 › Services.','Restart the Print Spooler service.','Send a test page to confirm jobs flow.']},
+ {id:'kb10', cat:'Network', title:'VPN profile invalid', tools:['Remote Desktop'], rel:['INC-1051'],
+  steps:['If home internet works but company resources don’t, look at the VPN client.','The Northstar-Legacy profile points to a retired gateway. Select Northstar-Staff.','Connect, then verify by opening a mapped drive or pinging FILE01.']}
+];
+
+function ws(host, owner, floor, tag, serial, opts){
+  return Object.assign({host, owner, floor, tag, serial, model:'Northbook 14 laptop', warranty:'2027-06-30', state:'In use',
+    site: floor ? 'Floor '+floor : 'Remote', power:true, remote:false, netOk:false,
+    wifi:{profiles:[{ssid:'Northstar-Staff', broken:false}], connected:'Northstar-Staff'},
+    vpn:{profile:'Northstar-Staff', connected:false}}, opts||{});
+}
+function user(id, name, dept, title, floor, ext, host, groups, extra){
+  return Object.assign({id, name, dept, title, floor, ext, email:name.toLowerCase().replace(' ','.')+'@northstar.example', host,
+    groups:['Domain Users'].concat(groups), enabled:true, locked:false, pwdExpired:false, mustChange:false, mfa:true,
+    lastSignIn:'Today 08:02', tokenStale:false, signInOk:false, manager:'Dana Okafor'}, extra||{});
+}
+function seed(){
+  return {
+    v:1,
+    profile:{name:'Technician', points:0, firstRun:true},
+    settings:{hints:true, split:true},
+    users:{
+      mchen:    user('mchen','Maya Chen','Finance','Payroll Specialist',2,'4421','NS-FIN-014',['Finance-Share'],{locked:true, lastSignIn:'Sep 26, 17:42'}),
+      ebrooks:  user('ebrooks','Evan Brooks','Sales','Account Executive',1,'3108','NS-SALES-008',['Sales-Share'],{locked:true, pwdExpired:true, lastSignIn:'Yesterday 17:55'}),
+      pshah:    user('pshah','Priya Shah','Human Resources','HR Coordinator',1,'3315','NS-HR-003',['HR-Share']),
+      lmartinez:user('lmartinez','Leo Martinez','Support','Support Analyst',2,'4207','NS-SUP-002',['Support-Share']),
+      jprice:   user('jprice','Jordan Price','Operations','Operations Lead',1,'3520','NS-OPS-021',['Operations-Share']),
+      awilson:  user('awilson','Avery Wilson','Executive Office','Chief of Staff',2,'4010','NS-EXEC-001',['Executive-Share'],{manager:'Board office'})
+    },
+    workstations:{
+      'NS-FIN-014':  ws('NS-FIN-014','mchen',2,'NSA-2014','NB14-55821'),
+      'NS-SALES-008':ws('NS-SALES-008','ebrooks',1,'NSA-1008','NB14-55107',{remote:true, site:'Remote (home)', vpn:{profile:'Northstar-Legacy', connected:false}, wifi:{profiles:[{ssid:'Brooks-Home-5G', broken:false}], connected:'Brooks-Home-5G'}}),
+      'NS-HR-003':   ws('NS-HR-003','pshah',1,'NSA-1003','NB14-54980'),
+      'NS-SUP-002':  ws('NS-SUP-002','lmartinez',2,'NSA-2002','NB14-55002'),
+      'NS-OPS-021':  ws('NS-OPS-021','jprice',1,'NSA-1021','NB14-55690',{wifi:{profiles:[{ssid:'Northstar-Staff', broken:true}], connected:null}}),
+      'NS-EXEC-001': ws('NS-EXEC-001','awilson',2,'NSA-2001','NB14-55990',{warranty:'2028-01-31'}),
+      'NS-MKT-011':  ws('NS-MKT-011',null,3,'NSA-3011','NB14-54412',{model:'Desk 24 workstation', site:'Floor 3 · hot desk'}),
+      'NS-MKT-012':  ws('NS-MKT-012',null,3,'NSA-3012','NB14-54413',{model:'Desk 24 workstation', site:'Floor 3 · hot desk', warranty:'2026-03-31'})
+    },
+    net:{
+      devices:{
+        isp:{id:'isp', name:'MetroFiber ISP', kind:'isp', ip:'—', loc:'External provider', status:'online', up:2810, latency:15},
+        edge:{id:'edge', name:'Edge Router', kind:'router', ip:'10.0.0.1', loc:'Server Room A', status:'online', up:1210},
+        fw:{id:'fw', name:'Main Firewall', kind:'firewall', ip:'10.0.0.254', loc:'Server Room A', status:'online', up:1210},
+        sw1:{id:'sw1', name:'Floor 1 Switch', kind:'switch', ip:'10.0.1.1', loc:'Server Room A', status:'online', up:860, floor:1},
+        sw2:{id:'sw2', name:'Floor 2 Switch', kind:'switch', ip:'10.0.2.1', loc:'Server Room A', status:'online', up:860, floor:2},
+        sw3:{id:'sw3', name:'Floor 3 Switch', kind:'switch', ip:'10.0.3.1', loc:'Server Room B', status:'offline', up:0, floor:3},
+        ap1:{id:'ap1', name:'Lobby Wi-Fi AP', kind:'ap', ip:'10.0.10.1', loc:'Lobby', status:'online', up:430},
+        ap2:{id:'ap2', name:'Cafe Wi-Fi AP', kind:'ap', ip:'10.0.10.2', loc:'Cafe', status:'online', up:430},
+        prn1:{id:'prn1', name:'PRN-F1-01', kind:'printer', ip:'10.0.1.50', loc:'Floor 1 copy room', status:'online', up:200},
+        prn2:{id:'prn2', name:'PRN-F2-01', kind:'printer', ip:'10.0.2.50', loc:'Floor 2 copy room', status:'online', up:200}
+      },
+      servers:{
+        DC01:{id:'DC01', role:'Domain Controller', ip:'10.0.0.10', cpu:22, mem:59, up:1440, services:{'Directory Service':'running','DNS Server':'running'}},
+        DC02:{id:'DC02', role:'Domain Controller', ip:'10.0.0.11', cpu:19, mem:55, up:1440, services:{'Directory Service':'running','DNS Server':'running'}},
+        FILE01:{id:'FILE01', role:'File Server', ip:'10.0.0.20', cpu:44, mem:72, up:960, services:{'File Sharing (SMB)':'running','Shadow Copies':'running'}},
+        MAIL01:{id:'MAIL01', role:'Mail Server', ip:'10.0.0.25', cpu:56, mem:78, up:960, services:{'Mail Transport':'running','Content Filter':'running'}},
+        PRINT01:{id:'PRINT01', role:'Print Server', ip:'10.0.0.30', cpu:42, mem:64, up:300, services:{'Print Spooler':'stopped','Print Web Portal':'running'}, testPageOk:false}
+      }
+    },
+    mail:{
+      mailboxes:{
+        mchen:{quotaGB:5, usedGB:2.1, archive:false, retention:'Standard (2 years)', enabled:true, testOk:false},
+        ebrooks:{quotaGB:5, usedGB:3.4, archive:true, retention:'Standard (2 years)', enabled:true, testOk:false},
+        pshah:{quotaGB:5, usedGB:1.8, archive:false, retention:'HR (7 years)', enabled:true, testOk:false},
+        lmartinez:{quotaGB:5, usedGB:1.2, archive:false, retention:'Standard (2 years)', enabled:true, testOk:false},
+        jprice:{quotaGB:5, usedGB:2.7, archive:false, retention:'Standard (2 years)', enabled:true, testOk:false},
+        awilson:{quotaGB:5, usedGB:4.95, archive:false, retention:'Executive (7 years)', enabled:true, testOk:false}
+      },
+      messages:[
+        {id:'m1', time:'09:02', from:'onboarding@brightpath-staffing.example', to:'priya.shah@northstar.example', subject:'Onboarding pack – October starters (spreadsheet)', status:'Quarantined', detail:'Held by the content filter: strict attachment policy', verified:false},
+        {id:'m2', time:'08:55', from:'board.office@harborline.example', to:'avery.wilson@northstar.example', subject:'Board pack draft v3', status:'Failed', detail:'550 5.2.2 Recipient mailbox full'},
+        {id:'m3', time:'08:41', from:'travel@northstar.example', to:'avery.wilson@northstar.example', subject:'Itinerary update – Thursday', status:'Failed', detail:'550 5.2.2 Recipient mailbox full'},
+        {id:'m4', time:'08:31', from:'it-news@northstar.example', to:'all-staff@northstar.example', subject:'Patch window Thursday 19:00', status:'Delivered', detail:'Delivered to 512 mailboxes'},
+        {id:'m5', time:'09:06', from:'evan.brooks@northstar.example', to:'orders@clientco.example', subject:'Quote follow-up', status:'Pending', detail:'Deferred: remote server busy, retrying in 5 minutes'},
+        {id:'m6', time:'08:12', from:'payroll@northstar.example', to:'maya.chen@northstar.example', subject:'Payroll run checklist', status:'Delivered', detail:'Delivered to inbox'},
+        {id:'m7', time:'07:58', from:'secure-docs@paylink-verify.example', to:'priya.shah@northstar.example', subject:'Action required: verify your payroll account', status:'Quarantined', detail:'Held by the content filter: phishing'},
+        {id:'m8', time:'09:10', from:'support-team@northstar.example', to:'leo.martinez@northstar.example', subject:'Rota for next week', status:'Delivered', detail:'Delivered to inbox (copy forwarded by rule to external-archive@outside.example)'},
+        {id:'m9', time:'07:44', from:'deals@cruise-prizes.example', to:'jordan.price@northstar.example', subject:'You have won a cruise!!!', status:'Quarantined', detail:'Held by the content filter: bulk spam'}
+      ],
+      quarantine:[
+        {id:'q1', msg:'m1', reason:'Strict attachment policy (score 5.1)', kind:'policy', state:'held'},
+        {id:'q2', msg:'m7', reason:'Phishing: credential-harvest link (score 9.6)', kind:'phish', state:'held'},
+        {id:'q3', msg:'m9', reason:'Bulk spam (score 8.2)', kind:'spam', state:'held'}
+      ],
+      rules:[
+        {id:'r1', box:'lmartinez', name:'.', cond:'All incoming messages', action:'Forward a copy to external-archive@outside.example, mark as read', external:true, created:'Oct 9, 02:14 from an unrecognized web session', inspected:false, deleted:false},
+        {id:'r2', box:'lmartinez', name:'Team rota', cond:'From support-team@northstar.example', action:'Move to folder “Team”', external:false, created:'Mar 3, 10:20', inspected:false, deleted:false},
+        {id:'r3', box:'awilson', name:'Board mail', cond:'From *@harborline.example', action:'Flag as important', external:false, created:'Jan 15, 09:00', inspected:false, deleted:false}
+      ]
+    },
+    tickets:Object.fromEntries(TICKETS.map(t=>[t.ref,{status:t.after?'waiting':'open', assignee:null, hints:0, checked:false, notes:[], penalties:{}, result:null}])),
+    log:[],
+    ui:{view:'dash', ticket:null, tool:null, pane:'tool', tab:{}, q:{}, sel:{}, drafts:{}, flash:null, rdp:null, term:{}, trace:null, past:null}
+  };
+}
+
+/* =====================================================================
+   2. STATE + PERSISTENCE — one root object S, saved to localStorage.
+   ===================================================================== */
+const KEY = 'deskops-lab-v1';
+let S, memoryOnly = false, bootNote = null;
+function validSave(s){
+  return s && s.v===1 && s.users && s.workstations && s.net && s.mail && s.ui && s.profile && s.tickets &&
+    TICKETS.every(t=>s.tickets[t.ref]);
+}
+function load(){
+  let raw;
+  try { raw = localStorage.getItem(KEY); } catch(e){ memoryOnly = true; return seed(); }
+  if (!raw) return seed();
+  try { const s = JSON.parse(raw); if (validSave(s)) return s; } catch(e){}
+  bootNote = 'Saved progress couldn’t be read, so a fresh shift was started.';
+  return seed();
+}
+function save(){
+  if (memoryOnly) return;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ memoryOnly = true; document.getElementById('memNote').classList.remove('hide'); }
+}
+
+/* ===== small helpers ===== */
+const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const now = () => new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+const msg = (s,id) => s.mail.messages.find(m=>m.id===id);
+const rule = (s,id) => s.mail.rules.find(r=>r.id===id);
+const first = name => name.split(' ')[0];
+const canReceive = mb => mb.enabled && mb.usedGB < mb.quotaGB*0.98;
+const canSignIn = u => u.enabled && !u.locked && !u.pwdExpired;
+const serverHealthy = srv => Object.values(srv.services).every(v=>v==='running');
+const devById = (s,id) => s.net.devices[id];
+const fmtUp = h => h<=0 ? '0h' : (h>=24 ? Math.floor(h/24)+'d '+(h%24)+'h' : h+'h');
+const userByEmail = (s,email) => Object.values(s.users).find(u=>u.email===email);
+function reqInfo(T){
+  if (T.req){ const u=S.users[T.req]; return {name:u.name, dept:u.dept, loc:'Floor '+u.floor, ext:u.ext, email:u.email}; }
+  return {name:T.reqName, dept:T.reqDept, loc:T.reqLoc, ext:T.reqExt, email:T.reqEmail};
+}
+/* Whether a workstation is reachable and has internal (company network) access. */
+function netState(s, w){
+  if (!w.power) return {up:false, internal:false, why:'Powered off'};
+  if (w.remote) return {up:true, internal:w.vpn.connected, why:w.vpn.connected?'Connected over VPN':'Off-site — VPN not connected'};
+  const d = s.net.devices;
+  if (d.edge.status!=='online' || d.fw.status!=='online') return {up:false, internal:false, why:'Core network (edge router / firewall) is down'};
+  const sw = Object.values(d).find(x=>x.kind==='switch' && x.floor===w.floor);
+  if (sw && sw.status!=='online') return {up:false, internal:false, why:`Unreachable: ${sw.name} is down`};
+  const wifiOk = w.wifi.connected==='Northstar-Staff';
+  return {up:true, internal:wifiOk, why: wifiOk ? 'On the office network' : (w.wifi.connected ? 'On guest Wi-Fi (no internal access)' : 'Wi-Fi disconnected')};
+}
+
+/* =====================================================================
+   3. ENV MUTATORS — pure functions of the state `s` (no DOM, no globals).
+   Each returns a short feedback string. The UI calls them through act().
+   ===================================================================== */
+let tempSeq = 4800;
+const ENV = {
+  unlock(s,id){ const u=s.users[id]; u.locked=false; u.signInOk=false;
+    return `${u.name}’s account is unlocked.` + (u.pwdExpired?' The password is still expired.':''); },
+  lock(s,id){ const u=s.users[id]; u.locked=true; u.signInOk=false; return `${u.name}’s account is now locked.`; },
+  enable(s,id){ const u=s.users[id]; u.enabled=true; u.signInOk=false; return `${u.name}’s account is enabled.`; },
+  disable(s,id){ const u=s.users[id]; u.enabled=false; u.signInOk=false; return `${u.name}’s account is disabled. They can’t sign in.`; },
+  resetPassword(s,id,must){ const u=s.users[id]; u.pwdExpired=false; u.mustChange=!!must; u.signInOk=false;
+    return `Temporary password Lab-Temp-${++tempSeq} issued to ${first(u.name)}` + (must?' (must change at next sign-in).':'.') +
+      (u.locked?' The account is still locked: a password reset doesn’t clear a lockout.':''); },
+  resetMfa(s,id){ const u=s.users[id]; u.mfa=false; u.signInOk=false; return `${u.name}’s MFA registration was cleared. They’ll re-enrol at next sign-in.`; },
+  sendCode(s,id){ return `A one-time verification code was sent to ${first(s.users[id].name)}’s registered phone (simulated).`; },
+  testSignIn(s,id){ const u=s.users[id];
+    const why = !u.enabled?'the account is disabled':u.locked?'the account is locked':u.pwdExpired?'the password has expired':null;
+    u.signInOk = !why;
+    return why ? `Sign-in test failed: ${why}.` : `Sign-in test passed for ${u.id}` + (u.mustChange?'. They’ll be asked to choose a new password.':'.'); },
+  addGroup(s,id,g){ const u=s.users[id]; if (!u.groups.includes(g)) u.groups.push(g); u.tokenStale=true;
+    return `${u.id} added to ${g}. It applies after ${first(u.name)} signs in again.`; },
+  removeGroup(s,id,g){ const u=s.users[id]; u.groups=u.groups.filter(x=>x!==g); u.tokenStale=true;
+    return `${u.id} removed from ${g}.`; },
+  refreshSession(s,id){ const u=s.users[id];
+    if (!canSignIn(u)) return `${first(u.name)} tried to sign back in but couldn’t: ${!u.enabled?'account disabled':u.locked?'account locked':'password expired'}.`;
+    u.tokenStale=false; return `${first(u.name)} signed out and back in. Group changes now apply to the session.`; },
+
+  checkIsp(s){ const d=s.net.devices.isp; return `MetroFiber reports the circuit ${d.status==='online'?'online · '+d.latency+' ms latency':'down'}.`; },
+  reboot(s,id){ const d=devById(s,id); d.status='online'; d.up=0;
+    if (d.kind==='printer' && !svcUp(s,'PRINT01','Print Spooler')) return `${d.name} restarted. Jobs are still waiting in the PRINT01 queue.`;
+    if (d.kind==='router'||d.kind==='firewall') return `${d.name} restarted. Every floor dropped for about two minutes.`;
+    return `${d.name} restarted and reports Online.`; },
+  on(s,id){ const d=devById(s,id); d.status='online'; d.up=0; return `${d.name} powered on and reports Online.`; },
+  off(s,id){ const d=devById(s,id); d.status='offline'; return `${d.name} powered off.` + (d.kind==='switch'?` Floor ${d.floor} lost its network.`:''); },
+  restartService(s,srv,name){ const x=s.net.servers[srv]; x.services[name]='running'; if (srv==='PRINT01') x.testPageOk=false;
+    return `${name} restarted on ${srv} and is Running.`; },
+  stopService(s,srv,name){ const x=s.net.servers[srv]; x.services[name]='stopped'; if (srv==='PRINT01') x.testPageOk=false;
+    return `${name} stopped on ${srv}.`; },
+  rebootServer(s,srv){ const x=s.net.servers[srv]; Object.keys(x.services).forEach(k=>x.services[k]='running'); x.up=0; if (srv==='PRINT01') x.testPageOk=false;
+    return `${srv} rebooted. All services started.`; },
+  testPage(s){ const x=s.net.servers.PRINT01;
+    if (!svcUp(s,'PRINT01','Print Spooler')) { x.testPageOk=false; return 'Test page is stuck in the queue: the Print Spooler isn’t running.'; }
+    x.testPageOk=true; return 'Test page printed on PRN-F1-01.'; },
+
+  forgetWifi(s,host,ssid){ const w=s.workstations[host]; w.wifi.profiles=w.wifi.profiles.filter(p=>p.ssid!==ssid);
+    if (w.wifi.connected===ssid) w.wifi.connected=null; w.netOk=false; return `Saved profile “${ssid}” removed from ${host}.`; },
+  connectWifi(s,host,ssid){ const w=s.workstations[host]; let p=w.wifi.profiles.find(x=>x.ssid===ssid); w.netOk=false;
+    if (p && p.broken) { w.wifi.connected=null; return `Can’t connect to ${ssid}: authentication failed with the saved profile.`; }
+    if (!p) w.wifi.profiles.push(p={ssid, broken:false});
+    w.wifi.connected=ssid; return `${host} connected to ${ssid}.` + (ssid==='Northstar-Guest'?' Guest Wi-Fi has internet only.':''); },
+  disconnectWifi(s,host){ const w=s.workstations[host]; w.wifi.connected=null; w.netOk=false; return `${host} disconnected from Wi-Fi.`; },
+  vpnProfile(s,host,p){ const w=s.workstations[host]; w.vpn.profile=p; w.vpn.connected=false; w.netOk=false; return `VPN profile set to ${p}.`; },
+  vpnConnect(s,host){ const w=s.workstations[host]; w.netOk=false;
+    if (w.vpn.profile==='Northstar-Legacy') { w.vpn.connected=false; return 'Connection failed: profile invalid. Gateway vpn-legacy.northstar.example has been retired.'; }
+    w.vpn.connected=true; return `VPN connected with ${w.vpn.profile}. Internal address 10.8.0.14.`; },
+  vpnDisconnect(s,host){ const w=s.workstations[host]; w.vpn.connected=false; w.netOk=false; return 'VPN disconnected.'; },
+  openShare(s,host,path){ const w=s.workstations[host], u=s.users[w.owner], sh=SHARES.find(x=>x.path===path), n=netState(s,w);
+    if (!n.internal) return `The network path ${path} wasn’t found. ` + (w.remote?'Connect the VPN first.':'Check the network connection.');
+    if (!canSignIn(u)) return `${path}: the user’s credentials were rejected.`;
+    if (!svcUp(s,'FILE01','File Sharing (SMB)')) return `${path}: FILE01 isn’t responding.`;
+    if (!u.groups.includes(sh.group) || u.tokenStale) return `${path}: Access is denied.`;
+    w.netOk=true; return `Opened ${path}.`; },
+  /* Terminal: an allowlist of fictional commands with scripted output. Nothing reaches the host OS. */
+  term(s,host,line){
+    const w=s.workstations[host], n=netState(s,w), owner=w.owner||'kiosk';
+    const [cmd, ...args] = line.trim().split(/\s+/); const c=(cmd||'').toLowerCase(), a=(args[0]||'').toLowerCase();
+    const ip = w.remote ? '192.168.1.23' : `10.0.${w.floor}.${40+Number(w.tag.slice(-2))}`;
+    if (!c) return [];
+    if (c==='help') return ['Lab commands: ipconfig, ping <host>, nslookup <host>, whoami, hostname, gpupdate /force, sfc /scannow, cls'];
+    if (c==='whoami') return [`northstar\\${owner}`];
+    if (c==='hostname') return [host];
+    if (c==='ipconfig') {
+      const out = [`Wireless adapter Wi-Fi:`];
+      if (w.wifi.connected) out.push(`   SSID . . . . . . . . . : ${w.wifi.connected}`, `   IPv4 Address . . . . . : ${w.wifi.connected==='Northstar-Guest'?'172.20.4.18':ip}`, `   Default Gateway  . . . : ${w.remote?'192.168.1.1':w.wifi.connected==='Northstar-Guest'?'172.20.4.1':'10.0.0.1'}`);
+      else out.push('   Media State  . . . . . : Media disconnected');
+      if (w.remote || w.vpn.connected) out.push('', 'VPN adapter Northstar:', w.vpn.connected?'   IPv4 Address . . . . . : 10.8.0.14':'   Media State  . . . . . : Media disconnected');
+      return out;
+    }
+    if (c==='ping' || c==='nslookup') {
+      if (!a) return [`Usage: ${c} <host>`];
+      const target = HOSTS[a] ? HOSTS[a] : (/^\d+\.\d+\.\d+\.\d+$/.test(a) ? a : null);
+      if (!target) return [`${c==='ping'?'Ping request could not find host':'*** Can’t find'} ${a}.`];
+      const internal = target.startsWith('10.');
+      const devDown = Object.values(s.net.devices).some(d=>d.ip===target && d.status!=='online');
+      const reach = n.up && (internal ? n.internal && !devDown : (w.remote || w.wifi.connected));
+      if (c==='nslookup') return reach||!internal ? [`Name:    ${a}`, `Address: ${target}`] : ['DNS request timed out.'];
+      if (!reach) return [`Pinging ${target} with 32 bytes of data:`, 'Request timed out.', 'Request timed out.', 'Request timed out.', `Packets: Sent = 3, Received = 0 (100% loss)`];
+      if (internal) w.netOk = true;
+      return [`Pinging ${target} with 32 bytes of data:`, ...[3,2,4].map(t=>`Reply from ${target}: bytes=32 time=${t+(w.remote?18:0)}ms TTL=64`), 'Packets: Sent = 3, Received = 3 (0% loss)'];
+    }
+    if (c==='gpupdate') return n.internal ? ['Updating policy...', 'Computer Policy update has completed successfully.', 'User Policy update has completed successfully.'] : ['Updating policy...', 'The processing of policy failed: the domain controller could not be reached.'];
+    if (c==='sfc') return ['Beginning system scan...', 'Verification 100% complete.', 'System File Checker did not find any integrity violations.'];
+    return [`'${cmd}' — Command not recognized in this lab. Type help for the list.`];
+  },
+
+  trace(s,f){ const res = s.mail.messages.filter(m=>
+      (!f.who || (m.from+' '+m.to).toLowerCase().includes(f.who.toLowerCase())) && (!f.status || m.status===f.status) && (!f.time || m.time>=f.time));
+    res.forEach(m=>{ if (m.id==='m1' && m.status==='Delivered') m.verified=true; });
+    return res.map(m=>m.id); },
+  release(s,qid){ const q=s.mail.quarantine.find(x=>x.id===qid), m=msg(s,q.msg); q.state='released'; m.status='Delivered'; m.verified=false;
+    m.detail='Released from quarantine and delivered to inbox';
+    return q.kind==='phish' ? `Released “${m.subject}” to ${m.to}. A credential-phishing message is now in a user’s inbox.` : `Released “${m.subject}”. Delivered to ${m.to}.`; },
+  keepBlocked(s,qid){ const q=s.mail.quarantine.find(x=>x.id===qid); q.state='blocked'; return 'Decision recorded: message stays blocked.'; },
+  reportQ(s,qid){ const q=s.mail.quarantine.find(x=>x.id===qid); q.state='blocked'; q.reported=true; return 'Message kept blocked and reported to the Security team.'; },
+  enableArchive(s,id){ const m=s.mail.mailboxes[id]; if (m.archive) return 'The archive is already enabled.';
+    m.archive=true; m.usedGB=Math.round(m.usedGB*0.45*100)/100; m.testOk=false;
+    return `Online archive enabled. Older items moved, mailbox now at ${m.usedGB} GB of ${m.quotaGB} GB.`; },
+  setQuota(s,id,gb){ const m=s.mail.mailboxes[id]; m.quotaGB=gb; m.testOk=false; return `Quota set to ${gb} GB.`; },
+  testMail(s,id){ const m=s.mail.mailboxes[id];
+    if (!canReceive(m)) { m.testOk=false; return 'Test message bounced: 550 5.2.2 Recipient mailbox full.'; }
+    m.testOk=true; return `Test message delivered to ${s.users[id].email}.`; },
+  inspectRule(s,id){ const r=rule(s,id); r.inspected=true; return `Opened details for rule “${r.name}”.`; },
+  deleteRule(s,id){ const r=rule(s,id); r.deleted=true; return `Rule “${r.name}” deleted.`; },
+  setAsset(s,host,field,val){ s.workstations[host][field]=val; return `${host}: ${field==='state'?'state':'location'} set to ${val}.`; }
+};
+
+/* =====================================================================
+   4. SCENARIOS — per-ticket objective checks over shared state.
+   ===================================================================== */
+function check(s, ref){
+  const T=TK[ref], done=[], todo=[];
+  T.obj.forEach(o=>{ (o.ok(s)?done:todo).push(o); });
+  return {done:done.map(o=>o.done), todo:todo.map(o=>o.todo), complete:todo.length===0};
+}
+const isResolved = (s, ref) => s.tickets[ref].status==='assigned' && check(s,ref).complete;
+function statusWord(ref){ const t=S.tickets[ref];
+  if (isResolved(S,ref)) return 'Resolved';
+  return {open:'Open', assigned:'Assigned', closed:'Closed', escalated:'Escalated', waiting:'Not arrived'}[t.status]; }
+
+/* =====================================================================
+   5. LIFECYCLE + SCORING
+   ===================================================================== */
+function notesBonus(T, notes){
+  const n=(notes||'').toLowerCase(); let b=0;
+  if (n.length>=40) b++;
+  if (T.keys.some(k=>n.includes(k))) b++;
+  if (/verif|confirm|test/.test(n)) b++;
+  return b;
+}
+/* mode: 'close' | 'escalate'. Returns {lines:[[label,pts]], total, outcome}. */
+function scoreFor(s, ref, mode, notes){
+  const T=TK[ref], t=s.tickets[ref], P=PRI[T.pri], lines=[]; let outcome;
+  if (mode==='escalate' && !T.security){ lines.push(['Routine escalation (work not needing Security)', -8]); outcome='Escalated'; }
+  else if (mode==='escalate' || check(s,ref).complete){
+    lines.push([`${P.w} ticket resolved`, P.pts]);
+    if (mode==='escalate'){ const r=rule(s,'r1'); if (r.inspected && !r.deleted) lines.push(['Correct security escalation', 12]); outcome='Routed to Security'; }
+    else outcome='Resolved';
+    const nb=notesBonus(T,notes); if (nb) lines.push(['Resolution notes', nb]);
+  } else { lines.push([`Closed while unresolved (${P.w})`, -P.pen]); outcome='Closed unresolved'; }
+  Object.values(t.penalties).forEach(([p,why])=>lines.push([why,-p]));
+  const raw=lines.reduce((a,l)=>a+l[1],0), total=Math.max(-20,Math.min(42,raw));
+  if (total!==raw) lines.push(['Ticket score cap (−20…+42)', total-raw]);
+  return {lines, total, outcome};
+}
+function arrivals(s){
+  TICKETS.forEach(T=>{ const t=s.tickets[T.ref];
+    if (t.status==='waiting' && ['closed','escalated'].includes(s.tickets[T.after].status)){
+      t.status='open'; if (T.arrive) T.arrive(s);
+      logEntry(s,'Service Desk',T.ref,`New ticket ${T.ref} arrived: ${T.title}`,null); } });
+}
+function logEntry(s, tool, entity, text, ref){
+  s.log.unshift({t:now(), tool, entity, text, ref});
+  if (s.log.length>400) s.log.length=400;
+}
+function finishTicket(ref, mode, notes){
+  const t=S.tickets[ref], sc=scoreFor(S,ref,mode,notes);
+  t.status = mode==='escalate' ? 'escalated' : 'closed';
+  t.result = {mode, outcome:sc.outcome, lines:sc.lines, total:sc.total, notes, at:now(), model:TK[ref].model};
+  S.profile.points += sc.total;
+  logEntry(S,'Service Desk',ref,`${ref} ${mode==='escalate'?'escalated to Security':'closed'} · ${sc.outcome} · ${sc.total>=0?'+':''}${sc.total} pts`,ref);
+  delete S.ui.drafts[ref];
+  arrivals(S);
+  return sc;
+}
+
+/* =====================================================================
+   6. VIEWS — template strings rendered from S. render() rebuilds #app.
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const app = $('app'), dlg = $('dlg');
+const IC = { // original line icons (24px viewBox)
+  directory:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M15 6h6M15 10h6M17 14h4"/>',
+  server:'<rect x="4" y="3.5" width="16" height="6" rx="1.2"/><rect x="4" y="13.5" width="16" height="6" rx="1.2"/><path d="M7.5 6.5h.01M7.5 16.5h.01M11 6.5h6M11 16.5h6"/>',
+  rdp:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4M8.5 10l2 2 4-4"/>',
+  mailadmin:'<rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+  mailsec:'<path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+  docs:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',
+  assets:'<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><path d="M13 16.5h7M16.5 13v7"/>',
+  wifi:'<path d="M3 9a13 13 0 0 1 18 0M6 12.5a8.5 8.5 0 0 1 12 0M9 16a4 4 0 0 1 6 0"/><circle cx="12" cy="19" r="1"/>',
+  vpn:'<rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  files:'<path d="M3 6h7l2 2h9v11H3z"/>',
+  term:'<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9l3 3-3 3M12 15h5"/>'
+};
+const icon = (k, size=18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const TOOLS = {
+  directory:{name:'Directory', grp:'Infrastructure', desc:'Accounts, permissions and sign-in state'},
+  server:{name:'Server Room', grp:'Infrastructure', desc:'Network devices and shared services'},
+  rdp:{name:'Remote Desktop', grp:'Infrastructure', desc:'Connect to a user workstation'},
+  mailadmin:{name:'Mail Admin', grp:'Email', desc:'Message trace, mailboxes and inbox rules'},
+  mailsec:{name:'Mail Security', grp:'Email', desc:'Review and release quarantined mail'},
+  docs:{name:'Documentation', grp:'Knowledge', desc:'Search procedures and troubleshooting notes'},
+  assets:{name:'Asset Management', grp:'Management', desc:'Hardware register: owners, tags and state'}
+};
+const byPri = (a,b) => PRI[a.pri].rank-PRI[b.pri].rank || a.created.localeCompare(b.created);
+const priTag = p => `<span class="pri ${p}">${PRI[p].w}</span>`;
+const stat = (ok, word, warn) => `<span class="st ${ok?'ok':warn?'warn':'bad'}">${word}</span>`;
+const kv = rows => `<dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+const tab = (group, id, label) => `<button class="tab ${curTab(group)===id?'on':''}" data-act="tab" data-id="${group}" data-arg="${id}" aria-pressed="${curTab(group)===id}">${label}</button>`;
+const curTab = (g, d) => S.ui.tab[g] || d || TABDEF[g];
+const TABDEF = {dir:'auth', srv:'overview', mail:'trace', split:'tool'};
+
+function render(){
+  const a = document.activeElement;
+  const sig = el => el.dataset.key || (el.dataset.act ? `${el.dataset.act}|${el.dataset.id||''}|${el.dataset.arg||''}` : '');
+  const key = a && app.contains(a) ? sig(a) : '', pos = a && a.selectionStart;
+  if (S.ui.view==='ticket' && ['closed','escalated'].includes(S.tickets[S.ui.ticket].status)) { S.ui.view='past'; S.ui.past=S.ui.ticket; }
+  app.innerHTML = VIEW[S.ui.view]();
+  $('pts').textContent = `${S.profile.points.toLocaleString()} pts`;
+  $('who').textContent = S.profile.name;
+  $('navDash').classList.toggle('on', S.ui.view==='dash');
+  if (key) {
+    const n = [...app.querySelectorAll('[data-key],[data-act]')].find(e=>sig(e)===key);
+    if (n) { n.focus({preventScroll:true}); try { if (pos!=null && n.setSelectionRange) n.setSelectionRange(pos,pos); } catch(e){} }
+  }
+  save();
+}
+
+/* ----- Dashboard ----- */
+function qrow(T){
+  const r=reqInfo(T);
+  return `<button class="qrow" data-act="open" data-id="${T.ref}">
+    <span><span class="mono" style="color:var(--blue)">${T.ref}</span><span class="t">${esc(T.title)}</span><span class="muted small">${esc(r.name)} · ${esc(r.dept)} · ${esc(T.cat)}</span></span>
+    ${priTag(T.pri)}<span class="chev" aria-hidden="true">›</span></button>`;
+}
+function systems(){
+  const d=S.net.devices, sv=S.net.servers, sw=['sw1','sw2','sw3'].filter(k=>d[k].status==='online').length;
+  const rows=[
+    ['Internet / ISP', d.isp.status==='online', d.isp.status==='online'?'Online':'Down'],
+    ['Core network', d.edge.status==='online'&&d.fw.status==='online', d.edge.status==='online'&&d.fw.status==='online'?'Healthy':'Down'],
+    ['Floor switches', sw===3, `${sw}/3 online`],
+    ['Directory services', serverHealthy(sv.DC01)&&serverHealthy(sv.DC02), 'Healthy'],
+    ['Mail service', serverHealthy(sv.MAIL01), serverHealthy(sv.MAIL01)?'Healthy':'Degraded'],
+    ['Print service', serverHealthy(sv.PRINT01), serverHealthy(sv.PRINT01)?'Healthy':'Degraded']];
+  return rows.map(([n,ok,w])=>`<div class="svc"><span class="dot ${ok?'ok':'bad'}"></span><span>${n}</span>${stat(ok,w)}</div>`).join('');
+}
+function vDash(){
+  const open=TICKETS.filter(T=>S.tickets[T.ref].status==='open').sort(byPri);
+  const mine=TICKETS.filter(T=>S.tickets[T.ref].status==='assigned').sort(byPri);
+  const closed=TICKETS.filter(T=>['closed','escalated'].includes(S.tickets[T.ref].status)).length;
+  const h=new Date().getHours(), greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  const queue = open.length ? open.map(qrow).join('') :
+    `<div class="empty">${mine.length?'No unclaimed incidents. Finish the tickets in My Queue.':'All available incidents are cleared. Nice shift.'}<br><button class="btn" style="margin-top:12px" data-act="go" data-id="past">Review Past Tickets</button></div>`;
+  return `<div class="wrap">
+    <div class="label">Northstar Office Group / Service Desk</div>
+    <h1 style="margin-top:6px">${greet}, ${esc(first(S.profile.name))}</h1>
+    <p class="muted">${S.profile.points} points · ${closed} ticket${closed===1?'':'s'} closed this shift. Pick an incident and work it through.</p>
+    <div class="dash">
+      <section class="card" aria-labelledby="qh">
+        <div class="hd qhead"><div><div class="label blue">Ticket queue</div><h2 id="qh">Incidents</h2></div><span class="label">${open.length} open</span></div>
+        <div class="row label" style="padding:10px 20px;border-bottom:1px solid var(--line)"><span>Reference / issue</span><span class="spacer"></span><span style="margin-right:34px">Priority</span></div>
+        ${queue}
+      </section>
+      <aside>
+        <section class="card"><div class="hd"><div class="label blue">My queue</div><h2>Assigned to you</h2></div>
+          <div class="bd">${mine.length ? mine.map(T=>`<div style="margin-bottom:12px"><b>${T.ref} · ${esc(T.title)}</b><div class="muted small">${esc(reqInfo(T).name)} · ${PRI[T.pri].w} · ${statusWord(T.ref)}</div>
+            <button class="btn primary sm" style="margin-top:6px" data-act="open" data-id="${T.ref}">Continue ticket</button></div>`).join('')
+            : '<p class="muted">Nothing assigned yet. Open an incident and select <b>Assign to me</b>.</p>'}</div></section>
+        <section class="card"><div class="hd"><div class="label blue">Systems overview</div><h2>Service health</h2></div><div class="bd">${systems()}
+          <button class="linkbtn small" data-act="tool" data-id="server">Open Server Room</button></div></section>
+        <section class="card"><div class="hd"><div class="label blue">Recent activity</div></div><div class="bd">
+          ${S.log.length ? S.log.slice(0,6).map(l=>`<div class="act-item"><span class="mono muted">${l.t}</span> ${esc(l.text)}</div>`).join('') : '<p class="muted small">No actions yet this shift.</p>'}</div></section>
+      </aside>
+    </div></div>`;
+}
+
+/* ----- Ticket ----- */
+function objectivesHtml(ref){
+  const t=S.tickets[ref];
+  if (!t.checked) return '<p class="muted small">Run <b>Check fix</b> to see which requirements are met.</p>';
+  const c=check(S,ref);
+  return `<ul class="objs">${c.done.map(x=>`<li><span class="ck y">✓</span><span>${esc(x)}</span></li>`).join('')}${c.todo.map(x=>`<li><span class="ck"></span><span>${esc(x)}</span></li>`).join('')}</ul>
+    <p class="muted small">${c.complete?'All requirements met. Review your work and close the ticket.':'Next: '+esc(c.todo[0])+'.'} This list updates live.</p>`;
+}
+function hintsHtml(ref){
+  if (!S.settings.hints) return '';
+  const T=TK[ref], n=S.tickets[ref].hints;
+  return `<ol class="hints">${T.hints.slice(0,n).map(h=>`<li>${esc(h)}</li>`).join('')}</ol>
+    ${n>T.hints.length ? `<div class="note"><b>Model answer.</b> ${esc(T.model)}</div>` : ''}
+    ${n<=T.hints.length ? `<button class="linkbtn small" data-act="hint" data-id="${ref}">${n<T.hints.length?`Show hint ${n+1} of ${T.hints.length}`:'Show model answer'}</button>` : ''}
+    <p class="muted small">Hints don’t affect your score.</p>`;
+}
+function ticketLog(ref){
+  const T=TK[ref], t=S.tickets[ref], r=reqInfo(T);
+  const items=[...S.log.filter(l=>l.ref===ref).map(l=>({t:l.t, text:`${l.tool}: ${l.text}`})), ...t.notes.map(n=>({t:n.t, text:'Work note: '+n.text}))].reverse();
+  return `<ul class="log"><li class="sys"><span class="tm">${T.created}</span><span>Ticket opened by ${esc(r.name)}</span></li>
+    ${items.length ? items.map(i=>`<li><span class="tm">${i.t}</span><span>${esc(i.text)}</span></li>`).join('') : '<li class="sys"><span class="tm">—</span><span class="muted">No technician actions yet</span></li>'}</ul>`;
+}
+function vTicket(){
+  const ref=S.ui.ticket, T=TK[ref], t=S.tickets[ref], r=reqInfo(T), mine=t.status==='assigned', resolved=isResolved(S,ref);
+  const ini=S.profile.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<div class="wrap">
+    <div class="row"><button class="linkbtn" data-act="go" data-id="dash">‹ Dashboard</button><span class="spacer"></span>
+      <button class="btn sm" popovertarget="optPop">Options ···</button>
+      <div id="optPop" popover class="menu" style="width:230px">
+        ${mine?`<button data-act="escalateDlg" data-id="${ref}">Escalate to Security</button><button data-act="unclaim" data-id="${ref}">Return to queue</button>`
+              :`<button data-act="claim" data-id="${ref}">Assign to me</button>`}
+        <button data-act="go" data-id="past">Past tickets</button></div></div>
+    <div class="thead" style="margin-top:12px"><span class="mono" style="color:var(--blue)">${ref}</span>${priTag(T.pri)}<span class="chip ${resolved?'ok':mine?'blue':''}">${statusWord(ref)}</span></div>
+    <h1 class="ttitle">${esc(T.title)}</h1>
+    <div class="row"><span class="label" style="margin-right:8px">Assignee</span>
+      ${mine?`<span class="avatar">${esc(ini)}</span><span>${esc(S.profile.name)}</span><button class="btn sm" data-act="unclaim" data-id="${ref}">Return to queue</button>`
+            :`<span class="muted">Unassigned</span><button class="btn primary sm" data-act="claim" data-id="${ref}">Assign to me</button>`}</div>
+    ${resolved?`<div class="banner ok" role="status"><b>Solution complete.</b><span>Every requirement is met. Review your work, then close the ticket.</span></div>`:''}
+    <div class="tgrid">
+      <div>
+        <section class="card"><div class="bd two">
+          <div><div class="label blue">Requester</div><h3 style="font-size:18px;margin:6px 0 4px">${esc(r.name)}</h3>
+            <div class="muted small">${esc(r.dept)} · ${esc(r.loc)} · Ext. ${esc(r.ext)}</div><div class="muted small">${esc(r.email)}</div></div>
+          <div><div class="label">Affected asset</div><div style="font-weight:600;margin:6px 0 2px" class="mono">${esc(T.asset)}</div><div class="muted small">${esc(T.assetType)}</div>
+            <div class="label" style="margin-top:12px">Category</div><div>${esc(T.cat)}</div></div></div></section>
+        <section class="card"><div class="bd"><div class="label blue">Description</div>
+          <p style="font-size:15px;margin-top:8px">“${esc(T.desc)}”</p>
+          <div class="label" style="margin-top:14px">Business impact</div><p>${esc(T.impact)}</p>
+          <div class="label" style="margin-top:14px">Already tried</div><p class="muted">${esc(T.tried)}</p></div></section>
+        <section class="card"><div class="bd"><div class="label blue">Activity / work notes</div>${ticketLog(ref)}
+          <label class="label" for="noteIn" style="display:block;margin-top:14px">Add a work note</label>
+          <div class="row" style="margin-top:6px;flex-wrap:nowrap"><input type="text" id="noteIn" data-key="noteIn" maxlength="300" placeholder="What you found or did" style="flex:1"><button class="btn sm" data-act="addNote" data-id="${ref}">Add</button></div></div></section>
+      </div>
+      <div>
+        <section class="card"><div class="bd"><div class="label blue">Troubleshooting</div><h3 style="font-size:18px;margin:6px 0">Work the evidence</h3>
+          <div class="row" style="margin-top:10px"><button class="btn primary" popovertarget="toolsPop">Open Tools</button><button class="btn" data-act="checkFix" data-id="${ref}">Check fix</button></div>
+          ${hintsHtml(ref)}</div></section>
+        <section class="card"><div class="bd"><div class="label blue">Required outcome</div>${objectivesHtml(ref)}</div></section>
+        <section class="card"><div class="bd"><div class="row"><button class="btn primary" data-act="closeDlg" data-id="${ref}" ${mine?'':'disabled'}>Close ticket</button>
+          <button class="btn" data-act="escalateDlg" data-id="${ref}" ${mine?'':'disabled'}>Escalate to Security</button></div>
+          <p class="muted small" style="margin-top:8px">${mine?'Only close after verifying the fix.':'Assign the ticket to yourself to close or escalate it.'}</p></div></section>
+      </div></div></div>`;
+}
+/* Compact ticket column shown beside a tool (split view). */
+function ticketSide(ref){
+  const T=TK[ref], r=reqInfo(T), t=S.tickets[ref];
+  return `<section class="card"><div class="bd">
+    <div class="row"><span class="mono" style="color:var(--blue)">${ref}</span>${priTag(T.pri)}<span class="chip">${statusWord(ref)}</span></div>
+    <h2 class="ttitle">${esc(T.title)}</h2>
+    <div class="small muted">${esc(r.name)} · ${esc(r.dept)} · <span class="mono">${esc(T.asset)}</span></div>
+    <p style="margin-top:10px">“${esc(T.desc)}”</p>
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="checkFix" data-id="${ref}">Check fix</button><button class="btn sm" data-act="open" data-id="${ref}">Open ticket</button></div>
+    ${t.status==='assigned'?'':'<p class="small muted">Not assigned to you yet.</p>'}
+    <div class="label blue" style="margin-top:14px">Required outcome</div>${objectivesHtml(ref)}${hintsHtml(ref)}</div></section>`;
+}
+
+/* ----- Tool shell (with optional split view) ----- */
+function vTool(){
+  const k=S.ui.tool, tool=TOOLS[k], fl=S.ui.flash && S.ui.flash.tool===tool.name ? S.ui.flash : null;
+  const consoleHtml = `<section class="console" aria-labelledby="th">
+    <div class="chd"><button class="linkbtn" data-act="go" data-id="dash">‹ Dashboard</button><h2 id="th"><span class="tico">${icon(k)}</span>${tool.name}</h2>
+      <span class="spacer"></span><span class="label">Local lab · simulated</span></div>
+    ${fl?`<div class="flash" role="status">${esc(fl.text)}</div>`:''}
+    ${CONSOLE[k]()}</section>`;
+  const ref=S.ui.ticket, live = ref && ['open','assigned'].includes(S.tickets[ref].status);
+  if (!live || !S.settings.split) return `<div class="wrap">${consoleHtml}</div>`;
+  const pane=curTab('split');
+  return `<div class="wrap"><div class="split pane-${pane}">
+    <div class="split-tabs tabs" role="group" aria-label="Show">${tab('split','ticket','Ticket')}${tab('split','tool',tool.name)}</div>
+    <div class="tside">${ticketSide(ref)}</div><div class="tmain">${consoleHtml}</div></div></div>`;
+}
+
+/* ----- Past tickets ----- */
+function vPast(){
+  const done=TICKETS.filter(T=>['closed','escalated'].includes(S.tickets[T.ref].status));
+  const sel=done.find(T=>T.ref===S.ui.past) || done[0];
+  const list = done.length ? `<table><thead><tr><th>Ticket</th><th>Outcome</th><th>Points</th></tr></thead><tbody>${done.map(T=>{ const r=S.tickets[T.ref].result;
+    return `<tr class="${sel&&sel.ref===T.ref?'sel':''}"><td><button class="linkbtn" data-act="pastSel" data-id="${T.ref}">${T.ref}</button><div class="small muted">${esc(T.title)}</div></td>
+      <td>${esc(r.outcome)}</td><td class="mono">${r.total>=0?'+':''}${r.total}</td></tr>`; }).join('')}</tbody></table>`
+    : '<div class="empty">No closed tickets yet. Closed and escalated tickets appear here with a model answer.</div>';
+  let detail='';
+  if (sel){ const t=S.tickets[sel.ref], r=t.result;
+    detail = `<div class="label blue">${sel.ref} · ${PRI[sel.pri].w}</div><h2 style="margin:6px 0">${esc(sel.title)}</h2>
+      <p><span class="chip ${r.outcome==='Closed unresolved'||r.outcome==='Escalated'?'bad':'ok'}">${esc(r.outcome)}</span> <span class="muted small">at ${r.at}</span></p>
+      <div class="prev">${r.lines.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p>=0?'+':''}${p}</span></div>`).join('')}<div class="tot"><span>Total</span><span class="mono">${r.total>=0?'+':''}${r.total}</span></div></div>
+      <div class="label" style="margin-top:14px">Your resolution notes</div><p>${r.notes?esc(r.notes):'<span class="muted">None recorded.</span>'}</p>
+      <div class="label" style="margin-top:14px">Model answer</div><div class="note">${esc(sel.model)}</div>
+      <div class="label" style="margin-top:14px">Action log</div>${ticketLog(sel.ref)}`; }
+  return `<div class="wrap"><button class="linkbtn" data-act="go" data-id="dash">‹ Dashboard</button><h1 style="margin:8px 0 16px">Past tickets</h1>
+    <div class="tgrid" style="grid-template-columns:minmax(0,380px) minmax(0,1fr)"><section class="card"><div class="tablewrap">${list}</div></section>
+    <section class="card"><div class="bd">${detail||'<p class="muted">Select a ticket to review it.</p>'}</div></section></div></div>`;
+}
+const VIEW = {dash:vDash, ticket:vTicket, tool:vTool, past:vPast};
+
+/* ----- Dialogs, toasts, menus ----- */
+let pendingConfirm = null;
+function openDlg(html){ dlg.innerHTML=html; if (!dlg.open) dlg.showModal(); const f=dlg.querySelector('textarea,input,.btn.primary,.btn.danger'); if (f) f.focus(); }
+function closeDlg(){ if (dlg.open) dlg.close(); }
+function confirmDlg(title, body, ok, danger, fn){
+  pendingConfirm=fn;
+  openDlg(`<div class="dh"><h2 id="dlgTitle">${esc(title)}</h2></div><div class="db">${body}</div>
+    <div class="df"><button class="btn" data-act="dlgCancel">Cancel</button><button class="btn ${danger?'danger solid':'primary'}" data-act="confirmOk">${esc(ok)}</button></div>`);
+}
+function toast(text, kind){
+  const el=document.createElement('div'); el.className='toast '+(kind||''); el.textContent=text; $('toasts').appendChild(el);
+  setTimeout(()=>el.remove(), 5000);
+}
+const prevHtml = sc => sc.lines.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p>=0?'+':''}${p}</span></div>`).join('') +
+  `<div class="tot"><span>Points if you confirm</span><span class="mono">${sc.total>=0?'+':''}${sc.total}</span></div>`;
+function closeDialog(ref){
+  const c=check(S,ref), draft=S.ui.drafts[ref]||'', sc=scoreFor(S,ref,'close',draft);
+  openDlg(`<div class="dh"><h2 id="dlgTitle">Close ${ref}</h2></div><div class="db">
+    ${c.complete?'<div class="note ok"><b>Solution complete.</b> Every requirement is met.</div>'
+      :`<div class="note bad"><b>This ticket still appears unresolved.</b><ul style="margin:6px 0 0;padding-left:18px">${c.todo.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`}
+    <label class="label" for="closeNotes">Resolution notes (optional, up to 600 characters)</label>
+    <textarea id="closeNotes" rows="4" maxlength="600" data-bind="draft" data-id="${ref}" placeholder="What was wrong, what you changed, how you verified it">${esc(draft)}</textarea>
+    <div class="small muted" id="cnt">${draft.length}/600</div>
+    <div class="prev" id="prev">${prevHtml(sc)}</div></div>
+    <div class="df"><button class="btn" data-act="dlgCancel">Cancel</button>
+      <button class="btn ${c.complete?'primary':'danger solid'}" id="closeGo" data-act="doClose" data-id="${ref}">${c.complete?'Close ticket':'Close anyway'}</button></div>`);
+}
+function escalateDialog(ref){
+  const T=TK[ref], draft=S.ui.drafts[ref]||'', sc=scoreFor(S,ref,'escalate',draft);
+  openDlg(`<div class="dh"><h2 id="dlgTitle">Escalate ${ref} to Security</h2></div><div class="db">
+    <p class="muted">Security takes ownership of the ticket. Use this for suspected compromise, not routine fixes.</p>
+    <label class="label" for="closeNotes">Evidence for Security (required)</label>
+    <textarea id="closeNotes" rows="4" maxlength="600" data-bind="draft" data-id="${ref}" data-esc="1" placeholder="What you found: account, rule, addresses, times">${esc(draft)}</textarea>
+    <div class="small muted" id="cnt">${draft.length}/600 · at least 15 characters</div>
+    <div class="prev" id="prev">${prevHtml(sc)}</div></div>
+    <div class="df"><button class="btn" data-act="dlgCancel">Cancel</button><button class="btn primary" id="closeGo" data-act="doEscalate" data-id="${ref}" ${draft.trim().length<15?'disabled':''}>Escalate</button></div>`);
+}
+function guideDialog(welcome){
+  openDlg(`<div class="dh"><h2 id="dlgTitle">${welcome?'Welcome to your first shift':'Shift guide'}</h2></div><div class="db">
+    <p>You’re on the service desk at <b>Northstar Office Group</b>. Every account, device and mailbox here is simulated, so nothing you do touches a real system.</p>
+    <ol class="steps"><li>Pick an incident from the queue and select <b>Assign to me</b>.</li><li>Read the evidence, then open <b>Tools</b> to investigate.</li>
+      <li>Make the fix in the right console. <b>Check fix</b> shows what’s still missing.</li><li>Close the ticket with short notes. Security cases get escalated instead.</li></ol>
+    <p class="muted small">Hints are free. Closing unresolved tickets, risky changes and needless escalations cost points.</p>
+    ${welcome?`<label class="label" for="nameIn">Your display name</label><input type="text" id="nameIn" data-bind="name" value="${esc(S.profile.name)}" maxlength="40" style="width:100%">`:''}</div>
+    <div class="df"><button class="btn primary" data-act="${welcome?'startShift':'dlgCancel'}">${welcome?'Start shift':'Got it'}</button></div>`);
+}
+function renderMenus(){
+  const groups=['Infrastructure','Email','Knowledge','Management'];
+  $('toolsPop').innerHTML = `<div class="toolsgrid">${groups.map(g=>`<div class="grp"><div class="label">${g}</div>${Object.entries(TOOLS).filter(([,t])=>t.grp===g)
+    .map(([k,t])=>`<button data-act="tool" data-id="${k}"><span class="tico">${icon(k)}</span><span><span class="tn">${t.name}</span><span class="td">${t.desc}</span></span></button>`).join('')}</div>`).join('')}</div>`;
+  $('profPop').innerHTML = `<div class="label">Local technician</div>
+    <label for="profName" class="small muted" style="display:block;margin:8px 0 2px">Display name</label><input type="text" id="profName" data-bind="name" value="${esc(S.profile.name)}" maxlength="40" style="width:100%">
+    <label><input type="checkbox" data-bind="hints" ${S.settings.hints?'checked':''}> Show hint buttons</label>
+    <label><input type="checkbox" data-bind="split" ${S.settings.split?'checked':''}> Keep the ticket beside tools</label>
+    <div style="border-top:1px solid var(--line);margin:8px -14px 0;padding:6px 4px 0">
+      <button data-act="go" data-id="past">Past tickets</button><button data-act="guide">Shift guide</button><button data-act="resetDlg" style="color:var(--crit)">Reset progress…</button></div>
+    <div class="label" style="margin-top:8px">Local lab · all systems simulated</div>`;
+}
+
+/* ----- Consoles. Each reads shared state S; mutations go through act(). ----- */
+const btn = (act, id, arg, label, cls='', extra='') => `<button class="btn sm ${cls}" data-act="${act}" data-id="${esc(id)}" data-arg="${esc(arg)}" ${extra}>${label}</button>`;
+const search = (key, ph, label) => `<input type="search" data-bind="q" data-id="${key}" data-key="q-${key}" value="${esc(S.ui.q[key]||'')}" placeholder="${ph}" aria-label="${label}">`;
+
+function cDirectory(){
+  const q=(S.ui.q.dir||'').toLowerCase();
+  const users=Object.values(S.users).filter(u=>!q || [u.name,u.id,u.email].some(x=>x.toLowerCase().includes(q)));
+  const u=S.users[S.ui.sel.dir], t=curTab('dir');
+  const list=`<div>${search('dir','Name, username or email','Search directory')}<ul class="ulist">${users.map(x=>`<li><button class="${u&&u.id===x.id?'on':''}" data-act="sel" data-id="dir" data-arg="${x.id}">${esc(x.name)}<small>${x.id} · ${esc(x.dept)}</small></button></li>`).join('')||'<li class="muted small">No matching accounts.</li>'}</ul></div>`;
+  if (!u) return `<div class="dir">${list}<div></div><div><p class="muted">Search for a person and select them to view their account.</p></div></div>`;
+  const rail=`<div class="vtabs" role="group" aria-label="Account sections">${[['profile','Profile'],['groups','Groups'],['licenses','Licenses'],['devices','Devices'],['auth','Authentication'],['mailbox','Mailbox']]
+    .map(([k,l])=>`<button class="${t===k?'on':''}" data-act="tab" data-id="dir" data-arg="${k}" aria-pressed="${t===k}">${l}</button>`).join('')}</div>`;
+  let pane='';
+  if (t==='profile') pane=kv([['Display name',esc(u.name)],['Username',`<span class="mono">${u.id}</span>`],['Email',esc(u.email)],['Title',esc(u.title)],['Department',esc(u.dept)],['Location',`Floor ${u.floor} · Ext. ${u.ext}`],['Manager',esc(u.manager)]]);
+  if (t==='auth') pane=kv([
+      ['Account', u.enabled?stat(1,'Enabled'):stat(0,'Disabled')], ['Lockout', u.locked?stat(0,'Locked'):stat(1,'Not locked')],
+      ['Password', (u.pwdExpired?stat(0,'Expired'):stat(1,'Current')) + (u.mustChange?' <span class="chip">Must change at next sign-in</span>':'')],
+      ['MFA', u.mfa?stat(1,'Enrolled'):stat(0,'Not enrolled',1)], ['Last sign-in', esc(u.lastSignIn)], ['Last sign-in test', u.signInOk?stat(1,'Passed'):'<span class="muted">Not run since last change</span>']]) +
+    `<div class="row">${u.locked?btn('dir',u.id,'unlock','Unlock account','primary'):btn('dir',u.id,'lock','Lock account')}
+      ${u.enabled?btn('dir',u.id,'disable','Disable account','danger'):btn('dir',u.id,'enable','Enable account')}
+      ${btn('dir',u.id,'resetPassword','Reset password…')}${btn('dir',u.id,'resetMfa','Reset MFA…')}${btn('dir',u.id,'sendCode','Send verification code')}${btn('dir',u.id,'testSignIn','Test sign-in')}</div>`;
+  if (t==='groups'){ const others=GROUPS.filter(g=>!u.groups.includes(g));
+    pane=`<table><thead><tr><th>Group</th><th></th></tr></thead><tbody>${u.groups.map(g=>`<tr><td>${g}</td><td style="text-align:right">${g==='Domain Users'?'<span class="muted small">Required</span>':btn('dirGroup',u.id,'remove:'+g,'Remove')}</td></tr>`).join('')}</tbody></table>
+      ${others.length?`<div class="row" style="margin-top:12px"><label class="small muted" for="grpSel">Add to group</label><select id="grpSel" data-key="grpSel">${others.map(g=>`<option>${g}</option>`).join('')}</select>${btn('dirGroup',u.id,'add','Add')}</div>`:''}
+      ${u.tokenStale?`<div class="note warn">Group changes apply after ${esc(first(u.name))} signs in again. ${btn('dir',u.id,'refreshSession','Ask user to sign out & back in')}</div>`:''}`; }
+  if (t==='licenses') pane=`<table><tbody>${['Northstar Office Suite (Standard)','Mail & Calendar','Endpoint Protection'].map(l=>`<tr><td>${l}</td><td>${stat(1,'Assigned')}</td></tr>`).join('')}</tbody></table>`;
+  if (t==='devices'){ const w=S.workstations[u.host], n=netState(S,w);
+    pane=`<table><thead><tr><th>Hostname</th><th>Model</th><th>Status</th></tr></thead><tbody><tr><td class="mono">${w.host}</td><td>${esc(w.model)}</td><td>${stat(n.up, n.up?'Online':'Offline')} <span class="small muted">${esc(n.why)}</span></td></tr></tbody></table>`; }
+  if (t==='mailbox'){ const m=S.mail.mailboxes[u.id], fw=S.mail.rules.filter(r=>r.box===u.id && r.external && !r.deleted).length;
+    pane=kv([['Mailbox', m.enabled?stat(1,'Enabled'):stat(0,'Disabled')],['Storage', `${m.usedGB} GB of ${m.quotaGB} GB <div class="bar ${canReceive(m)?'':'hot'}" style="max-width:240px;margin-top:4px"><i style="width:${Math.min(100,m.usedGB/m.quotaGB*100)}%"></i></div>`],
+      ['Archive', m.archive?'Enabled':'Not enabled'],['Delivery', canReceive(m)?stat(1,'Receiving'):stat(0,'Blocked: over quota')]]) +
+      (fw?`<div class="note warn">${fw} inbox rule forwards mail outside the organization. Review it in Mail Admin › Inbox Rules.</div>`:'<p class="muted small">Inbox rules are managed in Mail Admin.</p>'); }
+  return `<div class="dir">${list}${rail}<div><div class="label blue">${esc(u.dept)}</div><h3 style="font-size:18px;margin:4px 0 8px">${esc(u.name)} <span class="mono muted">${u.id}</span></h3>${pane}</div></div>`;
+}
+
+function devActions(d){
+  if (d.kind==='isp') return btn('dev',d.id,'checkIsp','Check ISP status');
+  return d.status==='online' ? btn('dev',d.id,'reboot','Reboot')+btn('dev',d.id,'off','Power off') : btn('dev',d.id,'on','Power on','primary');
+}
+function topology(){
+  const d=S.net.devices, sv=S.net.servers, healthy=Object.values(sv).filter(serverHealthy).length;
+  const node=(id,x,y,name,sub,ok,warn)=>`<g class="node" data-act="${id==='servers'?'tab':'selDev'}" data-id="${id==='servers'?'srv':id}" ${id==='servers'?'data-arg="servers"':''} role="button" tabindex="0" aria-label="${name}, ${sub}">
+    <rect x="${x-62}" y="${y-24}" width="124" height="48" rx="6" fill="${ok?'#fff':warn?'#fdf6ea':'#fdf0f0'}" stroke="${ok?'#9fd3ec':warn?'#d9a64a':'#d98a8e'}" ${S.ui.sel.dev===id?'stroke-width="2.5"':''}/>
+    <text x="${x}" y="${y-4}" text-anchor="middle" font-size="12" font-weight="600" fill="#20252B">${name}</text>
+    <text x="${x}" y="${y+12}" text-anchor="middle" font-size="10" letter-spacing="1" fill="${ok?'#1F7A54':warn?'#94600F':'#B4363C'}">${sub.toUpperCase()}</text></g>`;
+  const up=x=>x.status==='online', line=(x1,y1,x2,y2,ok)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${ok?'#9fd3ec':'#d98a8e'}" stroke-width="2" ${ok?'':'stroke-dasharray="5 4"'}/>`;
+  const bottom=[['sw1',80],['sw2',210],['sw3',340],['ap1',470],['ap2',600]];
+  return `<svg class="topo" viewBox="0 0 800 400" role="group" aria-label="Network topology">
+    ${line(400,54,400,71,true)}${line(400,119,400,136,up(d.isp))}${line(400,184,400,201,up(d.edge))}
+    ${bottom.map(([id,x])=>line(400,249,x,316,up(d.fw)&&up(d[id]))).join('')}${line(400,249,720,316,up(d.fw))}
+    <g><rect x="345" y="10" width="110" height="40" rx="20" fill="#EDF8FE" stroke="#9fd3ec"/><text x="400" y="35" text-anchor="middle" font-size="12" font-weight="600" fill="#20252B">Internet</text></g>
+    ${node('isp',400,95,'MetroFiber ISP',d.isp.status,up(d.isp))}${node('edge',400,160,'Edge Router',d.edge.status,up(d.edge))}${node('fw',400,225,'Main Firewall',d.fw.status,up(d.fw))}
+    ${bottom.map(([id,x])=>node(id,x,340,d[id].name,d[id].status,up(d[id]))).join('')}
+    ${node('servers',720,340,'Servers',`${healthy}/5 healthy`,healthy===5,true)}</svg>`;
+}
+function cServer(){
+  const d=S.net.devices, devs=Object.values(d), sv=Object.values(S.net.servers), t=curTab('srv');
+  const online=devs.filter(x=>x.status==='online').length, healthy=sv.filter(serverHealthy).length, f3=d.sw3.status!=='online';
+  const core=d.edge.status==='online'&&d.fw.status==='online';
+  let body='';
+  if (t==='overview') body=`<div class="stats">
+      <div class="stat"><div class="label">ISP · MetroFiber</div><b>${d.isp.status==='online'?'Online':'Down'}</b><span class="small muted">${d.isp.latency} ms latency</span></div>
+      <div class="stat"><div class="label">Network load</div><b>${core?36:0}%</b>${core&&online===devs.length?stat(1,'All clear'):stat(0,'Segment down')}</div>
+      <div class="stat"><div class="label">Devices</div><b>${online} / ${devs.length}</b>${stat(online===devs.length,'Online')}</div>
+      <div class="stat"><div class="label">Servers</div><b>${healthy} / ${sv.length}</b>${stat(healthy===sv.length,'Healthy',1)}</div></div>
+    <div class="two" style="margin-top:18px"><div><div class="label blue">Device status</div>${devs.map(x=>`<div class="svc"><span class="dot ${x.status==='online'?'ok':'bad'}"></span><span>${x.name}<br><span class="small muted">${x.loc} · ${x.ip}</span></span>${stat(x.status==='online',x.status)}</div>`).join('')}</div>
+      <div><div class="label blue">Servers · CPU / memory</div>${sv.map(x=>`<div style="padding:7px 0"><div class="row"><b>${x.id}</b><span class="small muted">${x.role}</span><span class="spacer"></span>${serverHealthy(x)?stat(1,'Healthy'):stat(0,'Service alert',1)}</div>
+        <div class="row small" style="flex-wrap:nowrap"><span style="width:34px">CPU</span><div class="bar" style="flex:1"><i style="width:${x.cpu}%"></i></div><span style="width:34px">${x.cpu}%</span></div>
+        <div class="row small" style="flex-wrap:nowrap"><span style="width:34px">MEM</span><div class="bar" style="flex:1"><i style="width:${x.mem}%"></i></div><span style="width:34px">${x.mem}%</span></div></div>`).join('')}</div></div>`;
+  if (t==='topology'){ const x=d[S.ui.sel.dev];
+    body=topology() + (x?`<div class="card" style="margin-top:12px"><div class="bd row"><b>${x.name}</b><span class="mono muted">${x.ip}</span><span class="muted small">${x.loc}</span>${stat(x.status==='online',x.status)}<span class="spacer"></span>${devActions(x)}</div></div>`
+      : '<p class="muted small" style="text-align:center">Select a device to see its actions.</p>'); }
+  if (t==='devices') body=`<div class="tablewrap"><table><thead><tr><th>Device</th><th>IP</th><th>Location</th><th>Uptime</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    ${devs.map(x=>`<tr><td><b>${x.name}</b></td><td class="mono">${x.ip}</td><td>${x.loc}</td><td class="mono">${x.status==='online'?fmtUp(x.up):'—'}</td><td>${stat(x.status==='online',x.status)}</td><td><div class="row">${devActions(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+  if (t==='servers') body=`<div class="tablewrap"><table><thead><tr><th>Server</th><th>Role</th><th>IP</th><th>Status</th><th>CPU</th><th>Memory</th><th>Actions</th></tr></thead><tbody>
+    ${sv.map(x=>{ const open=S.ui.sel.srv===x.id; return `<tr><td><b>${x.id}</b></td><td>${x.role}</td><td class="mono">${x.ip}</td><td>${serverHealthy(x)?stat(1,'Healthy'):stat(0,'Degraded',1)}</td>
+      <td><div class="bar"><i style="width:${x.cpu}%"></i></div><span class="small">${x.cpu}%</span></td><td><div class="bar"><i style="width:${x.mem}%"></i></div><span class="small">${x.mem}%</span></td>
+      <td><div class="row">${btn('sel','srv',open?'':x.id,open?'Hide services':'Services','',`aria-expanded="${open}"`)}${btn('srvAct',x.id,'reboot','Reboot')}${x.id==='PRINT01'?btn('srvAct',x.id,'testPage','Send test page'):''}</div></td></tr>
+      ${open?`<tr><td colspan="7" style="background:#fafbfc"><div class="label">Services on ${x.id}</div>${Object.entries(x.services).map(([n,v])=>`<div class="row" style="padding:5px 0"><span style="min-width:200px">${n}</span>${stat(v==='running',v)}<span class="spacer"></span>${v==='running'?btn('svc',x.id,n,'Restart')+btn('svc',x.id,'stop:'+n,'Stop'):btn('svc',x.id,n,'Start','primary')}</div>`).join('')}</td></tr>`:''}`; }).join('')}</tbody></table></div>`;
+  return `<div class="tabs">${tab('srv','overview','Overview')}${tab('srv','topology','Topology')}${tab('srv','devices','Devices')}${tab('srv','servers','Servers')}</div><div class="cbody">${body}</div>`;
+}
+
+const DRIVES = {'Finance-Share':'F:','Sales-Share':'S:','HR-Share':'H:','Support-Share':'T:','Operations-Share':'O:','Executive-Share':'X:','Domain Users':'P:'};
+const DEPT_GROUP = {'Finance':'Finance-Share','Sales':'Sales-Share','Human Resources':'HR-Share','Support':'Support-Share','Operations':'Operations-Share','Executive Office':'Executive-Share'};
+const APPS = {wifi:'Network & Wi-Fi', vpn:'VPN Client', files:'File Explorer', term:'Terminal'};
+function appBody(w, a){
+  const n=netState(S,w);
+  if (a==='wifi'){
+    if (w.remote) return `<p>Connected to <b>${esc(w.wifi.connected)}</b> (home network).</p><div class="note">This device is off-site. Company resources need the VPN Client.</div>`;
+    const avail=['Northstar-Staff','Northstar-Guest'].filter(x=>!w.wifi.profiles.some(p=>p.ssid===x));
+    return `<p>Status: ${w.wifi.connected?`connected to <b>${esc(w.wifi.connected)}</b>`:'<b>disconnected</b> (retrying)'} · ${esc(n.why)}</p>
+      <div class="label" style="margin-top:12px">Saved networks</div><table><tbody>${w.wifi.profiles.map(p=>`<tr><td><b>${esc(p.ssid)}</b><div class="small ${p.broken?'':'muted'}" style="${p.broken?'color:var(--down)':''}">${p.broken?'Can’t connect: saved security settings don’t match the network':w.wifi.connected===p.ssid?'Connected':'Saved'}</div></td>
+        <td style="text-align:right">${w.wifi.connected===p.ssid?btn('rdpAct',w.host,'disconnectWifi','Disconnect'):btn('rdpAct',w.host,'connectWifi:'+p.ssid,'Connect')}${btn('rdpAct',w.host,'forgetWifi:'+p.ssid,'Forget')}</td></tr>`).join('')||'<tr><td class="muted">No saved networks.</td></tr>'}</tbody></table>
+      ${avail.length?`<div class="label" style="margin-top:12px">Available networks</div><table><tbody>${avail.map(x=>`<tr><td>${x}</td><td style="text-align:right">${btn('rdpAct',w.host,'connectWifi:'+x,'Connect')}</td></tr>`).join('')}</tbody></table>`:''}`;
+  }
+  if (a==='vpn') return `<label class="small muted" for="vpnSel">Connection profile</label><div class="row" style="margin:4px 0 10px"><select id="vpnSel" data-bind="vpnProfile" data-id="${w.host}" data-key="vpnSel">${['Northstar-Legacy','Northstar-Staff'].map(p=>`<option ${w.vpn.profile===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      <p>Status: ${w.vpn.connected?stat(1,'Connected'):stat(0,'Disconnected',1)}</p>
+      <div class="row" style="margin-top:8px">${w.vpn.connected?btn('rdpAct',w.host,'vpnDisconnect','Disconnect'):btn('rdpAct',w.host,'vpnConnect','Connect','primary')}</div>
+      ${w.remote?'':'<p class="muted small">This device is on the office network and doesn’t normally need the VPN.</p>'}`;
+  if (a==='files'){ const u=S.users[w.owner]; if (!u) return '<p class="muted">Shared kiosk: no mapped drives.</p>';
+    const grps=[DEPT_GROUP[u.dept],'Domain Users'], open=S.ui.sel.share && SHARES.find(x=>x.path===S.ui.sel.share);
+    return `<table><thead><tr><th>Drive</th><th>Path</th><th></th></tr></thead><tbody><tr><td>C:</td><td>Local disk</td><td></td></tr>
+      ${grps.map(g=>SHARES.find(x=>x.group===g)).map(sh=>`<tr><td>${DRIVES[sh.group]}</td><td class="mono">${esc(sh.path)}</td><td style="text-align:right">${btn('rdpAct',w.host,'openShare:'+sh.path,'Open')}</td></tr>`).join('')}</tbody></table>
+      ${open?`<div class="label" style="margin-top:12px">${esc(open.path)}</div><ul>${open.files.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>`:''}`; }
+  if (a==='term'){ const lines=S.ui.term[w.host]||['DeskOps lab shell — type help for the command list.'];
+    return `<div class="term" aria-live="polite">${lines.map(esc).join('\n')}</div><div class="termin"><label for="termIn">${w.host}&gt;</label><input id="termIn" data-key="termIn" data-term="${w.host}" autocomplete="off" spellcheck="false"></div>`; }
+}
+function cRdp(){
+  const r=S.ui.rdp;
+  if (r){ const w=S.workstations[r.host], n=netState(S,w), owner=w.owner?S.users[w.owner].name:'Shared device';
+    const bar=`<div class="rdpbar"><b class="mono">${w.host}</b><span>${esc(owner)}</span><span>· ${esc(n.why)}</span><span class="spacer"></span><span class="mono">${now()}</span>
+      <button class="btn sm" data-act="rdpMax">${r.max?'Restore':'Maximize'}</button><button class="btn sm" data-act="rdpOff">Disconnect</button></div>`;
+    if (!n.up) return `<div class="cbody"><div class="rdp">${bar}<div class="desk"><div class="note bad">Connection lost: ${esc(n.why)}.</div></div></div></div>`;
+    return `<div class="cbody"><div class="rdp ${r.max?'max':''}">${bar}<div class="desk">
+      <div class="icons">${Object.entries(APPS).map(([k,l])=>`<button class="dicon" data-act="rdpApp" data-id="${k}"><span class="tico">${icon(k)}</span>${l}</button>`).join('')}</div>
+      ${r.app?`<div class="win" role="region" aria-label="${APPS[r.app]}"><div class="wt">${icon(r.app,16)}${APPS[r.app]}<span class="spacer"></span><button class="btn sm" data-act="rdpApp" data-id="" aria-label="Close ${APPS[r.app]}">✕</button></div><div class="wb">${appBody(w,r.app)}</div></div>`:''}
+      <div class="taskbar"><span class="mono">▣</span>${Object.entries(APPS).map(([k,l])=>`<button class="tb ${r.app===k?'on':''}" data-act="rdpApp" data-id="${k}">${l}</button>`).join('')}<span class="spacer"></span><span>${now()}</span></div>
+      </div></div></div>`;
+  }
+  const q=(S.ui.q.rdp||'').toLowerCase();
+  const rows=Object.values(S.workstations).filter(w=>!q || [w.host,w.tag,w.owner?S.users[w.owner].name:''].some(x=>x.toLowerCase().includes(q)));
+  return `<div class="cbody">${search('rdp','Hostname, asset tag or owner','Search machines')}
+    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Hostname</th><th>Owner</th><th>Location</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.map(w=>{ const n=netState(S,w); return `<tr><td class="mono"><b>${w.host}</b><div class="small muted">${w.tag}</div></td><td>${w.owner?esc(S.users[w.owner].name):'<span class="muted">Shared</span>'}</td><td>${esc(w.site)}</td>
+      <td>${stat(n.up,n.up?'Online':'Offline')}<div class="small muted">${esc(n.why)}</div></td><td>${btn('rdpConnect',w.host,'','Connect',n.up?'primary':'',n.up?'':'disabled')}</td></tr>`; }).join('')||'<tr><td class="muted" colspan="5">No matching machines.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function cMailAdmin(){
+  const t=curTab('mail'), boxes=Object.keys(S.mail.mailboxes);
+  let body='';
+  if (t==='trace'){ const res=S.ui.trace?S.ui.trace.map(id=>msg(S,id)):null;
+    body=`<div class="mailpane"><label>Sender or recipient<input type="text" data-bind="q" data-id="traceWho" data-key="q-traceWho" value="${esc(S.ui.q.traceWho||'')}" placeholder="e.g. priya.shah"></label>
+      <label>Status<select data-bind="q" data-id="traceStatus" data-key="q-traceStatus">${['','Delivered','Pending','Quarantined','Failed'].map(x=>`<option value="${x}" ${S.ui.q.traceStatus===x?'selected':''}>${x||'Any status'}</option>`).join('')}</select></label>
+      <label>Received<select data-bind="q" data-id="traceTime" data-key="q-traceTime">${[['','Any time today'],['08:30','After 08:30'],['09:00','After 09:00']].map(([v,l])=>`<option value="${v}" ${S.ui.q.traceTime===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <span></span><button class="btn primary" data-act="trace">Search</button></div>
+      ${res?`<div class="tablewrap"><table><thead><tr><th>Time</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead><tbody>${res.map(m=>`<tr><td class="mono">${m.time}</td><td>${esc(m.from)}</td><td>${esc(m.to)}</td><td>${esc(m.subject)}<div class="small muted">${esc(m.detail)}</div></td>
+        <td><span class="chip ${m.status==='Delivered'?'ok':m.status==='Failed'?'bad':'warn'}">${m.status}</span></td></tr>`).join('')||'<tr><td colspan="5" class="muted">No messages match.</td></tr>'}</tbody></table></div>`:'<p class="muted">Set filters and select Search to trace messages.</p>'}`; }
+  if (t==='mailbox'){ const id=S.ui.sel.mb||'awilson', m=S.mail.mailboxes[id], u=S.users[id];
+    body=`<div class="row"><label class="small muted" for="mbSel">Mailbox</label><select id="mbSel" data-bind="sel" data-id="mb" data-key="mbSel">${boxes.map(b=>`<option value="${b}" ${b===id?'selected':''}>${esc(S.users[b].email)}</option>`).join('')}</select></div>
+      ${kv([['Owner',esc(u.name)],['Mailbox',m.enabled?stat(1,'Enabled'):stat(0,'Disabled')],['Storage',`${m.usedGB} GB of ${m.quotaGB} GB (${Math.round(m.usedGB/m.quotaGB*100)}%)<div class="bar ${canReceive(m)?'':'hot'}" style="max-width:280px;margin-top:4px"><i style="width:${Math.min(100,m.usedGB/m.quotaGB*100)}%"></i></div>`],
+        ['Delivery',canReceive(m)?stat(1,'Receiving'):stat(0,'Blocked: quota exceeded')],['Online archive',m.archive?'Enabled':'Not enabled'],['Retention policy',esc(m.retention)]])}
+      <div class="row">${btn('mb',id,'enableArchive','Enable online archive',m.archive?'':'primary',m.archive?'disabled':'')}
+        <label class="small muted" for="quotaSel">Quota</label><select id="quotaSel" data-key="quotaSel">${[5,10].map(g=>`<option value="${g}" ${m.quotaGB===g?'selected':''}>${g} GB${g===10?' (approved for executives)':''}</option>`).join('')}</select>${btn('mb',id,'setQuota','Apply quota')}
+        ${btn('mb',id,'testMail','Send test message')}</div>`; }
+  if (t==='rules'){ const id=S.ui.sel.rb||'lmartinez', rules=S.mail.rules.filter(r=>r.box===id && !r.deleted), open=rule(S,S.ui.sel.rule);
+    body=`<div class="row"><label class="small muted" for="rbSel">Mailbox</label><select id="rbSel" data-bind="sel" data-id="rb" data-key="rbSel">${boxes.map(b=>`<option value="${b}" ${b===id?'selected':''}>${esc(S.users[b].email)}</option>`).join('')}</select></div>
+      <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Rule</th><th>Condition</th><th>Action</th><th></th></tr></thead><tbody>
+      ${rules.map(r=>`<tr class="${open&&open.id===r.id?'sel':''}"><td><b>${esc(r.name)}</b>${r.external?'<div><span class="chip bad">Forwards outside org</span></div>':''}</td><td>${esc(r.cond)}</td><td>${esc(r.action)}</td>
+        <td><div class="row">${btn('rule',r.id,'inspect','View details')}${btn('rule',r.id,'delete','Delete','danger')}</div></td></tr>`).join('')||'<tr><td colspan="4" class="muted">No inbox rules on this mailbox.</td></tr>'}</tbody></table></div>
+      ${open&&open.box===id&&!open.deleted?`<div class="card" style="margin-top:12px"><div class="bd"><div class="label blue">Rule details</div>${kv([['Name',`“${esc(open.name)}”`],['Applies to',esc(open.cond)],['Action',esc(open.action)],['Created',esc(open.created)]])}
+        ${open.external?'<div class="note bad"><b>Security concern.</b> This rule silently copies all incoming mail to an external address. Preserve it as evidence and escalate the ticket to Security. Don’t treat it as housekeeping.</div>':''}</div></div>`:''}`; }
+  return `<div class="tabs">${tab('mail','trace','Message trace')}${tab('mail','mailbox','Mailbox admin')}${tab('mail','rules','Inbox rules')}</div><div class="cbody">${body}</div>`;
+}
+
+function cMailSec(){
+  const q=(S.ui.q.qs||'').toLowerCase();
+  const items=S.mail.quarantine.map(x=>({...x, m:msg(S,x.msg)})).filter(x=>!q || [x.m.from,x.m.to,x.m.subject].some(v=>v.toLowerCase().includes(q)));
+  return `<div class="cbody">${search('qs','Sender, recipient or subject','Search quarantine')}
+    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Received</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Reason</th><th>State</th></tr></thead><tbody>
+    ${items.map(x=>`<tr><td class="mono">${x.m.time}</td><td>${esc(x.m.from)}</td><td>${esc(x.m.to)}</td><td>${esc(x.m.subject)}</td><td><span class="chip ${x.kind==='phish'?'bad':'warn'}">${esc(x.reason)}</span></td>
+      <td>${x.state==='held'?`<div class="row">${btn('qAct',x.id,'release','Release',x.kind==='phish'?'danger':'')}${btn('qAct',x.id,'keepBlocked','Keep blocked')}${btn('qAct',x.id,'reportQ','Report to Security')}</div>`
+        : `<span class="chip ${x.state==='released'?'ok':''}">${x.state==='released'?'Released · Delivered':x.reported?'Blocked · Reported':'Blocked'}</span>`}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nothing matches.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function cDocs(){
+  const q=(S.ui.q.kb||'').toLowerCase();
+  const list=KB.filter(a=>!q || [a.title,a.cat,a.tools.join(' '),a.steps.join(' ')].some(x=>x.toLowerCase().includes(q)));
+  const a=KB.find(x=>x.id===S.ui.sel.kb) || list[0];
+  return `<div class="kb"><div>${search('kb','Search articles','Search documentation')}<ul class="ulist">${list.map(x=>`<li><button class="${a&&a.id===x.id?'on':''}" data-act="sel" data-id="kb" data-arg="${x.id}">${esc(x.title)}<small>${x.cat}</small></button></li>`).join('')||'<li class="muted small">No articles match.</li>'}</ul></div>
+    <div>${a?`<div class="label blue">${a.cat}</div><h3 style="font-size:19px;margin:4px 0 10px">${esc(a.title)}</h3><ol class="steps">${a.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+      <div class="row" style="margin-top:12px"><span class="label">Tools</span>${a.tools.map(t=>`<span class="chip blue">${t}</span>`).join('')}<span class="label" style="margin-left:10px">Related</span>${a.rel.map(r=>`<span class="chip">${r}</span>`).join('')}</div>`:'<p class="muted">No article selected.</p>'}</div></div>`;
+}
+
+function cAssets(){
+  const q=(S.ui.q.as||'').toLowerCase();
+  const rows=Object.values(S.workstations).filter(w=>!q || [w.host,w.tag,w.serial,w.owner?S.users[w.owner].name:''].some(x=>x.toLowerCase().includes(q)));
+  const sel=(host,field,opts,cur)=>`<select data-bind="asset" data-id="${host}" data-arg="${field}" data-key="as-${host}-${field}" aria-label="${field} for ${host}">${opts.map(o=>`<option ${o===cur?'selected':''}>${o}</option>`).join('')}</select>`;
+  return `<div class="cbody">${search('as','Tag, hostname, serial or owner','Search assets')}
+    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Asset tag</th><th>Hostname</th><th>Owner</th><th>Serial</th><th>Warranty</th><th>Location</th><th>State</th></tr></thead><tbody>
+    ${rows.map(w=>`<tr><td class="mono">${w.tag}</td><td class="mono">${w.host}<div class="small muted">${esc(w.model)}</div></td><td>${w.owner?esc(S.users[w.owner].name):'<span class="muted">Shared</span>'}</td><td class="mono">${w.serial}</td>
+      <td>${w.warranty}${w.warranty<new Date().toISOString().slice(0,10)?' <span class="chip bad">Expired</span>':''}</td>
+      <td>${sel(w.host,'site',[...new Set([w.site,'Floor 1','Floor 2','Floor 3','Remote (home)','IT storeroom'])],w.site)}</td><td>${sel(w.host,'state',['In use','Spare','In repair','Retired'],w.state)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No assets match.</td></tr>'}</tbody></table></div></div>`;
+}
+const CONSOLE = {directory:cDirectory, server:cServer, rdp:cRdp, mailadmin:cMailAdmin, mailsec:cMailSec, docs:cDocs, assets:cAssets};
+
+/* =====================================================================
+   7. EVENTS — one delegated click/input/keydown handler each.
+   All environment mutations funnel through act().
+   ===================================================================== */
+function act(tool, entity, action, fn){
+  const text = fn(S);
+  const ref = S.ui.ticket && S.tickets[S.ui.ticket].status==='assigned' ? S.ui.ticket : null;
+  if (text) { logEntry(S, tool, entity, text, ref); S.ui.flash = {tool, text}; }
+  const key = action+':'+entity;
+  TICKETS.forEach(T=>{ const p=T.penalties && T.penalties[key], t=S.tickets[T.ref];
+    if (p && t.status==='assigned' && !t.penalties[key]) { t.penalties[key]=p; toast(`${T.ref}: ${p[1]} (−${p[0]} pts at close)`, 'warn'); } });
+  render();
+}
+function hidePops(){ document.querySelectorAll('[popover]').forEach(p=>{ try { p.hidePopover(); } catch(e){} }); }
+const splitArg = a => { const i=a.indexOf(':'); return i<0 ? [a,''] : [a.slice(0,i), a.slice(i+1)]; };
+const danger = (title, body, ok, fn) => confirmDlg(title, `<p>${body}</p>`, ok, true, fn);
+
+const ACT = {
+  go(d){ S.ui.view=d.id; if (d.id==='dash') S.ui.ticket=null; hidePops(); render(); scrollTo(0,0); },
+  open(d){ S.ui.view='ticket'; S.ui.ticket=d.id; hidePops(); render(); scrollTo(0,0); },
+  tool(d){ S.ui.view='tool'; S.ui.tool=d.id; S.ui.flash=null; S.ui.tab.split='tool'; hidePops(); render(); scrollTo(0,0); },
+  tab(d){ S.ui.tab[d.id]=d.arg; render(); },
+  sel(d){ S.ui.sel[d.id]=d.arg; render(); },
+  selDev(d){ S.ui.sel.dev=d.id; render(); },
+  pastSel(d){ S.ui.past=d.id; render(); },
+  claim(d){ const t=S.tickets[d.id]; t.status='assigned'; t.assignee=S.profile.name; S.ui.ticket=d.id; hidePops();
+    logEntry(S,'Service Desk',d.id,`${d.id} assigned to ${S.profile.name}`,d.id); render(); },
+  unclaim(d){ const t=S.tickets[d.id]; t.status='open'; t.assignee=null; hidePops();
+    logEntry(S,'Service Desk',d.id,`${d.id} returned to the queue`,d.id); render(); },
+  hint(d){ S.tickets[d.id].hints++; render(); },
+  checkFix(d){ const t=S.tickets[d.id], c=check(S,d.id); t.checked=true;
+    toast(c.complete ? `${d.id}: all requirements met.` : `${d.id}: ${c.done.length} of ${c.done.length+c.todo.length} requirements met. ${c.todo[0]}.`); render(); },
+  addNote(d){ const v=$('noteIn').value.trim(); if (!v) return; S.tickets[d.id].notes.push({t:now(), text:v}); render(); },
+  closeDlg(d){ hidePops(); closeDialog(d.id); },
+  escalateDlg(d){ hidePops(); escalateDialog(d.id); },
+  doClose(d){ const sc=finishTicket(d.id,'close',S.ui.drafts[d.id]||''); closeDlg();
+    S.ui.view='past'; S.ui.past=d.id; S.ui.ticket=null; toast(`${d.id} closed · ${sc.outcome} · ${sc.total>=0?'+':''}${sc.total} pts`); render(); },
+  doEscalate(d){ const notes=S.ui.drafts[d.id]||''; if (notes.trim().length<15) return;
+    const sc=finishTicket(d.id,'escalate',notes); closeDlg(); S.ui.view='past'; S.ui.past=d.id; S.ui.ticket=null;
+    if (d.id==='INC-1049') { const r=rule(S,'r1'); if (!r.deleted) r.action+=' — disabled by Security, evidence preserved'; }
+    toast(`${d.id} escalated · ${sc.outcome} · ${sc.total>=0?'+':''}${sc.total} pts`); render(); },
+  dlgCancel(){ closeDlg(); },
+  confirmOk(){ const f=pendingConfirm; pendingConfirm=null; closeDlg(); if (f) f(); },
+  guide(){ hidePops(); guideDialog(false); },
+  startShift(){ closeDlg(); renderMenus(); render(); },
+  resetDlg(){ hidePops(); danger('Reset all progress?', 'This clears your points, ticket history and every change to the simulated environment, then starts a fresh shift. It can’t be undone.', 'Reset progress',
+    ()=>{ S=seed(); S.profile.firstRun=false; renderMenus(); render(); guideDialog(true); toast('Progress reset. Fresh shift started.'); }); },
+
+  dir(d){ const id=d.id, u=S.users[id], run=op=>act('Directory', id, op, s=>ENV[op](s,id));
+    if (d.arg==='disable') return danger(`Disable ${u.id}?`, `${esc(u.name)} won’t be able to sign in until the account is enabled again.`, 'Disable account', ()=>run('disable'));
+    if (d.arg==='resetMfa') return danger(`Reset MFA for ${u.id}?`, `Only do this after confirming the caller’s identity. ${esc(first(u.name))} will have to re-enrol a device at next sign-in.`, 'Reset MFA', ()=>run('resetMfa'));
+    if (d.arg==='resetPassword') return confirmDlg(`Reset password for ${u.id}`, `<p>A temporary lab password will be issued. No real password is set or stored.</p>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mustChk" checked> User must change password at next sign-in</label>`, 'Reset password', false,
+      ()=>{ const must=$('mustChk').checked; act('Directory', id, 'resetPassword', s=>ENV.resetPassword(s,id,must)); });
+    run(d.arg); },
+  dirGroup(d){ const [op,g]=splitArg(d.arg), grp = op==='add' ? $('grpSel').value : g;
+    act('Directory', d.id, op+'Group', s=>op==='add' ? ENV.addGroup(s,d.id,grp) : ENV.removeGroup(s,d.id,grp)); },
+  dev(d){ const x=S.net.devices[d.id], run=()=>act('Server Room', d.id, d.arg, s=>ENV[d.arg](s,d.id));
+    if ((x.kind==='router'||x.kind==='firewall') && d.arg!=='on') return danger(`${d.arg==='off'?'Power off':'Reboot'} ${x.name}?`, `Every floor depends on the ${x.name}. ${d.arg==='off'?'Powering it off cuts the whole office off':'A reboot drops the whole office for about two minutes'}.`, d.arg==='off'?'Power off':'Reboot anyway', run);
+    if (d.arg==='off' && x.kind!=='printer') return danger(`Power off ${x.name}?`, `Everything connected through ${x.name} will lose its network.`, 'Power off', run);
+    run(); },
+  srvAct(d){ act('Server Room', d.id, d.arg, s=>d.arg==='testPage' ? ENV.testPage(s) : ENV.rebootServer(s,d.id)); },
+  svc(d){ const [op,n]=splitArg(d.arg), stop=op==='stop';
+    act('Server Room', d.id, stop?'stopService':'restartService', s=>stop ? ENV.stopService(s,d.id,n) : ENV.restartService(s,d.id,op)); },
+
+  rdpConnect(d){ const w=S.workstations[d.id];
+    confirmDlg(`Remote session to ${w.host}`, `<p>Owner: <b>${w.owner?esc(S.users[w.owner].name):'Shared device'}</b> · ${esc(w.site)}</p>
+      ${kv([['Sign in as','<span class="mono">NORTHSTAR\\svc-deskops-lab</span>'],['Credential','Lab service credential (simulated, nothing stored)']])}
+      <p class="muted small">Sessions are simulated inside this page. No real machine is contacted.</p>`, 'Connect', false,
+      ()=>{ S.ui.rdp={host:w.host, app:null, max:false}; S.ui.sel.share=null; logEntry(S,'Remote Desktop',w.host,`Remote session opened to ${w.host}`,S.ui.ticket); render(); }); },
+  rdpOff(){ logEntry(S,'Remote Desktop',S.ui.rdp.host,`Remote session to ${S.ui.rdp.host} closed`,S.ui.ticket); S.ui.rdp=null; render(); },
+  rdpMax(){ S.ui.rdp.max=!S.ui.rdp.max; render(); },
+  rdpApp(d){ S.ui.rdp.app=d.id||null; S.ui.sel.share=null; render(); },
+  rdpAct(d){ const [op,arg]=splitArg(d.arg);
+    act('Remote Desktop', d.id, op, s=>{ const r=ENV[op](s,d.id,arg); if (op==='openShare') S.ui.sel.share = r.startsWith('Opened') ? arg : null; return r; }); },
+
+  trace(){ const f={who:S.ui.q.traceWho, status:S.ui.q.traceStatus, time:S.ui.q.traceTime};
+    act('Mail Admin','trace','trace', s=>{ S.ui.trace=ENV.trace(s,f); return `Message trace${f.who?` for “${f.who}”`:''} returned ${S.ui.trace.length} result${S.ui.trace.length===1?'':'s'}.`; }); },
+  mb(d){ const gb=Number(($('quotaSel')||{}).value||5);
+    act('Mail Admin', d.id, d.arg, s=>d.arg==='setQuota' ? ENV.setQuota(s,d.id,gb) : ENV[d.arg](s,d.id)); },
+  rule(d){ const r=rule(S,d.id);
+    if (d.arg==='inspect') { S.ui.sel.rule=d.id; return act('Mail Admin', d.id, 'inspectRule', s=>ENV.inspectRule(s,d.id)); }
+    danger(`Delete rule “${r.name}”?`, r.external ? 'This rule looks like a compromise indicator. Deleting it destroys evidence Security needs, and the attacker may still have access. Escalating is the safe path.' : 'The rule will be removed from the mailbox.',
+      r.external ? 'Delete anyway' : 'Delete rule', ()=>act('Mail Admin', d.id, 'deleteRule', s=>ENV.deleteRule(s,d.id))); },
+  qAct(d){ const q=S.mail.quarantine.find(x=>x.id===d.id), run=()=>act('Mail Security', d.id, d.arg, s=>ENV[d.arg](s,d.id));
+    if (d.arg==='release' && q.kind==='phish') return danger('Release a phishing message?', 'The filter scored this as a credential-harvest attempt. Releasing it puts a live phishing link in a user’s inbox. Keep it blocked or report it to Security instead.', 'Release anyway', run);
+    run(); }
+};
+
+/* Two-way bindings for inputs: search boxes, selects, checkboxes, drafts. */
+const BIND = {
+  q(el){ S.ui.q[el.dataset.id]=el.value; render(); },
+  sel(el){ S.ui.sel[el.dataset.id]=el.value; render(); },
+  name(el){ S.profile.name=el.value.trim()||'Technician'; $('who').textContent=S.profile.name; save(); },
+  hints(el){ S.settings.hints=el.checked; render(); },
+  split(el){ S.settings.split=el.checked; render(); },
+  draft(el){ const ref=el.dataset.id; S.ui.drafts[ref]=el.value; save();
+    $('cnt').textContent = `${el.value.length}/600` + (el.dataset.esc?' · at least 15 characters':'');
+    $('prev').innerHTML = prevHtml(scoreFor(S, ref, el.dataset.esc?'escalate':'close', el.value));
+    if (el.dataset.esc) $('closeGo').disabled = el.value.trim().length<15; },
+  vpnProfile(el){ act('Remote Desktop', el.dataset.id, 'vpnProfile', s=>ENV.vpnProfile(s, el.dataset.id, el.value)); },
+  asset(el){ act('Asset Management', el.dataset.id, 'setAsset', s=>ENV.setAsset(s, el.dataset.id, el.dataset.arg, el.value)); }
+};
+function runTerm(el){
+  const host=el.dataset.term, line=el.value; if (!line.trim()) return;
+  const out=ENV.term(S, host, line), prev=S.ui.term[host]||[];
+  S.ui.term[host] = /^\s*cls\b/i.test(line) ? [] : prev.concat([`${host}> ${line}`], out).slice(-80);
+  logEntry(S,'Remote Desktop',host,`Ran “${line.trim()}” on ${host}`, S.ui.ticket && S.tickets[S.ui.ticket].status==='assigned' ? S.ui.ticket : null);
+  render(); const t=app.querySelector('.term'); if (t) t.scrollTop=t.scrollHeight;
+}
+document.addEventListener('click', e=>{
+  const el=e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const f=ACT[el.dataset.act]; if (f) { e.preventDefault(); f(el.dataset); }
+});
+document.addEventListener('input', e=>{ const el=e.target, f=el.dataset && BIND[el.dataset.bind]; if (f) f(el); });
+document.addEventListener('keydown', e=>{
+  const el=e.target;
+  if (e.key==='Enter' && el.dataset && el.dataset.term) { e.preventDefault(); runTerm(el); return; }
+  if (e.key==='Enter' && el.id==='noteIn') { e.preventDefault(); ACT.addNote({id:S.ui.ticket}); return; }
+  if ((e.key==='Enter'||e.key===' ') && el.getAttribute && el.getAttribute('role')==='button' && el.tagName!=='BUTTON') { e.preventDefault(); el.dispatchEvent(new MouseEvent('click',{bubbles:true})); return; }
+  if (e.key==='Escape' && !dlg.open && S.ui.rdp && S.ui.rdp.max) { S.ui.rdp.max=false; render(); }
+});
+/* Place popovers under the button that opened them. */
+document.addEventListener('toggle', e=>{
+  const p=e.target; if (!p.matches || !p.matches('[popover]') || e.newState!=='open') return;
+  const b=document.activeElement && document.activeElement.getAttribute('popovertarget')===p.id ? document.activeElement : document.querySelector(`[popovertarget="${p.id}"]`);
+  if (!b) return; const r=b.getBoundingClientRect();
+  p.style.top=(r.bottom+6)+'px'; p.style.left=Math.max(8, Math.min(r.left, innerWidth-p.offsetWidth-8))+'px';
+}, true);
+
+/* =====================================================================
+   8. SELF-TEST — runs every scenario from a fresh seed (open index.html#selftest).
+   ===================================================================== */
+function selfTest(){
+  const out=[], ok=(c,n)=>out.push([!!c,n]), done=(s,r)=>check(s,r).complete;
+  const fresh=ref=>{ const s=seed(), T=TK[ref]; if (T.after){ s.tickets[T.after].status='closed'; arrivals(s); } return s; };
+  let s, s2;
+  s=fresh('INC-1042'); ok(!done(s,'INC-1042'),'1042 not complete at seed');
+  ENV.resetPassword(s,'mchen',true); ok(!done(s,'INC-1042'),'1042 password reset alone does not unlock');
+  ENV.unlock(s,'mchen'); ok(done(s,'INC-1042'),'1042 unlock completes it');
+  s=fresh('INC-1043'); ENV.unlock(s,'ebrooks'); ok(!done(s,'INC-1043') && check(s,'INC-1043').done.length===1,'1043 unlock alone is partial');
+  ENV.resetPassword(s,'ebrooks',true); ok(!done(s,'INC-1043'),'1043 still needs a sign-in test');
+  ENV.testSignIn(s,'ebrooks'); ok(done(s,'INC-1043'),'1043 complete after unlock + reset + test');
+  s=fresh('INC-1044'); ok(s.tickets['INC-1044'].status==='open' && !s.users.mchen.groups.includes('Finance-Share'),'1044 arrives after 1042 and removes the group');
+  ok(seed().tickets['INC-1044'].status==='waiting','1044 waits at seed');
+  ENV.unlock(s,'mchen'); ENV.resetPassword(s,'mchen',false); ok(!done(s,'INC-1044'),'1044 password reset does not fix permissions');
+  ENV.addGroup(s,'mchen','Finance-Share'); ok(!done(s,'INC-1044') && ENV.openShare(s,'NS-FIN-014','\\\\FILE01\\Finance').includes('denied'),'1044 needs a session refresh');
+  ENV.refreshSession(s,'mchen'); ok(done(s,'INC-1044') && ENV.openShare(s,'NS-FIN-014','\\\\FILE01\\Finance').startsWith('Opened'),'1044 complete and share opens');
+  s=fresh('INC-1045'); ok(!netState(s,s.workstations['NS-MKT-011']).up,'Floor 3 hosts offline at seed');
+  ENV.reboot(s,'edge'); ok(!done(s,'INC-1045'),'1045 core reboot is not the fix');
+  ENV.on(s,'sw3'); ok(done(s,'INC-1045') && netState(s,s.workstations['NS-MKT-011']).up,'1045 switch restores Floor 3');
+  s=fresh('INC-1046'); ENV.connectWifi(s,'NS-OPS-021','Northstar-Staff'); ok(s.workstations['NS-OPS-021'].wifi.connected===null,'1046 broken profile cannot connect');
+  ENV.forgetWifi(s,'NS-OPS-021','Northstar-Staff'); ENV.connectWifi(s,'NS-OPS-021','Northstar-Staff'); ok(!done(s,'INC-1046'),'1046 still needs a connectivity test');
+  ENV.term(s,'NS-OPS-021','ping 10.0.0.1'); ok(done(s,'INC-1046'),'1046 complete after ping');
+  s=fresh('INC-1047'); ENV.trace(s,{who:'priya'}); ok(!done(s,'INC-1047'),'1047 trace alone does not fix');
+  ENV.release(s,'q1'); ok(!done(s,'INC-1047'),'1047 needs delivery confirmed');
+  ENV.trace(s,{who:'priya'}); ok(done(s,'INC-1047'),'1047 complete after re-trace');
+  s=fresh('INC-1048'); ENV.testMail(s,'awilson'); ok(!done(s,'INC-1048'),'1048 test bounces while full');
+  ENV.enableArchive(s,'awilson'); ENV.testMail(s,'awilson'); ok(done(s,'INC-1048'),'1048 complete after archive + test');
+  s=fresh('INC-1049'); ENV.inspectRule(s,'r1'); s.tickets['INC-1049'].status='escalated'; ok(done(s,'INC-1049'),'1049 complete when inspected + escalated');
+  s2=fresh('INC-1049'); ENV.inspectRule(s2,'r1'); ENV.deleteRule(s2,'r1'); s2.tickets['INC-1049'].status='escalated'; ok(!done(s2,'INC-1049'),'1049 deleting the rule is not rewarded');
+  s=fresh('INC-1050'); ENV.reboot(s,'prn1'); ok(!done(s,'INC-1050'),'1050 printer reboot is not the fix');
+  ENV.restartService(s,'PRINT01','Print Spooler'); ENV.testPage(s); ok(done(s,'INC-1050'),'1050 complete after spooler + test page');
+  s=fresh('INC-1051'); ENV.vpnConnect(s,'NS-SALES-008'); ok(!s.workstations['NS-SALES-008'].vpn.connected,'1051 legacy profile fails');
+  ENV.vpnProfile(s,'NS-SALES-008','Northstar-Staff'); ENV.vpnConnect(s,'NS-SALES-008'); ENV.term(s,'NS-SALES-008','ping file01'); ok(done(s,'INC-1051'),'1051 complete after profile + connect + ping');
+  ok(ENV.term(seed(),'NS-OPS-021','rm -rf /')[0].includes('not recognized'),'terminal rejects unknown commands');
+  s=fresh('INC-1042'); ENV.unlock(s,'mchen'); ok(scoreFor(s,'INC-1042','close','Unlocked mchen in Directory and confirmed Maya can sign in.').total===25,'score: High + full notes bonus = 25');
+  ok(scoreFor(fresh('INC-1045'),'INC-1045','close','').total===-20,'score: unresolved Critical close = −20');
+  s=fresh('INC-1049'); ENV.inspectRule(s,'r1'); ok(scoreFor(s,'INC-1049','escalate','Rule forwards all mail to external-archive@outside.example').total===42,'score: security escalation capped at +42');
+  ok(scoreFor(fresh('INC-1042'),'INC-1042','escalate','not security').total===-8,'score: routine escalation = −8');
+  return {pass: out.every(r=>r[0]), results: out};
+}
+window.selfTest = selfTest;
+
+/* ===== Boot ===== */
+S = load();
+if (memoryOnly) $('memNote').classList.remove('hide');
+renderMenus(); render();
+if (bootNote) toast(bootNote, 'warn');
+if (location.hash==='#selftest') {
+  const r=selfTest();
+  openDlg(`<div class="dh"><h2 id="dlgTitle">Self-test: ${r.pass?'all passed':'FAILURES'}</h2></div><div class="db"><ul class="objs">${r.results.map(([p,n])=>`<li><span class="ck ${p?'y':''}">${p?'✓':''}</span><span>${esc(n)}</span></li>`).join('')}</ul></div><div class="df"><button class="btn primary" data-act="dlgCancel">Close</button></div>`);
+} else if (S.profile.firstRun) { S.profile.firstRun=false; save(); guideDialog(true); }
+</script>
+</body>
+</html>
