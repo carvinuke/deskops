@@ -4,7 +4,7 @@
 
 This file is generated from the ticket and runbook data in `index.html`, so it always matches the game. Don’t edit it by hand.
 
-31 tickets across 3 shifts, and 37 runbooks.
+32 tickets across 3 shifts and a boss stage, and 38 runbooks.
 
 ## Contents
 
@@ -13,6 +13,7 @@ This file is generated from the ticket and runbook data in `index.html`, so it a
 - [Shift 1 · Monday morning](#shift-1)
 - [Shift 2 · Tuesday](#shift-2)
 - [Shift 3 · Wednesday](#shift-3)
+- [Boss stage · Thursday](#shift-4)
 - [Runbooks](#runbooks)
 
 ## How scoring works
@@ -20,13 +21,15 @@ This file is generated from the ticket and runbook data in `index.html`, so it a
 | Outcome | Points |
 |---|---|
 | Resolve a Critical / High / Medium / Low ticket | +30 / +22 / +15 / +10 |
+| Resolve the boss (INC-1073) | +60 |
+| Flawless boss: resolved with no penalties, without revealing its guide first | +5 |
 | Correct escalation of a security ticket to Security | +12 |
 | Resolution notes: 40+ characters, a ticket keyword, and “verified”, “confirmed” or “tested” | +1 each, up to +3 |
-| Close a ticket that isn’t resolved | −20 (Critical), −15 (High), −10 (Medium, Low) |
-| Escalate a routine ticket to Security | −8 |
+| Close a ticket that isn’t resolved | −20 (Critical), −15 (High), −10 (Medium, Low), −30 (boss) |
+| Escalate a routine ticket to Security | the same as closing it unresolved: −20 / −15 / −10, −30 for the boss |
 | Escalate a security ticket before its case is ready | −20 (Critical), −15 (High), −10 (Medium, Low) |
-| Ticket-specific wrong actions (listed per ticket) | −2 to −6 each, charged once at close (they count from the moment the ticket arrives) |
-| Cap per ticket | −20 … +42 |
+| Ticket-specific wrong actions (listed per ticket) | −2 to −8 each, charged once at close (they count from the moment the ticket arrives) |
+| Cap per ticket | −20 … +42 (boss: −30 … +70) |
 
 Hints and these guides are free.
 
@@ -65,6 +68,7 @@ Hints and these guides are free.
 | [INC-1069](#inc-1069) | “Not enough space” when saving to any shared drive | High | Server / Storage | Server Room, Remote Desktop | 3 |
 | [INC-1070](#inc-1070) | Starters spreadsheet vanished from the HR drive | Medium | Server / File restore | Server Room, Remote Desktop, Company Chat | 3 |
 | [INC-1072](#inc-1072) | Reported email: “Mailbox storage limit reached, revalidate within 24 hours” | High | Security / Phishing | Mail Admin, Mail Security, Company Chat | 3 |
+| [INC-1073](#inc-1073) | Locked out every quarter-hour since my 06:41 password change, and Ledgerline mail keeps vanishing | Boss | Identity / Lockout and missing mail | Directory, Server Room, Remote Desktop, Computer Deployment, PC Shelf, Mail Admin, Asset Management, Company Chat | Boss |
 
 <a id="shift-1"></a>
 
@@ -134,7 +138,7 @@ One user, one account, a clear error message and healthy colleagues: this is an 
 
 No ticket-specific penalties.
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -222,7 +226,7 @@ Two faults on one account, and each needs its own fix. Unlock clears the lockout
 |---|---|
 | Sent the temporary password by chat or to a personal email address | −3 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -307,7 +311,7 @@ Authentication answers “who are you?”; authorization answers “what may you
 |---|---|
 | Added Maya to share groups her Finance role doesn’t need (least privilege) | −3 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -397,7 +401,7 @@ Work outward from the impact. Floors 1 and 2 work, and every floor shares the in
 | Powered off the healthy Floor 1 switch — the whole floor lost its network | −3 |
 | Powered off the healthy Floor 2 switch — the whole floor lost its network | −3 |
 
-Closing it unresolved costs −20. Escalating it to Security costs −8.
+Closing it unresolved costs −20. Escalating it to Security costs −20.
 
 #### Hint ladder
 
@@ -485,7 +489,7 @@ When one device fails and its neighbours work, look at that device. The laptop h
 | Rebooted the edge router for a single-user Wi-Fi problem | −4 |
 | Powered off the edge router for a single-user Wi-Fi problem | −4 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -570,7 +574,7 @@ A missing message with no bounce is a tracing job, not a mailbox job. Message tr
 |---|---|
 | Released a phishing message into a user’s inbox | −6 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -653,7 +657,7 @@ The mailbox has reached its 5 GB quota, so the mail server rejects new messages.
 |---|---|
 | Gave an executive mailbox the 50 GB shared-mailbox quota, which isn’t an approved remedy | −2 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -825,7 +829,7 @@ Every print job goes through the Print Spooler service on PRINT01, which crashed
 |---|---|
 | Rebooted the whole print server for one stopped service: the Print Web Portal dropped for everyone | −3 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -910,7 +914,7 @@ Internet works and only internal resources fail, so the problem is the tunnel in
 
 No ticket-specific penalties.
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -1009,7 +1013,7 @@ Scope first: one machine and one user, so it isn’t the network or a server. A 
 | Deployed an unwiped device: a leaver’s data went to a new person | −5 |
 | Marked the dead PC Disposed, skipping the secure disk wipe and disposal certificate | −3 |
 
-Closing it unresolved costs −20. Escalating it to Security costs −8.
+Closing it unresolved costs −20. Escalating it to Security costs −20.
 
 #### Hint ladder
 
@@ -1098,7 +1102,7 @@ A new-starter ticket is really a checklist against a source of truth: here, the 
 | Gave a new starter access beyond her role template (least privilege) | −3 |
 | Sent a credential to a third party over chat. Temporary passwords go to the starter in person after an ID check | −4 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1190,7 +1194,7 @@ Separate hardware from software first. A working remote session plus a Code 43 e
 | Shipped to the saved address book entry: Clara moved out of 7 Quarry Bend | −4 |
 | Scrapped a laptop with accidental-damage cover until 2027-06-30. Return it for repair | −2 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -1280,7 +1284,7 @@ Read the failure code instead of restarting again. 0x80070070 means the disk is 
 | Deleted the user’s downloads without asking her first | −3 |
 | Paused security updates on an HR laptop to hide the symptom | −2 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1367,7 +1371,7 @@ Work up the stack. Physical: the dock and monitor are detected, so the cable and
 | Issued a new monitor for a display-settings fault | −2 |
 | Issued a new dock for a display-settings fault | −2 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1546,7 +1550,7 @@ Split the power path into charger, port, battery and operating system. The batte
 
 No ticket-specific penalties.
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1635,7 +1639,7 @@ Nothing is broken; the job is to apply access control correctly. Mail Admin › 
 | Granted access to Sales Orders before the owner approved: Dana isn’t the owner | −3 |
 | Gave Evan Send As on Sales Orders, which Rosa didn’t approve | −2 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1730,7 +1734,7 @@ A Windows device that gets no DHCP answer gives itself a 169.254.x.x (APIPA) add
 | Rebooted the Floor 2 switch: the whole floor dropped and the scope was still full | −3 |
 | Powered off the Floor 2 switch: the whole floor dropped and the scope was still full | −3 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1824,7 +1828,7 @@ The mobile access policy quarantines new devices until IT approves them. The que
 | Sent a full wipe to a traded-in phone that now belongs to someone else | −3 |
 | Turned off mobile quarantine for every user to fix one phone | −5 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -1932,7 +1936,7 @@ This joiner ticket checks whether you follow the identity standard instead of im
 | Repurposed a leaver’s account instead of creating a new one | −4 |
 | Sent a temporary password to a personal email address, outside the company | −4 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -2024,7 +2028,7 @@ A name change touches three different identifiers: the display name (what people
 | Removed the old address: supplier invoices to hannah.clarke@ now bounce | −3 |
 | Created a second identity for Hannah instead of updating her account | −3 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -2123,7 +2127,7 @@ Offboarding comes down to cutting access first, keeping data, then reclaiming re
 |---|---|
 | Deleted the account and mailbox: HR-LVR-0088 requires 2-year retention and Jordan loses the supplier mail | −6 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -2213,7 +2217,7 @@ An MFA reset removes a security factor, so it is one of the riskiest service-des
 |---|---|
 | Removed a security factor for a caller who wasn’t verified through a number on record | −5 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -2310,7 +2314,7 @@ The visible symptom (disabled) is only the first of three layers the leave workf
 | Took Office Suite from an active colleague: they just lost Word, Excel and Outlook mid-day | −3 |
 | Created a second identity: a new account has none of Leah’s mailbox, files or Finance history | −3 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -2495,7 +2499,7 @@ First split connectivity from name resolution. If ping 10.0.0.20 replies but pin
 | Rebooted the firewall: pings to IP addresses already proved the network works | −4 |
 | Powered off the firewall: pings to IP addresses already proved the network works | −4 |
 
-Closing it unresolved costs −20. Escalating it to Security costs −8.
+Closing it unresolved costs −20. Escalating it to Security costs −20.
 
 #### Hint ladder
 
@@ -2591,7 +2595,7 @@ Separate inside from outside. If internal addresses and names work but every ext
 | Powered off the firewall during a provider outage | −4 |
 | Told all staff to restart their PCs and routers during a provider outage, which fixes nothing and floods the desk | −2 |
 
-Closing it unresolved costs −20. Escalating it to Security costs −8.
+Closing it unresolved costs −20. Escalating it to Security costs −20.
 
 #### Hint ladder
 
@@ -2684,7 +2688,7 @@ The volume is full, but the real question is why it filled up. The folder breakd
 | Deleted a whole folder on the file server, including recent files, instead of purging old ones | −3 |
 | Rebooted FILE01: everyone lost their open files and no space was freed | −3 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -2772,7 +2776,7 @@ First confirm what happened. The audit trail shows a user delete at 09:14, not c
 |---|---|
 | Rolled back the entire HR share to recover one file: everyone’s changes since the snapshot are gone | −6 |
 
-Closing it unresolved costs −10. Escalating it to Security costs −8.
+Closing it unresolved costs −10. Escalating it to Security costs −10.
 
 #### Hint ladder
 
@@ -2866,7 +2870,7 @@ Treat the email as evidence. Read the headers, not the rendered message: SPF fai
 | Hard-deleted the phishing copies before Security finished, leaving no recoverable evidence | −3 |
 | Blocked the company’s own mail domain | −4 |
 
-Closing it unresolved costs −15. Escalating it to Security costs −8.
+Closing it unresolved costs −15. Escalating it to Security costs −15.
 
 #### Hint ladder
 
@@ -2887,6 +2891,171 @@ Earns +3 of 3 for notes. Keywords: `northstar-helpdesk`, `spf`, `purge`, `0 clic
 #### In the real world
 
 The user-reported phishing playbook is: analyse safely (headers and URL reputation, never click), scope it (search by sender, subject and URL), check for clicks or credential entry, preserve and report, purge everywhere, block the indicators, and thank the reporter. Thanking people keeps reporting rates high. If anyone clicked or entered credentials, treat it as a possible compromise: escalate to Security, reset the password, revoke sessions and review inbox rules.
+
+<a id="shift-4"></a>
+
+## Boss stage · Thursday
+
+Final boss. One ticket, and a requester who has already tried everything you would try first. Avery Farmwell (they/them), Senior Finance Systems Analyst, holds security analyst and IT support certifications and has ruled out every user-side fix. Today is the 12:00 supplier payment run and Avery is the approver. Expect layers: fixing one thing shows you the next. Avery’s measurements are reliable; their conclusions are hypotheses. Hints are vaguer, the solution guide stays behind its spoiler gate, and some actions here can’t be undone.
+
+<a id="inc-1073"></a>
+
+### INC-1073 · Locked out every quarter-hour since my 06:41 password change, and Ledgerline mail keeps vanishing · BOSS
+
+**Priority:** Boss (60 points) · **Category:** Identity / Lockout and missing mail · **Arrives:** as the boss stage, after every shift 3 ticket is closed or escalated (start it from the dashboard) · **Finish with:** Close ticket · **Best score:** +68
+
+**Tools:** Directory, Server Room, Remote Desktop, Computer Deployment, PC Shelf, Mail Admin, Asset Management, Company Chat  
+**Runbooks:** [Unlocking a locked account](#kb1), [Restoring a deleted file from a share](#kb28), [Following a message with Message trace](#kb37), [Tracing repeated lockouts to their source](#kb38)
+
+**The ticket**
+
+> My account (afarmwell) has locked out on every quarter-hour since 06:45 today: 06:45, 07:00, 07:15 and so on to 09:30, twelve lockouts in all. My password was due to expire today, so I changed it at the expiry prompt at 06:41, and the first lockout came four minutes later. Each lockout is five bad attempts about 5 seconds apart, which is exactly our 5-attempt threshold. So something is replaying my pre-06:41 password in a retry loop on a 15-minute timer. Self-service unlock works every time (I’ve used it 11 times), and the account relocks at the next :00, :15, :30 or :45 whichever device I’m on. My Sign-ins page shows every lockout failure as “Northstar HQ network”, with no device name. The only outside IPs are two blocked attempts from 198.51.100.23 and .24. I reported those to Security on Tuesday (SEC-2231), and they don’t line up with any lockout. MFA is intact and I’ve had no unexpected prompts.
+>
+> Separately, and I suspect it’s related, Ledgerline mail is disappearing. Six messages since Wednesday 16:10 are gone from every folder. They include the 02:00 PR-1014 payment confirmation, the 09:15 PR-1015 pre-run check, and even the 16:10 message I had already read on my new laptop. Ledgerline’s send log has “250 2.0.0 OK queued” from MAIL01 for every one of them, and webmail shows no rules, no forwarding and no delegates.
+>
+> I’ve ruled out everything I can see (list below). Whatever holds my old password is inside our network and runs on a timer, and users can’t see which machine it is. You can. Today is the 12:00 PR-1015 supplier payment run, and I’m the approver.
+>
+> *Business impact:* Avery is the approver of today’s 12:00 PR-1015 supplier payment run (51 payees, $1,842,300) and can’t stay signed in for more than 15 minutes. Six Ledgerline ERP messages are missing from their mailbox, including the PR-1014 payment confirmation and the PR-1015 pre-run check.
+>
+> *Already tried:*
+>
+> - Changed my password at the expiry prompt at 06:41, and again through self-service at 08:05. Both times I was locked again within 15 minutes, on the quarter-hour.
+> - Used self-service unlock 11 times, after every lockout from 06:45 to 09:15. It relocks at the next :00, :15, :30 or :45 every time, so I stopped after 09:30.
+> - On NS-FIN-041 I ran cmdkey /list (empty), ran klist purge, cleared Credential Manager and removed the saved credentials for my F: and P: drives.
+> - Rebooted NS-FIN-041 twice. The second was a full cold boot at 07:40, and it still locked at 07:45 on schedule.
+> - Checked Task Scheduler, services and startup items on NS-FIN-041: nothing runs as afarmwell. A full Endpoint Protection scan was clean.
+> - Repaired Office Suite, then reinstalled it at 08:20. Neither the lockouts nor the mail changed.
+> - Removed the Northstar Mail account from my Pixelon 8 at 07:31 and put the phone in airplane mode. Lockouts continued at 07:45, 08:00 and 08:15.
+> - Signed in on hot desk NS-MKT-011 (Floor 3) at 07:50, and it locked at 08:00 like everywhere else. Also tried wired on my Floor 2 dock and on Northstar-Staff Wi-Fi. I’m not on VPN.
+> - Webmail › “Sign out of other web sessions” at 08:06. It’s the only session control users get, and it only covers browser sessions.
+> - Webmail shows no inbox rules, no forwarding and no delegates. I searched Inbox, Deleted Items, Recoverable Items, Junk and the online archive for the Ledgerline messages, and none of them are there.
+> - Asked the Ledgerline admin for delivery evidence: every message got 250 OK from MAIL01.
+> - Reported the 198.51.100.23 attempts to Security on Tuesday (SEC-2231).
+> - Had a hardware refresh on Tuesday. NS-FIN-041 is a clean Finance image and nothing was migrated, so none of my old Ledgerline helpers came across.
+
+#### Symptoms to notice
+
+- The lockouts land on exact quarter-hours, five attempts about 5 seconds apart, starting four minutes after a password change. That’s a machine on a timer retrying an old password, not a person guessing.
+- Avery’s own Sign-ins page says only “Northstar HQ”. The admin sign-in log and DC01 event 4740 name the host: NS-FIN-033.
+- The same host signed in successfully every quarter-hour from Wednesday 18:00 until 06:30. The job existed before the password change; the change only made it visible.
+- There are two Averys. The requester is avery.farmwell@ (afarmwell, Finance). Avery Wilson’s mailbox-full events are noise.
+- The 198.51.100.x rows are blocked at the edge, not counted, and don’t line up with any lockout.
+- NS-FIN-033 has no owner, and its record says IT storeroom · Returned · Pending wipe. Yet its heartbeat is live on Floor 3 Switch port Gi1/0/33, it holds a Floor 3 lease, and Avery’s console session on it has been signed in since Oct 13.
+- Ledgerline mail is Delivered in Message trace but missing from every folder, including Recoverable Items. Something moved it rather than deleted it.
+- The mail rule is client-only and was created on NS-FIN-033 in September. Webmail never shows client-only rules.
+- The first message moved at 17:53 on Wednesday, one minute after the laptop resumed from sleep.
+- The task is a robocopy into \\\\FILE01\\Finance with no /XO. Check what it wrote while the password still worked.
+- Supplier\_Payments.xlsx’s modified date went backwards between snapshots sb3 and sb4. Samir’s 08:55 edit came after the damage and is in no snapshot.
+
+#### Diagnosis
+
+Avery’s evidence is good and their conclusion is half right: something inside the building holds the pre-06:41 password and retries on a 15-minute timer. Users can’t see the one field that names it, but admins can. The sign-in log and DC01 event 4740 point to NS-FIN-033, which succeeded every quarter-hour until the change. NS-FIN-033 is Avery’s old laptop. Every record says it’s in the storeroom waiting for a wipe, yet Asset Health shows a live heartbeat on Floor 3, DHCP has a Floor 3 lease for it, and Remote Desktop finds Avery’s console session still signed in since Oct 13. Inside that session, a September task runs robocopy into the Finance share every 15 minutes with a saved FILE01 credential, retrying four times: five bad attempts per run, exactly the lockout threshold. That one laptop explains everything. The hand-over marked it returned, nobody collected it, and Facilities docked it on Wednesday evening, which woke the session. While the old password still worked, the first run copied the laptop’s Oct 13 export over the payments file: robocopy copies older over newer without /XO and keeps the old timestamp. In the same session, Office ran a client-only rule that moved every Ledgerline message into a local PST: Message trace says Delivered, the mailbox audit shows the moves, and webmail never shows client-only rules. Work in an order that keeps data alive. Disable the task, and don’t give it a working credential, because that re-arms the overwrite. Unlock, then show that a quarter-hour passes cleanly. Move the PST items back before anything destructive, then revoke that one session and delete the rule. Restore the last good payments file as a copy and let Samir merge, because his 08:55 edits exist in no snapshot and the nightly backup was taken after the damage. Only then wipe the laptop. None of this is a compromise: every indicator is internal, on a schedule, and traceable to Avery’s own September automation.
+
+#### Perfect steps
+
+1. When every shift 3 ticket is closed or escalated, select Start the boss stage on the dashboard, read the briefing and select Start the boss stage. Open INC-1073 (marked BOSS) and select Assign to me. Read every line of what Avery already tried.
+2. Open Company Chat › Avery Farmwell (not Avery Wilson) and select “INC-1073 · Ask Avery for the exact lockout times and error codes”.
+3. Open Tools › Directory, search “farmwell”, select Avery Farmwell and open Authentication. In the Sign-in log, the Failure rows come from NS-FIN-033 · Floor 3 every quarter-hour; the same host has Success rows back to Oct 14 18:00; the 198.51.100.x rows are Blocked and not counted; NS-FIN-041 has only Success and Blocked rows. On Sessions, note the NS-FIN-033 · Office Suite (desktop) row and leave it for now.
+4. Open Tools › Server Room › Events & tasks and choose DC01 in the Server list: each 4740 names Caller Computer Name NS-FIN-033, and each 4771 comes from 10.0.3.133 with failure code 0x18.
+5. Open Tools › Asset Management, search “NS-FIN-033” and select Open. Health shows Heartbeat Live on Floor 3 Switch · port Gi1/0/33; Details says IT storeroom and Returned · Pending wipe. Optional: Server Room › DHCP › Floor 3 › View leases, PC Shelf (NSA-2033 Not wiped), Computer Deployment (job DPL-3190) and Company Chat › Tomasz Nowak.
+6. Open Tools › Remote Desktop, search “NS-FIN-033”, select Connect, then Connect in the dialog. Open Terminal and run whoami, quser, schtasks, schtasks /query /v and cmdkey /list.
+7. Open Task Scheduler on NS-FIN-033 and select Disable on LedgerlineExport. Don’t use Run as… or Run now.
+8. In Directory › Avery Farmwell › Authentication select Verify identity…, choose “Callback to number on record” and select Run check. Then select Unlock account and Test sign-in.
+9. In Company Chat › Avery Farmwell select “INC-1073 · Ask Avery to watch the next scheduled run”. The quarter-hour passes cleanly and Avery posts the mail update.
+10. Open Tools › Mail Admin › Message trace, type “ledgerline” and select Search: every message is Delivered. Open Mailboxes, choose avery.farmwell@northstar.example in the Mailbox list and read the Mailbox audit log: six Moves into Ledgerline-archive.pst by Office Suite on NS-FIN-033, the first at Oct 14 17:53.
+11. Open Inbox rules, choose avery.farmwell@northstar.example and select View details on “Ledgerline tidy”: Client-only, runs on NS-FIN-033, created Sep 4, no forwarding. Optional: ask Avery about the rule in Company Chat.
+12. Back in Remote Desktop › NS-FIN-033, open Office Suite and select Move items back to mailbox under Local data files.
+13. In Directory › Avery Farmwell › Sessions select Revoke on the NS-FIN-033 row only. In Mail Admin › Inbox rules select Delete on “Ledgerline tidy”, then Delete rule. Avery reports the Larkspur mismatch.
+14. Open Tools › Server Room › Shadow copies. In File audit type “Supplier”: one Overwritten by afarmwell from NS-FIN-033 at Oct 14 18:00, between shaddad’s 11:40 and 08:55 edits. Optional: Company Chat › Samir Haddad › “INC-1073 · Ask Samir about Supplier\_Payments.xlsx”.
+15. Set Share to Finance and select Supplier\_Payments.xlsx. sb4 holds a file modified Oct 13 15:58 (the date went backwards); sb3 holds Oct 14 11:40, the last good edit. On the sb3 row select Restore as a copy.
+16. In Company Chat › Samir Haddad select “INC-1073 · Ask Samir to merge the restored copy”: 51 rows, Larkspur on …7731.
+17. Now that the PST is recovered, open Tools › Asset Management, search “NS-FIN-033”, select Open, then Remote wipe on the Health tab and Wipe device.
+18. In Company Chat › Avery Farmwell select “INC-1073 · Ask to confirm the fix”. Avery confirms and approves PR-1015.
+19. Select Check fix (9 of 9), write notes covering the cause, the order of actions, the verification and the process follow-up, then select Close ticket.
+
+#### Verify
+
+- Directory › Avery Farmwell › Authentication: Not locked and the last sign-in test Passed. No NS-FIN-033 Failure rows after the task was disabled, across at least one quarter-hour boundary.
+- Server Room › Events & tasks › DC01: no 4740 for afarmwell after the fix time.
+- Mail Admin › Mailboxes › avery.farmwell@northstar.example › Mailbox audit log: Import of 6 items to Inbox › Recovered. Sessions has no NS-FIN-033 row, and Inbox rules has none for Avery.
+- Server Room › Shadow copies › Supplier\_Payments.xlsx: restored copy present from sb3, the live file wasn’t reverted, and Samir confirmed 51 payees with Larkspur on …7731.
+- Asset Management › NS-FIN-033: Remote wipe Wiped. Remote Desktop shows it Offline (“Wiped: no operating system”).
+- Avery’s confirmation is in Company Chat and all 9 requirements are ticked.
+
+#### Required outcome (what Check fix tests)
+
+- The LedgerlineExport job on NS-FIN-033 can no longer run
+- Avery stayed unlocked through a scheduled quarter-hour run and the sign-in test passed
+- Avery’s missing Ledgerline messages are back in their mailbox
+- The old laptop’s Office session is revoked and the client-only rule is removed
+- The Wednesday 11:40 payments data is recovered next to the live file
+- Samir’s 08:55 changes for today’s run are preserved
+- Samir merged the payments file for PR-1015
+- NS-FIN-033 wiped after its data was recovered
+- Avery confirmed everything works
+
+#### Common mistakes
+
+- Unlocking or resetting the password and calling it fixed. The account relocks at the next quarter-hour.
+- Deleting only the saved credential. The Windows session itself still holds the old password, so it keeps failing.
+- Giving the task a working credential, such as your own admin account. It’s the textbook service-account fix, and it re-arms a robocopy that overwrites today’s payments file.
+- Wiping the old laptop as soon as you find it. That stops the lockouts but destroys the only copy of six Ledgerline messages.
+- Treating it as a compromise or chasing the 198.51.100.x spray and escalating. Every indicator that matters is internal, scheduled and Avery’s own.
+- Working on Avery Wilson’s account because the search said “avery”.
+- Restoring the newest snapshot (stale), or restoring to the original location, which wipes Samir’s 08:55 edits.
+- Requesting the nightly backup. Oct 14 23:00 is after the overwrite, and it isn’t ready until tomorrow.
+- Deleting the client-only rule and assuming the mail comes back. The messages stay in the PST until you move them.
+- Revoking every session instead of only the old laptop’s: it signs the approver out mid-reconciliation and still doesn’t stop the lockouts.
+- Powering off the Floor 3 switch to silence one laptop.
+
+#### Wrong actions and penalties
+
+| Wrong action | Points |
+|---|---|
+| Wiped NS-FIN-033 before recovering Ledgerline-archive.pst: the only copies of six Ledgerline messages are gone | −8 |
+| Wiped the payment-run approver’s working laptop | −8 |
+| Re-imaged Avery’s working laptop: it was never the source | −4 |
+| Returned the payment-run approver’s working laptop to stock | −4 |
+| Marked Avery’s working laptop retired, disposed or lost | −3 |
+| Gave a retired laptop’s copy job your admin credential: it re-armed the overwrite of today’s payments file | −6 |
+| Rolled back the whole Finance share to fix one file | −6 |
+| Cut a whole floor’s network to silence one laptop | −6 |
+| Rebooted the Floor 3 switch: every hot desk dropped and nothing changed | −3 |
+| Deleted the restore points that held the last good payments file | −5 |
+| Restored over the live payments file: Samir’s 08:55 changes for today’s run were lost | −4 |
+| Rebooted a domain controller to clear a lockout caused by one client | −4 |
+| Rebooted the file server: everyone lost open files and nothing changed | −3 |
+| Removed MFA from an account with no sign of compromise | −3 |
+| Disabled the payment-run approver’s account on payment-run day | −3 |
+| Reset Avery’s password again after they asked you not to: a new password can’t fix an old copy | −2 |
+| Blocked the company’s own ERP mail | −3 |
+| Sent a full wipe to Avery’s phone: it stopped syncing at 07:29, before the lockouts it was blamed for | −3 |
+| Blocked Avery’s phone: it hasn’t synced since 07:29 and wasn’t the source | −2 |
+| Changed Avery Wilson’s account: the requester is Avery Farmwell (afarmwell) | −4 |
+
+Closing it unresolved costs −30. Escalating it to Security costs −30. Its score is capped at −30 … +70, and its hint ladder ends without a model answer.
+
+#### Hint ladder
+
+1. Avery’s measurements are reliable; their conclusions are hypotheses. Users can’t see which machine presented a bad password. Admin logs can.
+2. Paperwork and heartbeats can disagree. When a record says a device is somewhere quiet, check whether it really is quiet.
+3. Before you do anything irreversible, find out what else that machine did as Avery, and where its copies went.
+4. A modified date that goes backwards isn’t an edit. When someone has legitimately worked on top of the damage, neither the newest snapshot nor the live file is right on its own.
+5. No model answer for the boss: the full solution is in Documentation › Solution guides, behind the spoiler gate.
+
+#### Model answer
+
+NS-FIN-033 (NSA-2033), Avery’s old laptop, was marked Returned by DPL-3190 but never collected. Docked on Floor 3 on Oct 14, it woke Avery’s Oct 13 session. Its LedgerlineExport task (robocopy every 15 minutes with a saved FILE01 credential, /R:4) locked afarmwell after the 06:41 password change (DC01 4740, caller NS-FIN-033). Its client-only rule moved six Ledgerline messages into a local PST, and its first run at Oct 14 18:00 copied an Oct 13 export over Supplier\_Payments.xlsx. Disabled the task, unlocked Avery and watched a clean quarter-hour. Moved the PST items back, revoked only the NS-FIN-033 Office session and deleted the rule. Restored the Oct 14 11:40 version (sb3) as a copy for Samir to merge with his 08:55 payees. Wiped NS-FIN-033 last. Avery confirmed and approved PR-1015. Follow-up: a problem record so refresh returns are marked Returned only when they are scanned in at the storeroom.
+
+#### Ideal resolution note
+
+> Cause: old laptop NS-FIN-033 (NSA-2033), marked Returned by DPL-3190 but never collected, woke on Floor 3. Its LedgerlineExport robocopy (saved FILE01 credential) locked afarmwell (DC01 4740), overwrote Supplier\_Payments.xlsx at Oct 14 18:00, and its client-only rule moved 6 Ledgerline mails into a PST. Fix: disabled the task, unlocked; moved the PST items back; revoked only that session, deleted the rule; restored sb3 as a copy and Samir merged (Larkspur …7731); wiped the laptop last. Verified: clean quarter-hour, sign-in test passed, Avery confirmed.
+
+Earns +3 of 3 for notes. Keywords: `ns-fin-033`, `nsa-2033`, `4740`, `ledgerlineexport`, `client-only`, `pst`, `supplier_payments`, `restore as a copy`, `larkspur`, `robocopy`.
+
+#### In the real world
+
+Stale credentials in scheduled tasks, services, mapped drives and saved Credential Manager entries are the most common cause of recurring lockouts. Admins find the source with the domain controller’s 4740 event (Caller Computer Name) and the 4771 client address; users never see either. Hardware refreshes that mark old devices “returned” at hand-over, instead of when they physically arrive, leave live laptops in drawers with signed-in sessions, saved passwords and automations that wake up the moment someone plugs them in. Outlook rules that move mail to a PST are client-only: they run only on the PC that created them and don’t appear in webmail. Desktop app tokens often survive a password change, so revoke sessions explicitly. Robocopy copies older files over newer ones by default and keeps the source’s timestamp; use /XO when the destination can be newer. When you restore a file that someone has legitimately edited since the damage, restore it alongside the live file and let the owner merge. The process fixes are to close the asset record only when the device is scanned in at the storeroom, and to alert on heartbeats from devices in a Returned state.
 
 ## Runbooks
 
@@ -2929,12 +3098,13 @@ One runbook per procedure the tickets use. In the game: **Tools › Documentatio
 - [Logging chat messages and voicemails as tickets](#kb35) (Service desk)
 - [Verifying, documenting and closing a ticket](#kb36) (Service desk)
 - [Following a message with Message trace](#kb37) (Email)
+- [Tracing repeated lockouts to their source](#kb38) (Identity)
 
 <a id="kb1"></a>
 
 ### Unlocking a locked account
 
-*Identity* · **Tools:** Directory · **Used in:** [INC-1042](#inc-1042), [INC-1043](#inc-1043)
+*Identity* · **Tools:** Directory · **Used in:** [INC-1042](#inc-1042), [INC-1043](#inc-1043), [INC-1073](#inc-1073)
 
 **Purpose.** Restore sign-in for someone whose account locked after too many failed password attempts, without changing anything else on the account.
 
@@ -3743,7 +3913,7 @@ One runbook per procedure the tickets use. In the game: **Tools › Documentatio
 
 ### Restoring a deleted file from a share
 
-*Server* · **Tools:** Server Room, Remote Desktop, Company Chat · **Used in:** [INC-1070](#inc-1070)
+*Server* · **Tools:** Server Room, Remote Desktop, Company Chat · **Used in:** [INC-1070](#inc-1070), [INC-1073](#inc-1073)
 
 **Purpose.** Bring back one deleted or damaged file without disturbing anything else on the share.
 
@@ -3756,9 +3926,10 @@ One runbook per procedure the tickets use. In the game: **Tools › Documentatio
 1. Deletes on network drives skip the Recycle Bin. Server Room › Shadow copies › File audit shows who deleted what and when.
 2. Set Share, select the file and compare its previous versions by modified time and size, not by snapshot label.
 3. Select Restore to original location on the right version (or Restore as a copy if the user wants to compare).
-4. Never select Revert entire share to recover one file: it overwrites everyone’s changes since the snapshot.
-5. If no snapshot holds the file, select Request restore from nightly backup.
-6. Ask the user in Company Chat to open it and confirm the content.
+4. If someone saved legitimate changes after the damage, select Restore as a copy instead and let the file’s owner merge: restoring over the live file loses their work.
+5. Never select Revert entire share to recover one file: it overwrites everyone’s changes since the snapshot.
+6. If no snapshot holds the file, select Request restore from nightly backup.
+7. Ask the user in Company Chat to open it and confirm the content.
 
 **Verify**
 
@@ -4000,7 +4171,7 @@ One runbook per procedure the tickets use. In the game: **Tools › Documentatio
 
 ### Following a message with Message trace
 
-*Email* · **Tools:** Mail Admin · **Used in:** [INC-1047](#inc-1047), [INC-1048](#inc-1048), [INC-1060](#inc-1060), [INC-1072](#inc-1072)
+*Email* · **Tools:** Mail Admin · **Used in:** [INC-1047](#inc-1047), [INC-1048](#inc-1048), [INC-1060](#inc-1060), [INC-1072](#inc-1072), [INC-1073](#inc-1073)
 
 **Purpose.** Find out what happened to a message: delivered, quarantined, failed, pending or purged.
 
@@ -4022,3 +4193,36 @@ One runbook per procedure the tickets use. In the game: **Tools › Documentatio
 **Escalate when**
 
 - Messages fail for many recipients at once: check MAIL01 in Server Room and tell the messaging team.
+
+<a id="kb38"></a>
+
+### Tracing repeated lockouts to their source
+
+*Identity* · **Tools:** Directory, Server Room, Asset Management, Remote Desktop · **Used in:** [INC-1073](#inc-1073)
+
+**Purpose.** Find the device or job that keeps locking an account when unlocking and password resets only buy minutes.
+
+**Before you start**
+
+- The account locks again soon after every unlock.
+- You can read the account’s sign-in log (Directory) and the domain controller event log (Server Room).
+
+**Steps**
+
+1. Directory › person › Authentication: read the Sign-in log. Note the time, device, location and app on each Failure row. A steady rhythm (every 15 minutes, every hour) means a machine, not a person.
+2. Compare the failures with the password history: a job that only started failing after a password change is replaying the old password.
+3. Server Room › Events & tasks › DC01: event 4740 (account locked out) names the Caller Computer Name that presented the bad password, and event 4771 gives its address.
+4. Look that device up in Asset Management (owner, state, location and heartbeat) and in DHCP. Records and heartbeats can disagree.
+5. Remote Desktop › that device › Terminal: whoami, quser, schtasks /query /v and cmdkey /list show signed-in sessions, scheduled tasks and saved credentials that use the account.
+6. Stop the source without destroying data: disable the task, or end the stale session. Before you give an old job a working password, find out what it writes.
+7. Unlock the account, run Test sign-in, then let the next scheduled run pass and check that no new Failure rows or 4740 events appear.
+
+**Verify**
+
+- No new Failure rows or 4740 events after the next scheduled run.
+- The account stays Not locked and the sign-in test passes.
+
+**Escalate when**
+
+- Failures come from outside addresses or from devices nobody owns, or the user gets MFA prompts they didn’t start: treat it as an attack and escalate to Security.
+- The source is a server or service account you don’t own: hand it to the team that owns it.

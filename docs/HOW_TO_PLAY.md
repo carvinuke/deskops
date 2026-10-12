@@ -24,20 +24,22 @@ To start, open `index.html` in a browser (double-clicking it is fine, even offli
 | Resolve a High ticket | +22 |
 | Resolve a Medium ticket | +15 |
 | Resolve a Low ticket | +10 |
+| Resolve the final boss (INC-1073) | +60 |
+| Flawless boss: resolved with no penalties, without revealing its solution guide first | +5 |
 | Correctly escalate a security ticket to Security | +12 on top |
 | Resolution notes of 40 or more characters | +1 |
 | Notes that name the user, host, service or other ticket keyword | +1 |
 | Notes that say how you verified ("verified", "confirmed", "tested") | +1 |
-| Close a ticket that isn't resolved | −20 (Critical), −15 (High), −10 (Medium, Low) |
-| Escalate a routine ticket to Security | −8 |
+| Close a ticket that isn't resolved | −20 (Critical), −15 (High), −10 (Medium, Low), −30 (boss) |
+| Escalate a routine ticket to Security | The same as closing it unresolved: −20, −15 or −10, and −30 for the boss |
 | Escalate a security ticket before its case is ready (evidence not gathered, or something changed that shouldn't have) | −20 (Critical), −15 (High), −10 (Medium, Low) instead of the resolve points |
-| A ticket-specific wrong action (rebooting the core router for one user, releasing phishing, deleting evidence, sending passwords to the wrong place…) | −2 to −6 each |
+| A ticket-specific wrong action (rebooting the core router for one user, releasing phishing, deleting evidence, sending passwords to the wrong place…) | −2 to −8 each |
 
 - Wrong-action penalties are recorded when you make the mistake and charged once, when the ticket is closed or escalated. They count as soon as the ticket has arrived (even before you assign it or after you return it to the queue), and one action is charged to one ticket.
 - The game has its own clock: each shift starts at 09:40 on its day (Monday Oct 12, 2026 for shift 1) and every action takes a minute, so timestamps never depend on your real time of day.
-- Each ticket's total is capped between −20 and +42.
-- Hints and the solution guides are free.
-- A perfect run through all three shifts scores 742 points.
+- Each ticket's total is capped between −20 and +42. The boss is capped between −30 and +70.
+- Hints and the solution guides are free. The one exception: revealing the boss's guide before you finish it forfeits the +5 Flawless boss bonus.
+- A perfect run through all three shifts scores 742 points, and a flawless boss adds 68 (810 in total).
 
 A good note has three parts: the cause, the action, and the verification. For example: *"Cause: mchen locked out after vacation. Action: unlocked the account in Directory. Verified: sign-in test passed and Maya confirmed in chat."*
 
@@ -50,8 +52,11 @@ A good note has three parts: the cause, the action, and the verification. For ex
 | Silver | 100 |
 | Gold | 180 |
 | Platinum | 280 |
+| Diamond | 760 |
 
-Your rank shows under your name in the top bar. **Achievements** (the trophy icon) shows the rank ladder and five achievements, worked out from your results: First fix, By the book (a ticket resolved with no penalties), Paper trail (full notes bonus), Security minded (a compromise routed to Security with the evidence intact) and Inbox zero (every ticket cleared).
+Diamond is above the 742 points a perfect run through shifts 1–3 can score, so it takes a boss win.
+
+Your rank shows under your name in the top bar. **Achievements** (the trophy icon) shows the rank ladder and seven achievements, worked out from your results: First fix, By the book (a ticket resolved with no penalties), Paper trail (full notes bonus), Security minded (a compromise routed to Security with the evidence intact), Inbox zero (every shift 1–3 ticket cleared), Boss defeated (INC-1073 resolved) and Flawless boss (the boss resolved with no penalties, without revealing its guide first).
 
 ## Shifts
 
@@ -60,10 +65,21 @@ Your rank shows under your name in the top bar. **Achievements** (the trophy ico
 | 1 · Monday morning | 10 | Lockouts, a floor outage, Wi-Fi, mail delivery, printing and VPN |
 | 2 · Tuesday | 10 | Hardware: dead PCs, new starters, remote replacements, displays, chargers, DHCP, phones, mailbox access |
 | 3 · Wednesday | 11 | Identity and infrastructure: joiners, leavers, name changes, MFA, DNS, a provider outage, storage, file restores, phishing |
+| Boss stage · Thursday | 1 | The final boss: one requester who has already tried everything |
 
 - When every ticket on the shift is closed or escalated, the dashboard offers **Start next shift** with a briefing. **Shift briefing** on the dashboard shows the current one again.
 - Some tickets only arrive after another is finished, because the second problem only shows once the first is fixed.
 - Some tickets arrive as a Company Chat message or a voicemail rather than in the queue. Read who sent it and from which number or account before you trust it.
+
+## The boss stage
+
+Until shift 3 is cleared, the dashboard shows a locked **Final boss** card. When every shift 3 ticket is closed or escalated, the dashboard offers **Start the boss stage** and a briefing. The boss is one ticket, marked **BOSS** in the queue and on the ticket page, from a very technical requester who has already tried every fix a user can try.
+
+- It has layers. Check fix only lists the requirements you can see so far, plus "More requirements appear as you dig." Fixing one layer is what shows you the next, usually as an update from the requester in Company Chat.
+- The world keeps moving. Every action takes a minute of in-game time, and some things happen on a schedule, so watch the clock in the Remote Desktop taskbar and the timestamps in the logs.
+- Talk to the requester. Type to them in Company Chat: they answer what they've already checked, and they can give you exact times and error codes. Their measurements are reliable; their conclusions are hypotheses.
+- Some actions can't be undone, and the order you do things in matters. Wrong actions here cost up to −8 each.
+- The hint ladder has five hints and no model answer. The solution guide stays behind its spoiler gate, and revealing it before you finish forfeits the Flawless boss bonus.
 
 ## Tools tour
 
@@ -73,10 +89,10 @@ Open them from **Tools** in the top bar or **Open Tools** on a ticket.
 |---|---|
 | **Directory** | Users (profile, email addresses, groups, licences, devices, authentication, sessions, mailbox), HR **Starters** and **Leavers** records, **Licence pools**, Create user, Verify identity, unlock, enable, password and MFA resets, sign-in tests |
 | **Server Room** | Overview, clickable **Topology**, Devices, Servers and their services, **DHCP** scopes and leases, **Storage** volumes, **Shadow copies** with previous versions and the file audit, **Events & tasks**, and the ISP circuit (check status, log a fault) |
-| **Remote Desktop** | Connect to a user's PC: Network & Wi-Fi, VPN Client, File Explorer, Terminal, Settings (Display, Storage, Power & battery, About), System Update, Device Manager, Office Suite, Restart |
+| **Remote Desktop** | Connect to a user's PC: Network & Wi-Fi, VPN Client, File Explorer, Terminal, Settings (Display, Storage, Power & battery, About), System Update, Device Manager, Office Suite (including local data files), Task Scheduler, Restart |
 | **Computer Deployment** | Image a shelf device with a role image, assign it and run the five-stage deployment; image catalogue and deployed fleet |
 | **PC Shelf** | Spare devices (reserve, wipe, mark faulty, retire) and accessories you can issue to a device |
-| **Mail Admin** | Message trace, mailboxes (quota, archive, conversion to shared, permissions, automatic replies, forwarding, test messages), shared mailboxes, distribution lists, mobile devices, inbox rules |
+| **Mail Admin** | Message trace, mailboxes (quota, archive, conversion to shared, permissions, automatic replies, forwarding, test messages, mailbox audit log), shared mailboxes, distribution lists, mobile devices, inbox rules |
 | **Mail Security** | Quarantine, reported messages (analyse, report, purge, block) and blocked senders |
 | **Documentation** | **Runbooks** for every procedure (purpose, prerequisites, steps, verification, when to escalate) and a **Solution guide** for every ticket |
 | **Asset Management** | Hardware register: owner, location, state, warranty, health, lock, wipe, return to shelf, accessories, history, and company mobiles |
@@ -102,7 +118,7 @@ The same guides are in [`SOLUTIONS.md`](SOLUTIONS.md), which contains spoilers.
 
 - **Tab / Shift+Tab** move through every control; **Enter** or **Space** activates buttons, including the boxes in Server Room › Topology.
 - **Escape** closes dialogs and menus, closes Company Chat, and restores a maximized Remote Desktop window.
-- **Enter** in the Remote Desktop terminal runs the command. Type `help` for the list: `ipconfig [/all|/renew|/flushdns]`, `ping <host>`, `nslookup <host> [server]`, `tracert <host>`, `whoami`, `hostname`, `gpupdate /force`, `sfc /scannow` and `cls`.
+- **Enter** in the Remote Desktop terminal runs the command. Type `help` for the list: `ipconfig [/all|/renew|/flushdns]`, `ping <host>`, `nslookup <host> [server]`, `tracert <host>`, `whoami`, `hostname`, `quser`, `schtasks` (with `/query /v`, `/change /tn <task> /disable` or `/enable`, `/run /tn <task>` and `/delete /tn <task> /f`), `cmdkey /list`, `cmdkey /delete:<target>`, `logoff`, `shutdown /r`, `gpupdate /force`, `sfc /scannow` and `cls`.
 - **Enter** in the work-note box adds the note; **Enter** in Company Chat sends the message.
 - Search boxes filter as you type. Focus stays where it was when the screen redraws.
 

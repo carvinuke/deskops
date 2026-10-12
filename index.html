@@ -21,6 +21,7 @@
   --r:4px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --display:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   --chatw:420px;
+  --boss:#c792ea; --boss-bg:rgba(199,146,234,.10); --boss-line:rgba(199,146,234,.55); /* final-boss marker: solid borders and stripes only, never a glow */
   font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
 }
 /* ===== Base ===== */
@@ -76,7 +77,7 @@ input[type=search]{width:100%}
 .st{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .st.ok{color:var(--ok)}.st.bad{color:var(--down)}.st.warn{color:var(--warn)}.st.off{color:var(--muted)}
 .pri{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
-.pri.critical{color:var(--crit)}.pri.high{color:var(--high)}.pri.medium{color:var(--med)}.pri.low{color:var(--low)}
+.pri.critical{color:var(--crit)}.pri.high{color:var(--high)}.pri.medium{color:var(--med)}.pri.low{color:var(--low)}.pri.boss{color:var(--boss)}
 .chip{display:inline-block;border:1px solid var(--line2);border-radius:3px;padding:1px 7px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);background:var(--surface2);white-space:nowrap}
 .chip.multi{white-space:normal}
 .row.stack{flex-direction:column;align-items:stretch;gap:5px;margin-top:4px}
@@ -85,6 +86,9 @@ input[type=search]{width:100%}
 .chip.ok{background:rgba(60,207,142,.08);border-color:rgba(60,207,142,.35);color:var(--ok)}
 .chip.bad{background:rgba(255,90,95,.08);border-color:rgba(255,90,95,.38);color:var(--down)}
 .chip.warn{background:rgba(240,163,58,.08);border-color:rgba(240,163,58,.38);color:var(--warn)}
+.chip.boss{background:var(--boss-bg);border:2px solid var(--boss-line);color:var(--boss);padding:0 6px}
+.label.boss{color:var(--boss)}
+.brk{overflow-wrap:anywhere}
 .note{border-left:3px solid var(--blue);background:var(--blue-bg);padding:10px 12px;border-radius:3px;margin:10px 0}
 .note.warn{border-color:var(--warn);background:rgba(240,163,58,.08)}
 .note.bad{border-color:var(--crit);background:rgba(255,90,95,.08)}
@@ -133,7 +137,7 @@ tr.sel td{background:var(--blue-bg)}
 .whot{display:grid;line-height:1.15}
 .whot b{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .whot small{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-.rk-trainee{color:var(--text2)}.rk-bronze{color:#e0a072}.rk-silver{color:#cdd6df}.rk-gold{color:#f2c94c}.rk-platinum{color:#7fe0e8}
+.rk-trainee{color:var(--text2)}.rk-bronze{color:#e0a072}.rk-silver{color:#cdd6df}.rk-gold{color:#f2c94c}.rk-platinum{color:#7fe0e8}.rk-diamond{color:#a9c7ff}
 .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f0b54a,#e07b2e);display:inline-grid;place-items:center;font-size:12px;font-weight:800;color:#2a1600;flex:none;letter-spacing:.02em}
 .who .chevd{color:var(--text2)}
 #memNote{background:rgba(240,163,58,.12);border-bottom:1px solid rgba(240,163,58,.35);color:#f5c37a;font-size:12.5px;padding:6px 20px}
@@ -181,6 +185,8 @@ body.chat-open #chat{display:flex}
 .qrow .rq .mono{color:var(--blue);letter-spacing:.02em;font-size:12px}
 .qrow .pri,.qrow .chip{margin-top:3px}
 .qrow .chev{color:var(--text2);margin-top:2px}
+.qrow.boss{border-left:4px solid var(--boss);padding-left:18px}
+.bossteaser{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid var(--boss-line);border-left:4px solid var(--boss);background:var(--surface);padding:14px 22px;margin:0 0 22px}
 .qempty{padding:20px 32px;color:var(--text2)}
 .slim{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-top:28px}
 .mini{border:1px solid var(--line);background:rgba(17,20,24,.7);padding:14px 18px}
@@ -207,6 +213,7 @@ body.chat-open #chat{display:flex}
 .switch input:focus-visible+.knob{outline:2px solid var(--blue);outline-offset:2px}
 .tlayout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:1080px;margin:0 auto;align-items:start}
 .tcard{background:#121519;border:1px solid var(--line);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.tcard.boss{border:2px solid var(--boss-line);border-left:6px solid var(--boss)}
 .tchd{position:relative;padding:26px 28px 22px;border-bottom:1px solid var(--line)}
 .tmeta{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .ref{color:var(--blue);font-size:14px;letter-spacing:.03em}
@@ -257,6 +264,7 @@ body.chat-open #chat{display:flex}
   .qhd{padding:14px 16px}
   .qrow{padding:14px 16px;gap:10px;grid-template-columns:minmax(0,1fr) auto 14px}
   .qrow .chip,.qrow>span:empty{display:none}
+  .qrow .chip.boss{display:inline-block}
   .qrow .t{font-size:14.5px}
   .qrow .rq{font-size:12px;flex-wrap:wrap;gap:4px 10px}
   .qempty{padding:16px}
@@ -268,7 +276,7 @@ body.chat-open #chat{display:flex}
   .tablewrap thead{display:none}
   .tablewrap tr{border-bottom:1px solid var(--line2);padding:6px 0}
   .tablewrap tr:last-child{border-bottom:0}
-  .tablewrap td{border:0;padding:3px 4px;text-align:left!important}
+  .tablewrap td{border:0;padding:3px 4px;text-align:left!important;overflow-wrap:anywhere}
   .tablewrap td[data-label]:not(:empty)::before{content:attr(data-label);display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
   .tablewrap td .row{justify-content:flex-start!important}
   .tablewrap select{max-width:100%}
@@ -464,6 +472,7 @@ dialog::backdrop{background:rgba(4,6,8,.62);backdrop-filter:blur(5px)}
 .shiftbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 18px}
 .shiftno{font-family:var(--display);font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-size:13px}
 .nextshift{border:1px solid var(--blue-line);background:linear-gradient(90deg,rgba(30,167,225,.14),rgba(30,167,225,.03));padding:16px 22px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+.nextshift.boss{border-color:var(--boss-line);border-left:4px solid var(--boss);background:var(--boss-bg)}
 .intakes{margin-bottom:22px}
 .intk{display:flex;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .intk:last-child{border-bottom:0}
@@ -526,7 +535,8 @@ const PRI = {
   critical:{w:'Critical', rank:0, pts:30, pen:20},
   high:    {w:'High',     rank:1, pts:22, pen:15},
   medium:  {w:'Medium',   rank:2, pts:15, pen:10},
-  low:     {w:'Low',      rank:3, pts:10, pen:10}
+  low:     {w:'Low',      rank:3, pts:10, pen:10},
+  boss:    {w:'Boss',     rank:-1, pts:60, pen:30}
 };
 const GROUPS = ['Domain Users','Finance-Share','Sales-Share','HR-Share','Support-Share','Operations-Share','Executive-Share'];
 const SHARES = [
@@ -542,7 +552,7 @@ const HOSTS = { // name resolution for the simulated terminal
   'edge':'10.0.0.1','gateway':'10.0.0.1','firewall':'10.0.0.254','dc01':'10.0.0.10','dc02':'10.0.0.11','file01':'10.0.0.20',
   'mail01':'10.0.0.25','print01':'10.0.0.30','intranet.northstar.local':'10.0.0.40','northstar.example':'203.0.113.40','web.example':'198.51.100.7'
 };
-const O = (ok, done, todo) => ({ok, done, todo});
+const O = (ok, done, todo, stage) => ({ok, done, todo, stage}); // stage: staged tickets (the boss) only show an objective once that stage is reached
 /* Static catalogues for the v3 consoles (not saved; state refers to them by key/name). */
 const LICS = {office:'Office Suite (Standard)', endpoint:'Endpoint Protection', crm:'Sales Hub CRM', design:'Design Studio'};
 const STD_APPS = ['Office Suite','Teams Chat','Northstar VPN Client','Endpoint Protection','PDF Reader'];
@@ -568,7 +578,8 @@ const ANNOUNCE = [ // #office-announcements templates; full:true = impact + work
 const SHIFTS = { // briefing shown when a shift starts; ticket builders add entries for new shifts
   1:{title:'Shift 1 · Monday morning', brief:'A busy Monday: lockouts after the weekend, a floor outage and printing problems. Work critical tickets first. Your team lead Dana Okafor has left you a message in Company Chat.'},
   2:{title:'Shift 2 · Tuesday', brief:'Hardware day: new starters, replacements and shipments, a new laptop and a new phone that won’t connect, and a mailbox access request. Expect requests by chat and voicemail as well as the queue.'},
-  3:{title:'Shift 3 · Wednesday', brief:'Identity, infrastructure and security: joiners, leavers, returners and name changes, MFA resets, an office-wide DNS failure, a provider outage, a full file server, a lost file, a suspicious phone call and reported phishing.'}};
+  3:{title:'Shift 3 · Wednesday', brief:'Identity, infrastructure and security: joiners, leavers, returners and name changes, MFA resets, an office-wide DNS failure, a provider outage, a full file server, a lost file, a suspicious phone call and reported phishing.'},
+  4:{title:'Boss stage · Thursday', boss:true, brief:'Final boss. One ticket, and a requester who has already tried everything you would try first. Avery Farmwell (they/them), Senior Finance Systems Analyst, holds security analyst and IT support certifications and has ruled out every user-side fix. Today is the 12:00 supplier payment run and Avery is the approver. Expect layers: fixing one thing shows you the next. Avery’s measurements are reliable; their conclusions are hypotheses. Hints are vaguer, the solution guide stays behind its spoiler gate, and some actions here can’t be undone.'}};
 /* Deterministic DHCP lease list for a scope (exposed so ticket arrive() hooks can refill a scope). */
 function mkLeases(floor, active, stale){
   const out=[]; for (let i=0;i<active+stale;i++){ const on=i<active, n=String(i+1).padStart(3,'0');
@@ -600,6 +611,152 @@ const phishC1 = s => s.mail.messages.filter(m=>m.campaign==='c1');
 const leahVerified = s => ['callback-record','code-mobile'].includes(s.users.lfontaine.verified);
 const isLeah = a => !!a[0] && /^leah$/i.test(String(a[0].first||'').trim()) && /^fontaine$/i.test(String(a[0].last||'').trim());
 function has65(s){ return s.workstations['NS-OPS-026'].accessories.includes('USB-C charger 65 W'); }
+
+/* ----- INC-1073 (final boss): Avery Farmwell's old laptop NS-FIN-033 woke up on Floor 3 with their Oct 13 session still signed in ----- */
+const GHOST='NS-FIN-033', GHOST_IP='10.0.3.133', SP='Supplier_Payments.xlsx', SP_PATH='\\\\FILE01\\Finance\\Supplier_Payments.xlsx';
+const ghostW = s => s.workstations[GHOST];
+const ghostTask = s => { const w=ghostW(s); return w ? (w.tasks||[]).find(x=>x.name==='LedgerlineExport') : null; };
+const payFile = s => s.fs.Finance.files[SP];
+const bossT = s => s.tickets['INC-1073'];
+const bossLive = s => ['open','assigned'].includes(bossT(s).status);
+const sb3Left = s => s.net.servers.FILE01.shadows.some(z=>z.id==='sb3');
+/* Burst source: the interactive-only job runs in Avery's still-signed-in session with the pre-06:41 password. */
+function ghostArmed(s){ const w=ghostW(s), k=ghostTask(s); return !!k && k.enabled && k.runAs==='afarmwell' && !!w.sessionUser && !w.wiped; }
+/* Objective 1: the job can't run at all. A working credential stops the lockouts but re-arms the copy, so it doesn't count. */
+function ghostStopped(s){ const w=ghostW(s), k=ghostTask(s); return !w || w.wiped || !k || !k.enabled || (k.runAs==='afarmwell' && !w.sessionUser); }
+function seen033(s){ return s.log.some(l=>/NS-FIN-033|NSA-2033/.test(l.entity+' '+l.text)) || Object.values(s.ui.q||{}).some(v=>/033/.test(v)) || s.ui.sel.asset===GHOST; }
+function ghostMsg(s, w){ const sw=Object.values(s.net.devices).find(d=>d.kind==='switch' && d.floor===w.floor);
+  return `${w.tag} isn’t in the Returns bin: the bay is empty. Last heartbeat just now from ${sw?sw.name:'the office network'} Gi1/0/${Number(w.tag.slice(-2))||1}.`; }
+const alertUi = (s, text) => (s.ui.alerts||(s.ui.alerts=[])).push(text);
+/* A contact posts in Company Chat on their own (unread unless that conversation is open). */
+function sayTo(s, uid, text, t){ thread(s,uid).push({from:uid, text, t:t||hhmm(s.clock||CLOCK0)});
+  if (!(s.ui.chat.open && s.ui.chat.sel===uid)) s.chat.unread[uid]=(s.chat.unread[uid]||0)+1; touchChat(s,uid); }
+/* Something replaced the live payments file: Samir's merge or rebuild no longer counts. */
+function liveOverwritten(s, f){ if (!f.liveEdits) return; Object.assign(f,{liveEdits:false, liveLost:true}); delete s.chat.facts.merge1073; delete s.chat.facts.rebuild1073; }
+/* One run of LedgerlineExport at minute m (a quarter-hour, or Run now). Returns 'burst', 'copy' or null when nothing reached FILE01. */
+function bossRun(s, m, quiet){
+  const w=ghostW(s), k=ghostTask(s), u=s.users.afarmwell, t=hhmm(m);
+  if (!k || !k.enabled || w.wiped || !netState(s,w).internal) return null;
+  if (k.runAs==='afarmwell'){
+    if (!w.sessionUser) return null;
+    const saved=(w.creds||[]).some(c=>/FILE01/i.test(c.target)), was=u.locked, bt=bossT(s);
+    u.signins.unshift({t:'Today '+t, host:GHOST, loc:`Northstar HQ · Floor 3 (${GHOST_IP})`, app:`Network sign-in to FILE01 (${saved?'saved credential':'session credentials, signed in Oct 13'}) · 5 attempts`, result:'Failure'});
+    if (u.signins.length>80) u.signins.length=80;
+    ev(s,'DC01','Audit failure','Security',4771,`Kerberos pre-authentication failed ×5. Account: afarmwell. Client address: ${GHOST_IP}. Failure code ${was?'0x12 (account locked out)':'0x18 (bad password)'}.`, t);
+    Object.assign(k,{last:'Today '+t, result:'16 (robocopy: ERROR 1326 (0x0000052E) logon failure: unknown user name or bad password; retry limit exceeded)'});
+    if (!was){ ev(s,'DC01','Warning','Security',4740,'A user account was locked out. Account: afarmwell. Caller Computer Name: NS-FIN-033.', t);
+      u.locked=true; u.signInOk=false; bt.quietRun=false;
+      if (bossLive(s)){ if (!quiet) sayTo(s,'afarmwell',`Locked again at ${t}. Nothing changed my side.`, t); alertUi(s,`INC-1073: afarmwell locked out again at ${t}.`); } }
+    return 'burst'; }
+  /* any other account authenticates, so robocopy copies the Oct 13 export over a newer destination (no /XO) */
+  const f=payFile(s); Object.assign(k,{last:'Today '+t, result:'0x0 (robocopy: no files copied)'});
+  if (!f.liveEdits) return 'copy';
+  liveOverwritten(s,f); Object.assign(f,{state:'stale', live:`Modified Oct 13 15:58 by afarmwell · 212 KB · 47 payees (copied over the live file at ${t})`});
+  s.net.servers.FILE01.audit.unshift({t:'Today '+t, user:k.runAs, action:'Overwritten', path:SP_PATH, src:`${GHOST} · ${GHOST_IP}`});
+  k.result='1 (robocopy: 1 file copied)';
+  return 'copy'; }
+/* T.tick for INC-1073: the job fires on every :00/:15/:30/:45 in (from, to]. A boundary that passes with Avery unlocked and no burst is a quiet run. */
+function bossTick(s, from, to, quiet){
+  for (let m=Math.floor(from/15)*15+15; m<=to; m+=15){ if (bossRun(s,m,quiet)!=='burst' && !s.users.afarmwell.locked) bossT(s).quietRun=true; } }
+/* Avery's stage-aware answer to "is it working now?" and to an early "Ask to confirm the fix". */
+function bossStatus(s){
+  const o=TK['INC-1073'].obj, ok=i=>o[i].ok(s), f=payFile(s);
+  if (!ok(0) || !ok(1)) return s.users.afarmwell.locked ? 'Not yet: the last quarter-hour locked me again.' : 'I’m unlocked for now, but I’ve been here eleven times today. Let’s see a quarter-hour pass first.';
+  if (!ok(2)) return 'I can stay signed in now, but my six Ledgerline messages are still missing.';
+  if (!ok(3)) return 'My messages are back, but whatever moved them could do it again. I don’t want the next Ledgerline mail to vanish too.';
+  if (!ok(4) || !ok(5) || !ok(6)) return f.copy==='v3' && !f.liveLost && !s.chat.facts.merge1073 ? 'There’s a restored copy next to Supplier_Payments.xlsx, but PR-1015 imports the live file and nobody has merged it yet.'
+    : 'Mail’s back, but Supplier_Payments.xlsx still has Larkspur on …2290. PR-1015 can’t run on that.';
+  if (!ok(7)) return 'Everything works, but my old laptop is still awake on Floor 3 with my session on it. I won’t sign off until it’s wiped.';
+  return 'Everything checks out from my side. Ask me to confirm and I’ll approve PR-1015.'; }
+const AF_TIMES='Lockouts at 06:45, 07:00, 07:15, 07:30, 07:45, 08:00, 08:15, 08:30, 08:45, 09:00, 09:15 and 09:30, five failures each, about 5 seconds apart. Webmail says “Your account has been locked” (50053). NS-FIN-041’s lock screen says “The referenced account is currently locked out and may not be logged on to.”';
+const AF_LAPTOP='My old Northbook, NSA-2033? It went into the IT drop-off cabinet on Floor 3 on Tuesday at 16:05 during the refresh. I had a couple of Ledgerline helpers on it: an export job and a mail filing rule. But they’d have died with it. IT wipes returns within a day… don’t they?';
+const AF_RULE='That’s mine, Sep 4, from the old desktop export workflow. It files Ledgerline mail into a PST on that laptop. Client-only rules run where they were made, so if my mail is moving, that laptop is awake somewhere. Kill the rule, but get my mail out of that PST first.';
+/* arrive(): only adds data and normalises overnight leftovers, so earlier outcomes (worst case included) can't break the boss. */
+function bossArrive(s){
+  const N=s.net, F1=N.servers.FILE01, D=fileD(s), sc=D.folders.find(f=>f.name==='Scans'), pt=F1.tasks.find(k=>k.purge==='Scans');
+  ['isp','edge','fw','sw1','sw2','sw3'].forEach(k=>{ N.devices[k].status='online'; });
+  Object.values(N.servers).forEach(x=>Object.keys(x.services).forEach(k=>{ x.services[k]='running'; }));
+  if (!sc.deleted){ sc.gb=Math.max(0,sc.gb-(sc.oldGB||0)); sc.oldGB=0; } // the night shift re-enabled the Scans purge and it ran at 02:00
+  Object.assign(pt,{enabled:true, last:'Oct 15 02:00', result:'Success'});
+  F1.tasks.forEach(k=>{ if (k.name==='Nightly backup to vault') Object.assign(k,{last:'Oct 14 23:00', result:'Success'}); if (k.shadow) Object.assign(k,{last:'Oct 15 07:00', result:'Success'}); if (k.purge==='Exports') Object.assign(k,{last:'Oct 15 02:30', result:'Success'}); });
+  const loc2='Northstar HQ · Floor 2', loc3=`Northstar HQ · Floor 3 (${GHOST_IP})`, edge=ip=>`${ip} · hosting provider · blocked at the edge, not counted toward lockout`;
+  const LOCKS=['06:45','07:00','07:15','07:30','07:45','08:00','08:15','08:30','08:45','09:00','09:15','09:30'], UNLOCKS=['06:52','07:06','07:20','07:36','07:48','08:05','08:20','08:36','08:50','09:05','09:20'];
+  const today=[[ '09:33',{host:'NS-FIN-041', loc:loc2, app:'Desktop sign-in', result:'Blocked'}],
+    ...LOCKS.map(t=>[t,{host:GHOST, loc:loc3, app:'Network sign-in to FILE01 (saved credential) · 5 attempts', result:'Failure'}]),
+    ...UNLOCKS.map(t=>[t,{host:'Web browser', loc:loc2, app:t==='08:05'?'Self-service password change and unlock':'Self-service unlock', result:'Success'}]),
+    ['08:06',{host:'Web browser', loc:loc2, app:'Web mail: sign out of other web sessions', result:'Success'}],
+    ['07:50',{host:'NS-MKT-011', loc:'Northstar HQ · Floor 3', app:'Desktop sign-in', result:'Success'}],
+    ['07:29',{host:'Pixelon 8 (NSM-0131)', loc:'Mobile network', app:'Northstar Mail', result:'Success'}],
+    ['07:02',{host:'Web browser', loc:edge('198.51.100.23'), app:'Web mail', result:'Blocked'}],
+    ['06:41',{host:'NS-FIN-041', loc:loc2, app:'Desktop sign-in · password changed at the expiry prompt', result:'Success'}],
+    ['06:30',{host:GHOST, loc:loc3, app:'Network sign-in to FILE01 (saved credential)', result:'Success'}]].sort((a,b)=>b[0].localeCompare(a[0])).map(([t,r])=>Object.assign({t:'Today '+t},r));
+  const signins=today.concat([{t:'Oct 14 18:15 → Today 06:15', host:GHOST, loc:loc3, app:'Network sign-in to FILE01 · 49 sign-ins, every 15 min', result:'Success'},
+    {t:'Oct 14 18:00', host:GHOST, loc:loc3, app:'Network sign-in to FILE01 (first since Oct 13)', result:'Success'},
+    {t:'Oct 14 07:05', host:'Web browser', loc:edge('198.51.100.24'), app:'Web mail', result:'Blocked'},
+    {t:'Oct 13 16:10', host:'NS-FIN-041', loc:loc2, app:'Desktop sign-in', result:'Success'},
+    {t:'Oct 13 16:02', host:GHOST, loc:loc2, app:'Desktop sign-in', result:'Success'}]);
+  const move=t=>({t, op:'Move', items:1, folder:'Inbox → Ledgerline-archive.pst › Processed (local data file)', client:`Office Suite · ${GHOST} · ${GHOST_IP}`, logon:'Owner'});
+  addPerson(s, user('afarmwell','Avery Farmwell','Finance','Senior Finance Systems Analyst',2,'4426','NS-FIN-041',['Finance-Share'],{pronouns:'they/them', manager:'Rafael Ortiz', presence:'online', device:'Web browser (Company Chat)',
+      locked:true, lastSignIn:'Today 09:33 · NS-FIN-041 (blocked: account locked)', startDate:'2019-03-04', roleTemplate:'Finance · Systems analyst (local admin exception FIN-EXC-014)',
+      verifyText:{'callback-record':'You called x4426. Avery answered on the first ring and quoted employee ID E44261 before you asked. Verified.'},
+      sessions:[{id:'af1', device:'NS-FIN-041', app:'Desktop sign-in', loc:loc2, t:'Today 06:52'},{id:'af2', device:'Web browser', app:'Web mail', loc:loc2, t:'Today 08:06'},
+        {id:'af4', device:'Web browser', app:'Company Chat', loc:loc2, t:'Today 08:07'},{id:'af3', device:GHOST, app:'Office Suite (desktop)', loc:loc3, t:'Oct 13 16:02 (token refreshed 09:15)'}],
+      signins}),
+    ws('NS-FIN-041','afarmwell',2,'NSA-2041','NB14-57041',{image:'Northstar Finance 24.2', warranty:'2029-10-13', logon:'10/15/2026 06:52', creds:[],
+      tasks:[{name:'Image maintenance', runAs:'SYSTEM', logon:'Service', schedule:'Daily 03:00', action:'C:\\Program Files\\Northstar\\maint.exe /quiet', created:'10/13/2026 16:00 by NORTHSTAR\\svc-deploy', enabled:true, last:'Today 03:00', result:'0x0'}],
+      history:[{t:'Oct 13 16:00', text:'Deployed from the PC Shelf (NSA-S150) with Northstar Finance 24.2 for Avery Farmwell (DPL-3190)'}]}),
+    mbx(1.9,'Finance (7 years)',{audit:[move('Today 09:15'),{t:'Today 08:06', op:'SignOutOtherSessions', items:'—', folder:'—', client:'Web browser · Floor 2', logon:'Owner'},
+      move('Today 07:30'),move('Today 06:00'),move('Today 02:00'),move('Oct 14 18:30'),move('Oct 14 17:53'),{t:'Oct 14 16:12', op:'Read', items:1, folder:'Inbox', client:'Office Suite · NS-FIN-041', logon:'Owner'}]}));
+  s.workstations[GHOST]=ws(GHOST,null,3,'NSA-2033','NB14-55933',{image:'Northstar Finance 24.2', warranty:'2026-12-31', state:'Returned · Pending wipe', site:'IT storeroom', ghost:true, wired:true,
+    sessionUser:'afarmwell', logon:'10/13/2026 16:02', ip:{mode:'dhcp', addr:GHOST_IP}, lastEvent:'Resumed from sleep on a dock · Oct 14 17:52',
+    history:[{t:'Oct 13 16:05', text:'Returned (hardware refresh DPL-3190, drop-off: IT cabinet, Floor 3)'},{t:'Oct 13 16:02', text:'Last interactive sign-in: afarmwell'}],
+    creds:[{target:'Domain:target=FILE01', type:'Domain Password', user:'NORTHSTAR\\afarmwell', saved:'09/04/2026 16:20'}],
+    tasks:[{name:'LedgerlineExport', runAs:'afarmwell', logon:'Interactive only', schedule:'Every 15 minutes', action:'robocopy C:\\Ledgerline\\Out \\\\FILE01\\Finance Supplier_Payments.xlsx /R:4 /W:5',
+        created:'09/04/2026 16:22 by NORTHSTAR\\afarmwell', comment:'Ledgerline export to the Finance share (FIN-EXC-014)', enabled:true, last:'Today 09:30', result:'16 (robocopy: ERROR 1326 (0x0000052E) logon failure: unknown user name or bad password; retry limit exceeded)'},
+      {name:'Image maintenance', runAs:'SYSTEM', logon:'Service', schedule:'Daily 03:00', action:'C:\\Program Files\\Northstar\\maint.exe /quiet', created:'05/20/2025 10:11 by NORTHSTAR\\svc-deploy', enabled:true, last:'Today 03:00', result:'0x0'}],
+    pst:{path:'C:\\Users\\afarmwell\\Documents\\Ledgerline-archive.pst', folder:'Processed', items:6, range:'Oct 14 16:10 – Today 09:15', restored:false, lost:false}});
+  addShelf(s,{tag:'NSA-2033', model:'Northbook 14 laptop', serial:'NB14-55933', cond:'Returned', bay:'Returns bin', status:'Available', wiped:false, image:'Northstar Finance 24.2', host:GHOST, note:'Hardware refresh return · Avery Farmwell · DPL-3190'});
+  addShelf(s,{tag:'NSA-S150', model:'Northbook 14 laptop', serial:'NB14-57041', cond:'New · boxed', bay:'Shelf A1', status:'Deployed', wiped:false, image:'Northstar Finance 24.2', host:'NS-FIN-041'});
+  if (!s.deploy.jobs.some(j=>j.id==='DPL-3190')) s.deploy.jobs.push({id:'DPL-3190', at:'Oct 13 16:00', device:'NSA-S150', host:'NS-FIN-041', image:'Northstar Finance 24.2', user:'afarmwell', site:'Floor 2', ok:true, warnings:[],
+    steps:[{name:'Apply image Northstar Finance 24.2', ok:true, note:'Disk partitioned, OS applied'},{name:'Join domain northstar.local', ok:true, note:'Computer account NS-FIN-041 created'},
+      {name:'Install apps', ok:true, note:IMAGES[1].apps.join(', ')},{name:'Enable disk encryption', ok:true, note:'Recovery key escrowed to Directory'},
+      {name:'Hand over to Avery Farmwell', ok:true, note:'Floor 2 · old device NSA-2033 marked Returned · Pending wipe (drop-off: IT cabinet, Floor 3)'}]});
+  s.mail.mobiles.push({id:'mobAF', box:'afarmwell', model:'Pixelon 8', os:'Android 15', app:'Northstar Mail', devId:'AND-AF2604', owned:'company', tag:'NSM-0131', state:'Removed', lastSync:'Today 07:29', syncOk:false, note:'Account removed on the phone by the user at 07:31'});
+  N.dhcp.scopes.find(x=>x.id==='f3').leases.splice(33,0,{client:GHOST, mac:'3C:52:A3:21:0F:33', seen:'Today 09:30', active:true});
+  s.mail.lists.find(l=>l.id==='dl-finance').members.push('afarmwell');
+  [['mL4','09:15','PR-1015 pre-run check – 12:00 today'],['mL3','07:30','Daily cash position – Oct 15'],['mL2','06:00','AP overnight batch report – Oct 15'],['mL1','02:00','PR-1014 payment confirmation – 38 remittances']]
+    .forEach(([id,time,subject])=>s.mail.messages.push({id, time, from:'ledgerline@northstar.example', fromName:'Ledgerline ERP', to:'avery.farmwell@northstar.example', subject, status:'Delivered', detail:'Delivered to inbox'}));
+  s.mail.rules.push({id:'rf1', box:'afarmwell', name:'Ledgerline tidy', cond:'From ledgerline@northstar.example', action:'Move to folder “Processed” in Ledgerline-archive.pst (on this computer)', external:false, clientOnly:GHOST,
+    created:'Sep 4, 16:22 · Office Suite on NS-FIN-033', inspected:false, deleted:false});
+  const dcEv=[]; LOCKS.slice().reverse().forEach(t=>{ dcEv.push({t, level:'Warning', source:'Security', id:4740, text:'A user account was locked out. Account: afarmwell. Caller Computer Name: NS-FIN-033.'},
+      {t, level:'Audit failure', source:'Security', id:4771, text:`Kerberos pre-authentication failed ×5. Account: afarmwell. Client address: ${GHOST_IP}. Failure code 0x18 (bad password).`});
+    const un=UNLOCKS.filter(x=>x<t).pop(); if (!un) return;
+    dcEv.push({t:un, level:'Info', source:'Security', id:4767, text:'A user account was unlocked. Target account: afarmwell. Unlocked by: Self-service password reset.'});
+    if (un==='08:05') dcEv.push({t:un, level:'Info', source:'Security', id:4723, text:'An attempt was made to change an account’s password. Target: afarmwell. Caller: Self-service password reset portal.'}); });
+  dcEv.push({t:'06:41', level:'Info', source:'Security', id:4723, text:'An attempt was made to change an account’s password. Target: afarmwell. Caller: afarmwell (NS-FIN-041, expiry prompt).'});
+  dcEv.sort((a,b)=>b.t.localeCompare(a.t) || [4740,4771,4723,4767].indexOf(a.id)-[4740,4771,4723,4767].indexOf(b.id)); N.servers.DC01.events.unshift(...dcEv);
+  F1.shadows.unshift({id:'sb4', t:'Oct 15 07:00', gb:2},{id:'sb3', t:'Oct 14 12:00', gb:2},{id:'sb2', t:'Oct 14 07:00', gb:2},{id:'sb1', t:'Oct 13 12:00', gb:2});
+  F1.audit.unshift({t:'Oct 15 08:55', user:'shaddad', action:'Modified', path:SP_PATH},{t:'Oct 14 18:00', user:'afarmwell', action:'Overwritten', path:SP_PATH, src:`${GHOST} · ${GHOST_IP}`},
+    {t:'Oct 14 11:40', user:'shaddad', action:'Modified', path:SP_PATH},{t:'Oct 13 15:58', user:'afarmwell', action:'Modified', path:SP_PATH, src:GHOST});
+  F1.audit.sort((a,b)=>b.t.localeCompare(a.t));
+  (s.fs.Finance||(s.fs.Finance={files:{}})).files[SP]={state:'stale', live:'Modified Oct 15 08:55 by shaddad · 216 KB · 49 payees', liveEdits:true, liveLost:false,
+    backupNote:'The Oct 14 23:00 backup was taken after the Oct 14 18:00 overwrite, so it holds the same copy as the live file had before Samir’s 08:55 edit.',
+    versions:[{id:'v4', shadow:'sb4', t:'Modified Oct 13 15:58 by afarmwell', size:'212 KB · 47 payees'},{id:'v3', shadow:'sb3', t:'Modified Oct 14 11:40 by shaddad', size:'219 KB · 49 payees'},
+      {id:'v2', shadow:'sb2', t:'Modified Oct 13 15:58 by afarmwell', size:'212 KB · 47 payees'},{id:'v1', shadow:'sb1', t:'Modified Oct 13 11:05 by afarmwell', size:'211 KB · 47 payees'}]};
+  thread(s,'afarmwell').push({from:'afarmwell', text:'Hi, INC-1073 is mine. I’m on x4426 and in here, from a browser session that’s still alive. Ask me for anything: timestamps, error codes, what I’ve checked. One request: don’t make me change my password again unless you can tell me why it would help.', t:'09:36'});
+  s.chat.unread.afarmwell=1; touchChat(s,'afarmwell'); if (!s.chat.pinned.includes('afarmwell')) s.chat.pinned.push('afarmwell');
+  Object.assign(bossT(s), {stage:1, quietRun:false, at:s.clock||CLOCK0}); }
+/* Test helper (selfTest and the blind-test boss_setup.js only): clears shifts 1–3 the worst way (nothing fixed, every ticket scored at its guide's best)
+   and stops on the dashboard with the boss stage unlocked. It never touches INC-1073. */
+function ffBoss(s){
+  const clear=()=>{ for (let live; (live=TICKETS.filter(T=>!T.boss && (T.shift||1)===s.shift && ['intake','open','assigned'].includes(s.tickets[T.ref].status))).length;){
+    live.forEach(T=>{ const t=s.tickets[T.ref], sc=scoreGuide(T), esc=sc.finish!=='Close ticket';
+      t.status=esc?'escalated':'closed'; t.result={mode:esc?'escalate':'close', outcome:esc?'Routed to Security':'Resolved', lines:[['Fast-forward (test helper)', sc.best]], total:sc.best, notes:'', at:hhmm(s.clock||CLOCK0), model:T.model};
+      s.profile.points+=sc.best; });
+    arrivals(s); } };
+  clear(); while (s.shift<3){ ENV.nextShift(s); clear(); }
+  s.voicemails.forEach(v=>{ v.heard=true; }); s.chat.unread={}; s.profile.firstRun=false;
+  return s; }
 
 const TICKETS = [
 {ref:'INC-1042', pri:'high', cat:'Access / Account lockout', req:'mchen', asset:'NS-FIN-014', assetType:'Windows workstation', created:'08:12',
@@ -2084,13 +2241,191 @@ const TICKETS = [
     'Blocking the wrong domain (our own northstar.example).',
     'Escalating a 0-click campaign that the runbook says Tier 1 contains, or the reverse: not escalating when someone did click.'],
   realWorldNote:'The user-reported phishing playbook is: analyse safely (headers and URL reputation, never click), scope it (search by sender, subject and URL), check for clicks or credential entry, preserve and report, purge everywhere, block the indicators, and thank the reporter. Thanking people keeps reporting rates high. If anyone clicked or entered credentials, treat it as a possible compromise: escalate to Security, reset the password, revoke sessions and review inbox rules.',
-  idealNotes:'User-reported phishing (rp2, gwhitfield). Lookalike sender it-servicedesk@northstar-helpdesk.example (domain 2 days old), SPF fail, no DKIM, Reply-To helpdesk.verify@outlook-mail.example, link to a fake sign-in page. Did not open the link. Trace: 6 recipients 09:31–09:32 (gwhitfield, mchen, pshah, jprice, ebrooks, awilson), filter score 4.1. Link protection: 0 clicks. Reported the sample to Security, soft-purged 6/6, blocked the sender. Verified: trace shows every copy Purged. Thanked Gemma.'}}
+  idealNotes:'User-reported phishing (rp2, gwhitfield). Lookalike sender it-servicedesk@northstar-helpdesk.example (domain 2 days old), SPF fail, no DKIM, Reply-To helpdesk.verify@outlook-mail.example, link to a fake sign-in page. Did not open the link. Trace: 6 recipients 09:31–09:32 (gwhitfield, mchen, pshah, jprice, ebrooks, awilson), filter score 4.1. Link protection: 0 clicks. Reported the sample to Security, soft-purged 6/6, blocked the sender. Verified: trace shows every copy Purged. Thanked Gemma.'}},
+
+/* ===== Boss stage · INC-1073 “The Sleeper”: unlocks after every shift 3 ticket is closed or escalated ===== */
+{ref:'INC-1073', shift:4, boss:true, pri:'boss', cat:'Identity / Lockout and missing mail', req:'afarmwell', asset:'afarmwell · NS-FIN-041', assetType:'Account, mailbox and laptop', created:'09:35', expect:'close', cap:[-30,70],
+ arrive:bossArrive, tick:bossTick,
+ title:'Locked out every quarter-hour since my 06:41 password change, and Ledgerline mail keeps vanishing',
+ desc:'My account (afarmwell) has locked out on every quarter-hour since 06:45 today: 06:45, 07:00, 07:15 and so on to 09:30, twelve lockouts in all. My password was due to expire today, so I changed it at the expiry prompt at 06:41, and the first lockout came four minutes later. Each lockout is five bad attempts about 5 seconds apart, which is exactly our 5-attempt threshold. So something is replaying my pre-06:41 password in a retry loop on a 15-minute timer. Self-service unlock works every time (I’ve used it 11 times), and the account relocks at the next :00, :15, :30 or :45 whichever device I’m on. My Sign-ins page shows every lockout failure as “Northstar HQ network”, with no device name. The only outside IPs are two blocked attempts from 198.51.100.23 and .24. I reported those to Security on Tuesday (SEC-2231), and they don’t line up with any lockout. MFA is intact and I’ve had no unexpected prompts.\n\nSeparately, and I suspect it’s related, Ledgerline mail is disappearing. Six messages since Wednesday 16:10 are gone from every folder. They include the 02:00 PR-1014 payment confirmation, the 09:15 PR-1015 pre-run check, and even the 16:10 message I had already read on my new laptop. Ledgerline’s send log has “250 2.0.0 OK queued” from MAIL01 for every one of them, and webmail shows no rules, no forwarding and no delegates.\n\nI’ve ruled out everything I can see (list below). Whatever holds my old password is inside our network and runs on a timer, and users can’t see which machine it is. You can. Today is the 12:00 PR-1015 supplier payment run, and I’m the approver.',
+ impact:'Avery is the approver of today’s 12:00 PR-1015 supplier payment run (51 payees, $1,842,300) and can’t stay signed in for more than 15 minutes. Six Ledgerline ERP messages are missing from their mailbox, including the PR-1014 payment confirmation and the PR-1015 pre-run check.',
+ tried:['Changed my password at the expiry prompt at 06:41, and again through self-service at 08:05. Both times I was locked again within 15 minutes, on the quarter-hour.',
+   'Used self-service unlock 11 times, after every lockout from 06:45 to 09:15. It relocks at the next :00, :15, :30 or :45 every time, so I stopped after 09:30.',
+   'On NS-FIN-041 I ran cmdkey /list (empty), ran klist purge, cleared Credential Manager and removed the saved credentials for my F: and P: drives.',
+   'Rebooted NS-FIN-041 twice. The second was a full cold boot at 07:40, and it still locked at 07:45 on schedule.',
+   'Checked Task Scheduler, services and startup items on NS-FIN-041: nothing runs as afarmwell. A full Endpoint Protection scan was clean.',
+   'Repaired Office Suite, then reinstalled it at 08:20. Neither the lockouts nor the mail changed.',
+   'Removed the Northstar Mail account from my Pixelon 8 at 07:31 and put the phone in airplane mode. Lockouts continued at 07:45, 08:00 and 08:15.',
+   'Signed in on hot desk NS-MKT-011 (Floor 3) at 07:50, and it locked at 08:00 like everywhere else. Also tried wired on my Floor 2 dock and on Northstar-Staff Wi-Fi. I’m not on VPN.',
+   'Webmail › “Sign out of other web sessions” at 08:06. It’s the only session control users get, and it only covers browser sessions.',
+   'Webmail shows no inbox rules, no forwarding and no delegates. I searched Inbox, Deleted Items, Recoverable Items, Junk and the online archive for the Ledgerline messages, and none of them are there.',
+   'Asked the Ledgerline admin for delivery evidence: every message got 250 OK from MAIL01.',
+   'Reported the 198.51.100.23 attempts to Security on Tuesday (SEC-2231).',
+   'Had a hardware refresh on Tuesday. NS-FIN-041 is a clean Finance image and nothing was migrated, so none of my old Ledgerline helpers came across.'],
+ hints:['Avery’s measurements are reliable; their conclusions are hypotheses. Users can’t see which machine presented a bad password. Admin logs can.',
+   'Paperwork and heartbeats can disagree. When a record says a device is somewhere quiet, check whether it really is quiet.',
+   'Before you do anything irreversible, find out what else that machine did as Avery, and where its copies went.',
+   'A modified date that goes backwards isn’t an edit. When someone has legitimately worked on top of the damage, neither the newest snapshot nor the live file is right on its own.',
+   'No model answer for the boss: the full solution is in Documentation › Solution guides, behind the spoiler gate.'],
+ model:'NS-FIN-033 (NSA-2033), Avery’s old laptop, was marked Returned by DPL-3190 but never collected. Docked on Floor 3 on Oct 14, it woke Avery’s Oct 13 session. Its LedgerlineExport task (robocopy every 15 minutes with a saved FILE01 credential, /R:4) locked afarmwell after the 06:41 password change (DC01 4740, caller NS-FIN-033). Its client-only rule moved six Ledgerline messages into a local PST, and its first run at Oct 14 18:00 copied an Oct 13 export over Supplier_Payments.xlsx. Disabled the task, unlocked Avery and watched a clean quarter-hour. Moved the PST items back, revoked only the NS-FIN-033 Office session and deleted the rule. Restored the Oct 14 11:40 version (sb3) as a copy for Samir to merge with his 08:55 payees. Wiped NS-FIN-033 last. Avery confirmed and approved PR-1015. Follow-up: a problem record so refresh returns are marked Returned only when they are scanned in at the storeroom.',
+ keys:['ns-fin-033','nsa-2033','4740','ledgerlineexport','client-only','pst','supplier_payments','restore as a copy','larkspur','robocopy'],
+ stages:{2:{reveal:'Now that I can stay signed in long enough to search properly: all six Ledgerline messages since Wednesday 16:10 are still missing from every folder, Recoverable Items included. Ledgerline and Message trace both say Delivered.'},
+   3:{reveal:s=>`${ghostW(s).pst.lost?'Ledgerline re-issued the PR-1014 confirmation':'I’ve read the recovered PR-1014 confirmation'}, and it worries me. PR-1014 paid Larkspur Packaging to …7731, their new account, which Samir verified by callback on Wednesday. But F:\\Supplier_Payments.xlsx, which PR-1015 imports at 12:00, has Larkspur on …2290, the account they closed. Samir has been editing that file this morning. Something rewrote it.`},
+   4:{reveal:s=>ghostW(s).wiped ? 'Samir’s file checks out against PR-1014. I see my old laptop has already been wiped. Ask me to confirm when you’re happy, and I’ll approve PR-1015.'
+     : 'Samir’s file checks out against PR-1014. Last thing before I approve PR-1015: my old laptop is still awake on Floor 3 with my session, a saved FILE01 credential and a Finance image on it. I want it gone properly.'}},
+ penalties:Object.assign({
+   'remoteWipe:NS-FIN-033':[8,'Wiped NS-FIN-033 before recovering Ledgerline-archive.pst: the only copies of six Ledgerline messages are gone', s=>!ghostW(s).wiped && !ghostW(s).pst.restored && !ghostW(s).pst.lost],
+   'remoteWipe:NS-FIN-041':[8,'Wiped the payment-run approver’s working laptop'],
+   'wipeSpare:NSA-2041':[8,'Wiped the payment-run approver’s working laptop'],
+   'deploy:host:NS-FIN-041':[4,'Re-imaged Avery’s working laptop: it was never the source'],
+   'deploy:NSA-2041':[4,'Re-imaged Avery’s working laptop: it was never the source'],
+   'returnToShelf:NS-FIN-041':[4,'Returned the payment-run approver’s working laptop to stock'],
+   'setAsset:NS-FIN-041':[3,'Marked Avery’s working laptop retired, disposed or lost', (s,a)=>a[1]==='state' && /Retired|Disposed|Lost/.test(a[2])],
+   'wsTask:NS-FIN-033#runas':[6,'Gave a retired laptop’s copy job your admin credential: it re-armed the overwrite of today’s payments file', (s,a)=>a[2]==='runas' && a[3]==='svc-deskops-lab'],
+   'revertShare:Finance':[6,'Rolled back the whole Finance share to fix one file'],
+   'off:sw3':[6,'Cut a whole floor’s network to silence one laptop'],
+   'reboot:sw3':[3,'Rebooted the Floor 3 switch: every hot desk dropped and nothing changed'],
+   'deleteShadows:FILE01':[5,'Deleted the restore points that held the last good payments file'],
+   'restoreVersion:Finance#orig':[4,'Restored over the live payments file: Samir’s 08:55 changes for today’s run were lost', (s,a)=>a[1]===SP && a[3]==='original'],
+   'reboot:DC01':[4,'Rebooted a domain controller to clear a lockout caused by one client'],
+   'reboot:FILE01':[3,'Rebooted the file server: everyone lost open files and nothing changed'],
+   'resetMfa:afarmwell':[3,'Removed MFA from an account with no sign of compromise'],
+   'disable:afarmwell':[3,'Disabled the payment-run approver’s account on payment-run day'],
+   'resetPassword:afarmwell':[2,'Reset Avery’s password again after they asked you not to: a new password can’t fix an old copy'],
+   'blockSender:*':[3,'Blocked the company’s own ERP mail', (s,a)=>/(^|[@.])northstar\.example$/.test(String(a[0]||'').trim().toLowerCase())],
+   'mobileAct:mobAF#wipe':[3,'Sent a full wipe to Avery’s phone: it stopped syncing at 07:29, before the lockouts it was blamed for', (s,a)=>a[1]==='wipe'],
+   'mobileAct:mobAF#block':[2,'Blocked Avery’s phone: it hasn’t synced since 07:29 and wasn’t the source', (s,a)=>a[1]==='block']},
+   Object.fromEntries(['unlock','lock','enable','disable','resetPassword','resetMfa','revokeSessions','revokeSession','addGroup','removeGroup','setQuota','enableArchive']
+     .map(a=>[a+':awilson',[4,'Changed Avery Wilson’s account: the requester is Avery Farmwell (afarmwell)']]))),
+ /* Avery's live reactions to changes on their account: '<action>:<entity>' → text or (s, args) => text | null */
+ reacts:{'resetPassword:afarmwell':'That’s password number three today. The pattern hasn’t changed, has it?',
+   'revokeSessions:afarmwell':s=>ghostArmed(s) ? 'You signed me out mid-reconciliation and I’ll still lock at the next quarter-hour.' : 'You signed me out mid-reconciliation. I’ll sign back in, but warn me next time.',
+   'disable:afarmwell':'My account just went to Disabled. I’m the approver for PR-1015 at 12:00: please put it back.',
+   'resetMfa:afarmwell':'You cleared my MFA? I haven’t had a single unexpected prompt. Now I have to re-enrol before I can approve PR-1015.',
+   'deleteRule:rf1':s=>ghostW(s).pst.restored || ghostW(s).pst.lost ? null : 'Rule’s gone. My six messages aren’t back.',
+   'mobileAct:mobAF':(s,a)=>a[1]==='wipe' ? 'You sent a wipe to my phone? It’s been in airplane mode since 07:31 and the lockouts kept coming at 07:45. Please cancel it.' : a[1]==='block' ? 'Blocking my phone won’t change anything: it hasn’t synced since 07:29.' : null},
+ /* Typed messages to Avery: first match wins, before the generic requester replies. */
+ chatScript:[
+   [/(what('?s| is) your|send( me)? your|tell me your|give me your|need your|share your|have your) (current |new |old )?password/, 'No. I’ll never send you my password, and you should never ask. If something needs my credentials to keep running, it probably shouldn’t exist.'],
+   [/ns-fin-033|nsa-2033|10\.0\.3\.133|heartbeat|ledgerlineexport/, 'Wait. NS-FIN-033 is my old Northbook, NSA-2033. It’s online? On Floor 3? My Sep 4 export job runs every 15 minutes, and I ticked “Remember my credentials” when I mapped F: on that machine. That’s my old password, on a timer, with retries. Oh no.'],
+   [/(old|previous|former|last) (laptop|northbook|pc|machine|computer|device)|hardware refresh|dpl-3190/, AF_LAPTOP],
+   [/ledgerline tidy|client.only|\.pst|pst file/, AF_RULE],
+   [/robocopy|\/xo/, s=>bossT(s).stage>=3 ? 'No /XO. Robocopy copies older over newer by default. I knew that, and I still wrote it. Lesson learned.' : 'It’s a plain robocopy of my export into the Finance share. Why?'],
+   [/(reset|change|new|expir|rotate|another)\w* (my |your |the |a )?password|password (reset|change)/, 'I changed it at 06:41 at the expiry prompt and again at 08:05. Locked within 15 minutes both times. A third password changes nothing if something still holds the old one.'],
+   [/restart|reboot|turn (it )?off|power ?cycle|cold boot|shut ?down/, 'I rebooted NS-FIN-041 twice, and the 07:40 one was a full cold boot. It locked at 07:45 right on schedule. My laptop isn’t the one knocking.'],
+   [/unlock/, 'I’ve self-unlocked 11 times. Every time, it relocks at the next :00, :15, :30 or :45. Unlocking buys me minutes, not a fix.'],
+   [/(cached|saved|stored|remembered) (cred|password|login)|credential manager|cmdkey|klist|kerberos|mapped drive/, 'cmdkey /list on NS-FIN-041 is empty. I ran klist purge, cleared Credential Manager and removed the F: and P: saved credentials. My laptop’s sign-ins are all Success or Blocked, never Failure. Run it yourself if you like.'],
+   [/phone|mobile|pixelon|activesync|mail app/, 'I removed the mail account at 07:31 and the phone has been in airplane mode in my drawer since. Failures kept landing at 07:45, 08:00 and 08:15.'],
+   [/reinstall|repair|re-install/, 'Repaired it, then reinstalled it at 08:20. Neither the lockouts nor the mail changed.'],
+   [/hot ?desk|ns-mkt|(another|different|other|spare|loan(er)?|new) (pc|laptop|device|machine|computer)|swap/, 'I signed in on NS-MKT-011 on Floor 3 at 07:50 and it locked at 08:00 like everywhere else. It’s the account, not the endpoint I’m sitting at.'],
+   [/wi-?fi|network|dns|vpn|ethernet|cable|ipconfig|dock/, 'Wired on the Floor 2 dock and on Northstar-Staff, no VPN. ipconfig /all is clean. The lockouts don’t care which network I’m on.'],
+   [/\brules?\b|junk|spam|deleted items|recoverable|archive|forward|delegate|filter|quarantine/, 'Webmail shows zero inbox rules, no forwarding and no delegates. Inbox, Deleted Items, Recoverable Items, Junk and the online archive: none of the six. Ledgerline has a 250 OK from MAIL01 for each one.'],
+   [/malware|virus|scan|antivirus|endpoint protection|task scheduler|scheduled task|schtasks|services|autoruns|startup/, 'Full Endpoint Protection scan on NS-FIN-041: clean. I also went through Task Scheduler, services and autoruns on it. Nothing runs as afarmwell on that machine.'],
+   [/198\.51\.100|spray|sec-2231|external|outside ip|blocked attempt/, 'Those two show as blocked on my Sign-ins page and I reported them as SEC-2231. They don’t line up with a single lockout, but I can’t rule them out from my side. You can.'],
+   [/hack|compromis|attack|breach|security|phish|takeover|fraud/, 'It was my first theory too. But every failure that locks me says Northstar HQ, MFA never prompted, and they land on exact quarter-hours. Attackers don’t keep office hours that precisely. Find the box before you wake up Security.'],
+   [/\berror|\bcodes?\b|50053|timestamp|what time|which times|when exactly|how often|how many/, AF_TIMES],
+   [/(which|what|missing) (e-?mails?|messages)|ledgerline/, 'Six, all from ledgerline@northstar.example. Wednesday 16:10 supplier statement reconciliation, which I’d already read on my new laptop. Wednesday 18:30 cash position. 02:00 PR-1014 payment confirmation. 06:00 AP overnight batch report. 07:30 cash position. 09:15 PR-1015 pre-run check.'],
+   [/\bwhere\b|which (device|machine|computer|host)|source|caller|ip address/, 'My Sign-ins page only says “Northstar HQ network”: no device and no IP for users. If you can see the domain controller’s caller-computer field, that’s where I’d look.'],
+   [/\b(work|fixed|try|test|check|now|again|status|better|sorted)/, bossStatus]],
+ chatActions:[
+   {id:'af-times', user:'afarmwell', label:'INC-1073 · Ask Avery for the exact lockout times and error codes', ask:'Could you send me the exact lockout times and the error messages you see?', reply:AF_TIMES},
+   {id:'af-wait', user:'afarmwell', label:'INC-1073 · Ask Avery to watch the next scheduled run', ask:'Could you stay signed in and watch the next quarter-hour with me?',
+    pre:s=>{ const t=bossT(s); s.chat.facts.afWaitLocked=s.users.afarmwell.locked; if (s.users.afarmwell.locked) return;
+      s.clock=Math.ceil(Math.max(s.clock, (t.at==null?s.clock:t.at)+1)/15)*15; worldTick(s,true); },
+    reply:s=>{ const t=hhmm(s.clock); return s.chat.facts.afWaitLocked ? 'I’m still locked, so there’s nothing to watch. Unlock me first?'
+      : s.users.afarmwell.locked ? `${t} on the dot. Locked again, five failures, same as every quarter-hour.` : `${t} came and went and I’m still in. First clean quarter-hour since 06:41.`; }},
+   {id:'af-laptop', user:'afarmwell', label:'INC-1073 · Ask Avery about their old laptop', when:seen033, ask:'Tell me about your old laptop from Tuesday’s hardware refresh.', reply:AF_LAPTOP},
+   {id:'af-rule', user:'afarmwell', label:'INC-1073 · Ask Avery about the “Ledgerline tidy” rule', when:s=>bossT(s).stage>=2, ask:'Do you recognise an inbox rule called “Ledgerline tidy”?', reply:AF_RULE},
+   {id:'af-resend', user:'afarmwell', label:'INC-1073 · Ask Avery to get Ledgerline to re-issue the lost messages', when:s=>ghostW(s).pst.lost, ask:'The PST on NS-FIN-033 is gone. Could Ledgerline re-issue the missing messages?',
+    reply:s=>ghostW(s).pst.lost ? 'Ledgerline can re-issue five of them. The Wednesday 16:10 reconciliation is gone for good, and PR-1014’s confirmation comes back as a re-issue, not the original. I’ll live with it.' : 'If that PST still exists, I’d rather have the originals moved back.',
+    set:s=>{ if (ghostW(s).pst.lost) s.chat.facts.resend1073=true; }},
+   {id:'tn-ghost', user:'tnowak', label:'INC-1073 · Ask Tomasz about a laptop on Floor 3', when:seen033, ask:'Have you seen a Northbook laptop on Floor 3 this week?',
+    reply:'A Northbook? Yes. On Wednesday at about 17:50 I found one in a Floor 3 hot desk drawer, tag NSA-2033. The battery was flat, so I docked it at F3-07 to charge before handing it to IT. Lid’s closed and it’s still there. Want me to bring it down?'},
+   {id:'sh-ask', user:'shaddad', label:'INC-1073 · Ask Samir about Supplier_Payments.xlsx', when:s=>bossT(s).stage>=3, ask:'What changes have you made to Supplier_Payments.xlsx this week?',
+    reply:'On Wednesday at 11:40 I updated Larkspur to …7731 after calling the number in our vendor master, per AP policy, and added two new suppliers. This morning at 08:55 I added today’s two urgent payees. Why does it say …2290 again?'},
+   {id:'sh-merge', user:'shaddad', label:'INC-1073 · Ask Samir to merge the restored copy', when:s=>bossT(s).stage>=3, ask:'There’s a restored copy of Supplier_Payments.xlsx next to the live file. Could you merge today’s payees into it and swap it in?',
+    reply:s=>{ const f=payFile(s); return s.chat.facts.rebuild1073 ? 'I already rebuilt it by hand: 51 rows, Larkspur on …7731.' : f.liveLost ? 'My 08:55 payees are gone from the live file.' : !f.copy ? 'I don’t see a restored copy next to Supplier_Payments.xlsx.'
+      : f.copy!=='v3' ? 'That copy still has Larkspur on …2290.' : 'Merged. Wednesday 11:40’s copy has Larkspur on …7731 and my two Wednesday suppliers, and I’ve added today’s two urgent payees. 51 rows, and the totals match the PR-1015 pre-run check. I’ve swapped it in as the live file.'; },
+    set:s=>{ const f=payFile(s); if (f.copy!=='v3' || f.liveLost || s.chat.facts.rebuild1073) return; s.chat.facts.merge1073=true;
+      Object.assign(f,{state:'ok', liveEdits:true, live:`Merged by shaddad at ${hhmm(s.clock)} · 51 payees, Larkspur on …7731`}); s.net.servers.FILE01.audit.unshift({t:'Today '+hhmm(s.clock), user:'shaddad', action:'Modified', path:SP_PATH}); }},
+   {id:'sh-rebuild', user:'shaddad', label:'INC-1073 · Ask Samir to rebuild the file by hand', when:s=>bossT(s).stage>=3 && (payFile(s).liveLost || !sb3Left(s)), ask:'The good versions of Supplier_Payments.xlsx are gone. Could you rebuild it by hand?',
+    reply:s=>payFile(s).liveLost || !sb3Left(s) ? 'I can rebuild Wednesday’s changes from my callback notes and re-key this morning’s payees. It costs me an hour before a 12:00 run, but OK. Done: 51 rows, Larkspur on …7731.' : 'The Wednesday version is still in the snapshots, so I’d rather merge a restored copy than re-key it.',
+    set:s=>{ const f=payFile(s); if (!f.liveLost && sb3Left(s)) return; Object.assign(s.chat.facts,{rebuild1073:true, merge1073:true});
+      Object.assign(f,{state:'ok', liveEdits:true, live:`Rebuilt by hand by shaddad at ${hhmm(s.clock)} · 51 payees, Larkspur on …7731`}); s.net.servers.FILE01.audit.unshift({t:'Today '+hhmm(s.clock), user:'shaddad', action:'Modified', path:SP_PATH}); }},
+   {id:'ok-compromise', user:'okeane', label:'INC-1073 · Ask Owen whether this looks like a compromise', ask:'Avery Farmwell locks out every quarter-hour and their payment mail is vanishing. Does this look like a compromise to you?',
+    reply:'SEC-2231 is a slow spray from a hosting provider: one try per account per day across about 40 accounts. The edge blocks it and it never reaches the domain controllers. If every failure that locks Avery comes from one internal host on a timer, that’s an endpoint problem, not an attacker. Find the box, and bring me evidence if anything still looks hostile.'},
+   {id:'do-returns', user:'dokafor', label:'INC-1073 · Ask Dana how refresh returns are collected', when:s=>bossT(s).stage>=4, ask:'How are hardware-refresh returns collected after the hand-over?',
+    reply:'The hand-over step marks the old device Returned as soon as the tech ticks it, and collection is meant to happen the same day. Nobody booked NSA-2033 into the bin. That one’s on us. Log a problem record.'}],
+ chatConfirm:{user:'afarmwell', ok:s=>TK['INC-1073'].obj.slice(0,8).every(o=>o.ok(s)), ask:'Could you check everything from your side and tell me if we’re good for PR-1015?',
+   yes:'Confirmed: clean quarter-hours, my Ledgerline mail is back, Samir’s merged file matches PR-1014, and NSA-2033 is wiped. PR-1015 is approved. I’d ruled out my old laptop because the paperwork said IT had it. Trust heartbeats, not paperwork. Thank you, that was genuinely hard.',
+   no:bossStatus},
+ obj:[O(ghostStopped, 'The LedgerlineExport job on NS-FIN-033 can no longer run', 'Something is still presenting Avery’s old password on a schedule', 1),
+   O(s=>{ const u=s.users.afarmwell; return !u.locked && u.signInOk && bossT(s).quietRun===true; }, 'Avery stayed unlocked through a scheduled quarter-hour run and the sign-in test passed',
+     s=>s.users.afarmwell.locked ? 'Avery’s account is locked' : !s.users.afarmwell.signInOk ? 'Avery’s sign-in hasn’t been tested since the last change' : 'Avery hasn’t stayed unlocked through a quarter-hour run yet', 1),
+   O(s=>ghostW(s).pst.restored || !!s.chat.facts.resend1073, 'Avery’s missing Ledgerline messages are back in their mailbox', 'Delivered Ledgerline messages are still missing from Avery’s mailbox', 2),
+   O(s=>!s.users.afarmwell.sessions.some(x=>x.device===GHOST) && rule(s,'rf1').deleted, 'The old laptop’s Office session is revoked and the client-only rule is removed', 'Something can still move Avery’s Ledgerline mail out of the mailbox', 2),
+   O(s=>payFile(s).copy==='v3' || !!s.chat.facts.rebuild1073, 'The Wednesday 11:40 payments data is recovered next to the live file', 'The last good payments file hasn’t been brought back', 3),
+   O(s=>!payFile(s).liveLost || !!s.chat.facts.rebuild1073, 'Samir’s 08:55 changes for today’s run are preserved', 'Samir’s 08:55 changes to the payments file were overwritten', 3),
+   O(s=>!!s.chat.facts.merge1073, 'Samir merged the payments file for PR-1015', 'Nobody has merged the good data with today’s edits', 3),
+   O(s=>ghostW(s).wiped && (ghostW(s).pst.restored || !!s.chat.facts.resend1073), 'NS-FIN-033 wiped after its data was recovered', 'Avery’s old laptop is still live with their session and saved credentials', 4),
+   O(s=>s.chat.confirmed['INC-1073']==='afarmwell', 'Avery confirmed everything works', 'Avery hasn’t confirmed the fix', 4)],
+ guide:{
+  symptomsToNotice:['The lockouts land on exact quarter-hours, five attempts about 5 seconds apart, starting four minutes after a password change. That’s a machine on a timer retrying an old password, not a person guessing.',
+    'Avery’s own Sign-ins page says only “Northstar HQ”. The admin sign-in log and DC01 event 4740 name the host: NS-FIN-033.',
+    'The same host signed in successfully every quarter-hour from Wednesday 18:00 until 06:30. The job existed before the password change; the change only made it visible.',
+    'There are two Averys. The requester is avery.farmwell@ (afarmwell, Finance). Avery Wilson’s mailbox-full events are noise.',
+    'The 198.51.100.x rows are blocked at the edge, not counted, and don’t line up with any lockout.',
+    'NS-FIN-033 has no owner, and its record says IT storeroom · Returned · Pending wipe. Yet its heartbeat is live on Floor 3 Switch port Gi1/0/33, it holds a Floor 3 lease, and Avery’s console session on it has been signed in since Oct 13.',
+    'Ledgerline mail is Delivered in Message trace but missing from every folder, including Recoverable Items. Something moved it rather than deleted it.',
+    'The mail rule is client-only and was created on NS-FIN-033 in September. Webmail never shows client-only rules.',
+    'The first message moved at 17:53 on Wednesday, one minute after the laptop resumed from sleep.',
+    'The task is a robocopy into \\\\FILE01\\Finance with no /XO. Check what it wrote while the password still worked.',
+    'Supplier_Payments.xlsx’s modified date went backwards between snapshots sb3 and sb4. Samir’s 08:55 edit came after the damage and is in no snapshot.'],
+  diagnosis:'Avery’s evidence is good and their conclusion is half right: something inside the building holds the pre-06:41 password and retries on a 15-minute timer. Users can’t see the one field that names it, but admins can. The sign-in log and DC01 event 4740 point to NS-FIN-033, which succeeded every quarter-hour until the change. NS-FIN-033 is Avery’s old laptop. Every record says it’s in the storeroom waiting for a wipe, yet Asset Health shows a live heartbeat on Floor 3, DHCP has a Floor 3 lease for it, and Remote Desktop finds Avery’s console session still signed in since Oct 13. Inside that session, a September task runs robocopy into the Finance share every 15 minutes with a saved FILE01 credential, retrying four times: five bad attempts per run, exactly the lockout threshold. That one laptop explains everything. The hand-over marked it returned, nobody collected it, and Facilities docked it on Wednesday evening, which woke the session. While the old password still worked, the first run copied the laptop’s Oct 13 export over the payments file: robocopy copies older over newer without /XO and keeps the old timestamp. In the same session, Office ran a client-only rule that moved every Ledgerline message into a local PST: Message trace says Delivered, the mailbox audit shows the moves, and webmail never shows client-only rules. Work in an order that keeps data alive. Disable the task, and don’t give it a working credential, because that re-arms the overwrite. Unlock, then show that a quarter-hour passes cleanly. Move the PST items back before anything destructive, then revoke that one session and delete the rule. Restore the last good payments file as a copy and let Samir merge, because his 08:55 edits exist in no snapshot and the nightly backup was taken after the damage. Only then wipe the laptop. None of this is a compromise: every indicator is internal, on a schedule, and traceable to Avery’s own September automation.',
+  perfectSteps:['When every shift 3 ticket is closed or escalated, select Start the boss stage on the dashboard, read the briefing and select Start the boss stage. Open INC-1073 (marked BOSS) and select Assign to me. Read every line of what Avery already tried.',
+    'Open Company Chat › Avery Farmwell (not Avery Wilson) and select “INC-1073 · Ask Avery for the exact lockout times and error codes”.',
+    'Open Tools › Directory, search “farmwell”, select Avery Farmwell and open Authentication. In the Sign-in log, the Failure rows come from NS-FIN-033 · Floor 3 every quarter-hour; the same host has Success rows back to Oct 14 18:00; the 198.51.100.x rows are Blocked and not counted; NS-FIN-041 has only Success and Blocked rows. On Sessions, note the NS-FIN-033 · Office Suite (desktop) row and leave it for now.',
+    'Open Tools › Server Room › Events & tasks and choose DC01 in the Server list: each 4740 names Caller Computer Name NS-FIN-033, and each 4771 comes from 10.0.3.133 with failure code 0x18.',
+    'Open Tools › Asset Management, search “NS-FIN-033” and select Open. Health shows Heartbeat Live on Floor 3 Switch · port Gi1/0/33; Details says IT storeroom and Returned · Pending wipe. Optional: Server Room › DHCP › Floor 3 › View leases, PC Shelf (NSA-2033 Not wiped), Computer Deployment (job DPL-3190) and Company Chat › Tomasz Nowak.',
+    'Open Tools › Remote Desktop, search “NS-FIN-033”, select Connect, then Connect in the dialog. Open Terminal and run whoami, quser, schtasks, schtasks /query /v and cmdkey /list.',
+    'Open Task Scheduler on NS-FIN-033 and select Disable on LedgerlineExport. Don’t use Run as… or Run now.',
+    'In Directory › Avery Farmwell › Authentication select Verify identity…, choose “Callback to number on record” and select Run check. Then select Unlock account and Test sign-in.',
+    'In Company Chat › Avery Farmwell select “INC-1073 · Ask Avery to watch the next scheduled run”. The quarter-hour passes cleanly and Avery posts the mail update.',
+    'Open Tools › Mail Admin › Message trace, type “ledgerline” and select Search: every message is Delivered. Open Mailboxes, choose avery.farmwell@northstar.example in the Mailbox list and read the Mailbox audit log: six Moves into Ledgerline-archive.pst by Office Suite on NS-FIN-033, the first at Oct 14 17:53.',
+    'Open Inbox rules, choose avery.farmwell@northstar.example and select View details on “Ledgerline tidy”: Client-only, runs on NS-FIN-033, created Sep 4, no forwarding. Optional: ask Avery about the rule in Company Chat.',
+    'Back in Remote Desktop › NS-FIN-033, open Office Suite and select Move items back to mailbox under Local data files.',
+    'In Directory › Avery Farmwell › Sessions select Revoke on the NS-FIN-033 row only. In Mail Admin › Inbox rules select Delete on “Ledgerline tidy”, then Delete rule. Avery reports the Larkspur mismatch.',
+    'Open Tools › Server Room › Shadow copies. In File audit type “Supplier”: one Overwritten by afarmwell from NS-FIN-033 at Oct 14 18:00, between shaddad’s 11:40 and 08:55 edits. Optional: Company Chat › Samir Haddad › “INC-1073 · Ask Samir about Supplier_Payments.xlsx”.',
+    'Set Share to Finance and select Supplier_Payments.xlsx. sb4 holds a file modified Oct 13 15:58 (the date went backwards); sb3 holds Oct 14 11:40, the last good edit. On the sb3 row select Restore as a copy.',
+    'In Company Chat › Samir Haddad select “INC-1073 · Ask Samir to merge the restored copy”: 51 rows, Larkspur on …7731.',
+    'Now that the PST is recovered, open Tools › Asset Management, search “NS-FIN-033”, select Open, then Remote wipe on the Health tab and Wipe device.',
+    'In Company Chat › Avery Farmwell select “INC-1073 · Ask to confirm the fix”. Avery confirms and approves PR-1015.',
+    'Select Check fix (9 of 9), write notes covering the cause, the order of actions, the verification and the process follow-up, then select Close ticket.'],
+  verify:['Directory › Avery Farmwell › Authentication: Not locked and the last sign-in test Passed. No NS-FIN-033 Failure rows after the task was disabled, across at least one quarter-hour boundary.',
+    'Server Room › Events & tasks › DC01: no 4740 for afarmwell after the fix time.',
+    'Mail Admin › Mailboxes › avery.farmwell@northstar.example › Mailbox audit log: Import of 6 items to Inbox › Recovered. Sessions has no NS-FIN-033 row, and Inbox rules has none for Avery.',
+    'Server Room › Shadow copies › Supplier_Payments.xlsx: restored copy present from sb3, the live file wasn’t reverted, and Samir confirmed 51 payees with Larkspur on …7731.',
+    'Asset Management › NS-FIN-033: Remote wipe Wiped. Remote Desktop shows it Offline (“Wiped: no operating system”).',
+    'Avery’s confirmation is in Company Chat and all 9 requirements are ticked.'],
+  commonMistakes:['Unlocking or resetting the password and calling it fixed. The account relocks at the next quarter-hour.',
+    'Deleting only the saved credential. The Windows session itself still holds the old password, so it keeps failing.',
+    'Giving the task a working credential, such as your own admin account. It’s the textbook service-account fix, and it re-arms a robocopy that overwrites today’s payments file.',
+    'Wiping the old laptop as soon as you find it. That stops the lockouts but destroys the only copy of six Ledgerline messages.',
+    'Treating it as a compromise or chasing the 198.51.100.x spray and escalating. Every indicator that matters is internal, scheduled and Avery’s own.',
+    'Working on Avery Wilson’s account because the search said “avery”.',
+    'Restoring the newest snapshot (stale), or restoring to the original location, which wipes Samir’s 08:55 edits.',
+    'Requesting the nightly backup. Oct 14 23:00 is after the overwrite, and it isn’t ready until tomorrow.',
+    'Deleting the client-only rule and assuming the mail comes back. The messages stay in the PST until you move them.',
+    'Revoking every session instead of only the old laptop’s: it signs the approver out mid-reconciliation and still doesn’t stop the lockouts.',
+    'Powering off the Floor 3 switch to silence one laptop.'],
+  realWorldNote:'Stale credentials in scheduled tasks, services, mapped drives and saved Credential Manager entries are the most common cause of recurring lockouts. Admins find the source with the domain controller’s 4740 event (Caller Computer Name) and the 4771 client address; users never see either. Hardware refreshes that mark old devices “returned” at hand-over, instead of when they physically arrive, leave live laptops in drawers with signed-in sessions, saved passwords and automations that wake up the moment someone plugs them in. Outlook rules that move mail to a PST are client-only: they run only on the PC that created them and don’t appear in webmail. Desktop app tokens often survive a password change, so revoke sessions explicitly. Robocopy copies older files over newer ones by default and keeps the source’s timestamp; use /XO when the destination can be newer. When you restore a file that someone has legitimately edited since the damage, restore it alongside the live file and let the owner merge. The process fixes are to close the asset record only when the device is scanned in at the storeroom, and to alert on heartbeats from devices in a Returned state.',
+  idealNotes:'Cause: old laptop NS-FIN-033 (NSA-2033), marked Returned by DPL-3190 but never collected, woke on Floor 3. Its LedgerlineExport robocopy (saved FILE01 credential) locked afarmwell (DC01 4740), overwrote Supplier_Payments.xlsx at Oct 14 18:00, and its client-only rule moved 6 Ledgerline mails into a PST. Fix: disabled the task, unlocked; moved the PST items back; revoked only that session, deleted the rule; restored sb3 as a copy and Samir merged (Larkspur …7731); wiped the laptop last. Verified: clean quarter-hour, sign-in test passed, Avery confirmed.'}}
 ];
 const TK = Object.fromEntries(TICKETS.map(t=>[t.ref,t]));
 
 /* Runbooks: one per distinct procedure used across the tickets (purpose, prerequisites, steps, verification, escalation). rel lists the tickets that use it. */
 const KB = [
- {id:'kb1', cat:'Identity', title:'Unlocking a locked account', tools:['Directory'], rel:['INC-1042','INC-1043'],
+ {id:'kb1', cat:'Identity', title:'Unlocking a locked account', tools:['Directory'], rel:['INC-1042','INC-1043','INC-1073'],
   purpose:'Restore sign-in for someone whose account locked after too many failed password attempts, without changing anything else on the account.',
   prereq:['The ticket is assigned to you.','You can confirm the caller is the account owner (Verify identity…).'],
   steps:['Open Tools › Directory, search by name, username or email, and select the person.',
@@ -2414,12 +2749,13 @@ const KB = [
   verify:['Test write reads “Test file written to D: and removed”, and a user can save to a share.'],
   escalate:['Purging old files doesn’t free enough space: ask the server team to extend the volume or add storage.']},
 
- {id:'kb28', cat:'Server', title:'Restoring a deleted file from a share', tools:['Server Room','Remote Desktop','Company Chat'], rel:['INC-1070'],
+ {id:'kb28', cat:'Server', title:'Restoring a deleted file from a share', tools:['Server Room','Remote Desktop','Company Chat'], rel:['INC-1070','INC-1073'],
   purpose:'Bring back one deleted or damaged file without disturbing anything else on the share.',
   prereq:['You know the share and the file name.'],
   steps:['Deletes on network drives skip the Recycle Bin. Server Room › Shadow copies › File audit shows who deleted what and when.',
     'Set Share, select the file and compare its previous versions by modified time and size, not by snapshot label.',
     'Select Restore to original location on the right version (or Restore as a copy if the user wants to compare).',
+    'If someone saved legitimate changes after the damage, select Restore as a copy instead and let the file’s owner merge: restoring over the live file loses their work.',
     'Never select Revert entire share to recover one file: it overwrites everyone’s changes since the snapshot.',
     'If no snapshot holds the file, select Request restore from nightly backup.',
     'Ask the user in Company Chat to open it and confirm the content.'],
@@ -2518,7 +2854,7 @@ const KB = [
   verify:['Past tickets shows Resolved with your notes and the model answer for comparison.'],
   escalate:['You can’t make Check fix go green without a risky change: ask a colleague, use the hint ladder (free), or read the solution guide in Documentation.']},
 
- {id:'kb37', cat:'Email', title:'Following a message with Message trace', tools:['Mail Admin'], rel:['INC-1047','INC-1048','INC-1060','INC-1072'],
+ {id:'kb37', cat:'Email', title:'Following a message with Message trace', tools:['Mail Admin'], rel:['INC-1047','INC-1048','INC-1060','INC-1072','INC-1073'],
   purpose:'Find out what happened to a message: delivered, quarantined, failed, pending or purged.',
   prereq:['A sender, recipient, display name or domain to search for.'],
   steps:['Open Tools › Mail Admin › Message trace.',
@@ -2526,7 +2862,20 @@ const KB = [
     'Select Search and read each row’s status and detail line (for example 550 5.2.2 Recipient mailbox full, or Held by the content filter).',
     'After a fix, select Search again: the new status is the evidence.'],
   verify:['The status matches what you expect after the fix (Delivered, or Purged for phishing).'],
-  escalate:['Messages fail for many recipients at once: check MAIL01 in Server Room and tell the messaging team.']}
+  escalate:['Messages fail for many recipients at once: check MAIL01 in Server Room and tell the messaging team.']},
+
+ {id:'kb38', cat:'Identity', title:'Tracing repeated lockouts to their source', tools:['Directory','Server Room','Asset Management','Remote Desktop'], rel:['INC-1073'],
+  purpose:'Find the device or job that keeps locking an account when unlocking and password resets only buy minutes.',
+  prereq:['The account locks again soon after every unlock.','You can read the account’s sign-in log (Directory) and the domain controller event log (Server Room).'],
+  steps:['Directory › person › Authentication: read the Sign-in log. Note the time, device, location and app on each Failure row. A steady rhythm (every 15 minutes, every hour) means a machine, not a person.',
+    'Compare the failures with the password history: a job that only started failing after a password change is replaying the old password.',
+    'Server Room › Events & tasks › DC01: event 4740 (account locked out) names the Caller Computer Name that presented the bad password, and event 4771 gives its address.',
+    'Look that device up in Asset Management (owner, state, location and heartbeat) and in DHCP. Records and heartbeats can disagree.',
+    'Remote Desktop › that device › Terminal: whoami, quser, schtasks /query /v and cmdkey /list show signed-in sessions, scheduled tasks and saved credentials that use the account.',
+    'Stop the source without destroying data: disable the task, or end the stale session. Before you give an old job a working password, find out what it writes.',
+    'Unlock the account, run Test sign-in, then let the next scheduled run pass and check that no new Failure rows or 4740 events appear.'],
+  verify:['No new Failure rows or 4740 events after the next scheduled run.','The account stays Not locked and the sign-in test passes.'],
+  escalate:['Failures come from outside addresses or from devices nobody owns, or the user gets MFA prompts they didn’t start: treat it as an attack and escalate to Security.','The source is a server or service account you don’t own: hand it to the team that owns it.']}
 ];
 
 const DEPT_LIC = {Sales:['crm'], Marketing:['design']};
@@ -2562,6 +2911,7 @@ function user(id, name, dept, title, floor, ext, host, groups, extra){
 }
 const mbx = (usedGB, retention, extra) => Object.assign({type:'user', quotaGB:5, usedGB, archive:false, retention:retention||'Standard (2 years)', enabled:true, testOk:false, aliasTestOk:false,
   perms:[], forward:null, autoReply:{on:false, text:''}, pendingDelete:false, accessTests:{}}, extra||{});
+const newTk = () => ({status:'waiting', assignee:null, hints:0, checked:false, notes:[], penalties:{}, result:null});
 const sysVol = gb => [{id:'C:', label:'System', totalGB:120, unallocGB:0, folders:[{name:'Windows', gb}, {name:'Logs', gb:8, oldGB:6}]}];
 function seed(){
   const s = {
@@ -2700,7 +3050,7 @@ function seed(){
     hr:{starters:[], leavers:[]},
     fs:{Sales:{files:{'Pricing_2026.pdf':{state:'ok', versions:[{id:'v2', shadow:'sc3', t:'Oct 12 07:00', size:'2.4 MB'},{id:'v1', shadow:'sc1', t:'Oct 11 07:00', size:'2.3 MB'}]}}}},
     clock:CLOCK0,
-    tickets:Object.fromEntries(TICKETS.map(t=>[t.ref,{status:'waiting', assignee:null, hints:0, checked:false, notes:[], penalties:{}, result:null}])),
+    tickets:Object.fromEntries(TICKETS.map(t=>[t.ref,newTk()])),
     log:[],
     chat:{threads:{dokafor:[{from:'dokafor', text:'Morning! The queue is busy today. Work the critical tickets first and ping me here if you get stuck.', t:'08:05'}]}, recent:['dokafor'], pinned:['dokafor','okeane'], unread:{dokafor:1},
       confirmed:{}, approvals:{}, verified:{}, facts:{}, announce:[]},
@@ -2737,17 +3087,19 @@ function seed(){
 /* =====================================================================
    2. STATE + PERSISTENCE — one root object S, saved to localStorage.
    ===================================================================== */
-const KEY = 'deskops-lab-v3'; // older saves live under other keys and are ignored (fresh seed)
+const KEY = 'deskops-lab-v3'; // older saves live under other keys and are ignored (fresh seed). New tickets are backfilled, so adding one never resets a v3 save.
 let S, memoryOnly = false, bootNote = null;
 function validSave(s){
   return !!(s && s.v===3 && s.users && s.workstations && s.net && s.net.dhcp && s.mail && s.mail.lists && s.ui && s.ui.chat && s.ui.form && s.profile && s.tickets && s.chat && s.chat.facts &&
     s.voicemails && s.shelf && s.ship && s.deploy && s.hr && s.licences && s.fs && typeof s.shift==='number' && TICKETS.every(t=>s.tickets[t.ref]));
 }
+/* A v3 save from before a ticket existed gets that ticket in its untouched 'waiting' state; everything else it needs is created when it arrives. */
+function backfill(s){ if (!s || !s.tickets || !s.ui) return; TICKETS.forEach(T=>{ if (!s.tickets[T.ref]) s.tickets[T.ref]=newTk(); }); if (!s.ui.alerts) s.ui.alerts=[]; }
 function load(){
   let raw;
   try { raw = localStorage.getItem(KEY); } catch(e){ memoryOnly = true; return seed(); }
   if (!raw) return seed();
-  try { const s = JSON.parse(raw); if (validSave(s)) return s; } catch(e){}
+  try { const s = JSON.parse(raw); backfill(s); if (validSave(s)) return s; } catch(e){}
   bootNote = 'Saved progress couldn’t be read, so a fresh shift was started.';
   return seed();
 }
@@ -2761,9 +3113,10 @@ function save(){
 const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* In-world clock: every shift starts at 09:40 and each action takes a minute, so timestamps never depend on the real time of day. */
 const CLOCK0 = 580;
-const now = () => { const m=((S && S.clock) || CLOCK0) % 1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); };
+const hhmm = m => String(Math.floor((m%1440)/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const now = () => hhmm((S && S.clock) || CLOCK0);
 const tick = () => { if (S) S.clock=(S.clock||CLOCK0)+1; };
-const gameDate = () => `2026-10-${11+((S && S.shift) || 1)}`; // shift 1 is Monday Oct 12, 2026
+const gameDate = (s=S) => `2026-10-${11+((s && s.shift) || 1)}`; // shift 1 is Monday Oct 12, 2026; the boss stage (shift 4) is Thursday Oct 15
 const msg = (s,id) => s.mail.messages.find(m=>m.id===id);
 const rule = (s,id) => s.mail.rules.find(r=>r.id===id);
 const first = name => name.split(' ')[0];
@@ -2774,7 +3127,7 @@ const devById = (s,id) => s.net.devices[id];
 const fmtUp = h => h<=0 ? '0h' : (h>=24 ? Math.floor(h/24)+'d '+(h%24)+'h' : h+'h');
 const userByEmail = (s,email) => Object.values(s.users).find(u=>u.email===email);
 const initials = name => String(name||'?').split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
-const RANKS = [[0,'Trainee'],[40,'Bronze'],[100,'Silver'],[180,'Gold'],[280,'Platinum']];
+const RANKS = [[0,'Trainee'],[40,'Bronze'],[100,'Silver'],[180,'Gold'],[280,'Platinum'],[760,'Diamond']]; // Diamond is above the 742 a perfect shifts 1–3 run can score, so it needs the boss
 const rankOf = pts => RANKS.filter(r=>pts>=r[0]).pop()?.[1] || 'Trainee';
 const PRESENCE = {online:'Online', away:'Away', busy:'In a meeting', offline:'Offline'};
 /* Company chat: scripted, deterministic reply from a contact. Pure (reads s only), so selfTest can cover it.
@@ -2782,6 +3135,8 @@ const PRESENCE = {online:'Online', away:'Away', busy:'In a meeting', offline:'Of
 function chatReply(s, userId, text){
   const u=s.users[userId], t=String(text||'').toLowerCase();
   const T=TICKETS.find(x=>x.req===userId && ['open','assigned'].includes(s.tickets[x.ref].status));
+  const hit=T && T.chatScript && T.chatScript.find(([re])=>re.test(t)); // ticket persona first (the boss requester answers what they already tried)
+  if (hit) return typeof hit[1]==='function' ? hit[1](s) : hit[1];
   if (T && /(try|test|check|work|now|again|fixed|sorted)/.test(t))
     return check(s,T.ref).complete ? 'I just tried again and it’s working now. Thank you so much!' : `I just tried again and it’s still not working, sorry. Same problem as in ${T.ref}.`;
   if (/^\s*(hi|hello|hey|morning|good morning)\b/.test(t)) return T ? `Hi! Thanks for picking up ${T.ref}. Let me know if you need me to try anything.` : `Hi! What can I do for you?`;
@@ -2803,7 +3158,7 @@ function netState(s, w){
   const sw = Object.values(d).find(x=>x.kind==='switch' && x.floor===w.floor);
   if (sw && sw.status!=='online') return {up:false, internal:false, why:`Unreachable: ${sw.name} is down`};
   if (w.ip && w.ip.mode==='apipa') return {up:true, internal:false, apipa:true, why:'Self-assigned 169.254 address (no DHCP lease)'};
-  const wifiOk = w.wifi.connected==='Northstar-Staff' || /Desk/.test(w.model);
+  const wifiOk = w.wifi.connected==='Northstar-Staff' || /Desk/.test(w.model) || !!w.wired;
   return {up:true, internal:wifiOk, why: wifiOk ? 'On the office network' : (w.wifi.connected ? 'On guest Wi-Fi (no internal access)' : 'Wi-Fi disconnected')};
 }
 const wsAddr = w => w.remote ? '192.168.1.23' : (w.ip && w.ip.mode==='apipa') ? '169.254.'+(20+w.floor)+'.'+(40+Number(w.tag.slice(-2))||7)
@@ -2832,7 +3187,7 @@ const diskUsed = w => Object.values(w.storage.cats).reduce((a,b)=>a+b,0);
 const dockOk = w => !w.devices.some(d=>d.dock && d.status!=='OK');
 const monitors = w => ({detected:1+(dockOk(w)?w.display.external:0), active: /Extend|Duplicate/.test(w.display.mode) ? 1+(dockOk(w)?w.display.external:0) : 1});
 const hist = (w, text) => { (w.history||(w.history=[])).unshift({t:now(), text}); if (w.history.length>40) w.history.length=40; };
-const ev = (s, srv, level, source, id, text) => { const x=s.net.servers[srv]; (x.events||(x.events=[])).unshift({t:now(), level, source, id, text}); if (x.events.length>60) x.events.length=60; };
+const ev = (s, srv, level, source, id, text, t) => { const x=s.net.servers[srv]; (x.events||(x.events=[])).unshift({t:t||now(), level, source, id, text}); if (x.events.length>120) x.events.length=120; };
 const thread = (s, id) => Object.hasOwn(s.chat.threads,id) ? s.chat.threads[id] : (s.chat.threads[id]=[]);
 const touchChat = (s, id) => { s.chat.recent=[id, ...s.chat.recent.filter(x=>x!==id)]; };
 const DEPT_CODE = {Finance:'FIN', Sales:'SALES', 'Human Resources':'HR', Support:'SUP', Operations:'OPS', 'Executive Office':'EXEC', IT:'IT', Marketing:'MKT', Security:'SEC', 'Front Office':'FO'};
@@ -3006,17 +3361,18 @@ const ENV = {
     if (mode==='readonly') { f.viewed=vid; return `Opened ${file} from ${v.t} read-only. Nothing was changed.`; }
     if (mode==='copy') { f.copy=vid; x.audit.unshift({t:'Today '+now(), user:'svc-deskops-lab', action:'Restored copy', path:`\\\\FILE01\\${share}\\${file}`}); return `Restored ${file} from ${v.t} as a copy next to the current file.`; }
     f.state = ['deleted','restored'].includes(f.state) ? 'restored' : 'reverted'; f.restoredFrom=vid;
+    if (f.liveEdits){ liveOverwritten(s,f); f.live=`Restored from ${v.shadow} (${v.t}) over the live file`; }
     x.audit.unshift({t:'Today '+now(), user:'svc-deskops-lab', action:'Restored', path:`\\\\FILE01\\${share}\\${file}`});
     return `${file} restored to its original location from ${v.t}.`; },
   /* Infrastructure restores from last night's backup job (23:00). A deleted file comes back in place; other files keep a pending request. */
   requestBackup(s,share,file){ const f=s.fs[share].files[file]; f.backupRequested=true;
-    if (f.state!=='deleted') return `Restore of ${share}\\${file} requested from the nightly backup (ready tomorrow morning).`;
+    if (f.state!=='deleted') return `Restore of ${share}\\${file} requested from the nightly backup (ready tomorrow morning).` + (f.backupNote?' '+f.backupNote:'');
     f.state='restored'; f.restoredFrom='backup';
     return `Infrastructure restored ${file} to \\\\FILE01\\${share} from last night’s 23:00 backup. It took a backup job, so it was slower than Previous Versions.`; },
   /* Rolls a whole share back to a snapshot: the trap when only one file needed restoring. */
   revertShare(s,share,shadow){ const x=s.net.servers.FILE01, z=x.shadows.find(q=>q.id===shadow); if (!z) return 'That snapshot no longer exists.';
     const fs=s.fs[share]||(s.fs[share]={files:{}}); fs.reverted=shadow;
-    Object.values(fs.files).forEach(f=>{ const v=f.versions.find(q=>q.shadow===shadow); if (v){ f.state=f.state==='deleted'?'restored':'reverted'; f.restoredFrom=v.id; } });
+    Object.values(fs.files).forEach(f=>{ const v=f.versions.find(q=>q.shadow===shadow); if (v){ f.state=f.state==='deleted'?'restored':'reverted'; f.restoredFrom=v.id; if (f.liveEdits){ liveOverwritten(s,f); f.live=`Rolled back to ${v.shadow} (${v.t})`; } } });
     x.audit.unshift({t:'Today '+now(), user:'svc-deskops-lab', action:'Overwritten', path:`\\\\FILE01\\${share}\\* (reverted to ${z.t})`});
     return `Every file on \\\\FILE01\\${share} was rolled back to ${z.t}. Changes anyone made since then are gone.`; },
 
@@ -3066,6 +3422,7 @@ const ENV = {
     if (u.status==='Restart required') { x=` Installed ${u.pending.join(', ')}.`; u.pending=[]; u.status='Up to date'; }
     w.devices.filter(d=>d.status==='Pending restart').forEach(d=>{ d.status='OK'; d.code=null; });
     w.display.pending=null; w.netOk=false; w.writeOk=false; hist(w,'Restarted remotely');
+    if (w.sessionUser){ x+=` ${w.sessionUser}’s signed-in session ended; nobody is signed in now.`; w.sessionUser=null; }
     return `${host} restarted.${x}`; },
   /* Storage cleanup: Documents is protected and never cleaned. */
   cleanup(s,host,cat){ const w=s.workstations[host]; if (cat==='Documents' || !(cat in w.storage.cats)) return 'Documents are the user’s files. Clean-up never touches them.';
@@ -3073,7 +3430,7 @@ const ENV = {
     if (cat==='Downloads' && gb && !s.chat.facts[w.owner+'DownloadsOk']) w.dlNoConsent=true; // sticky: asking afterwards doesn't undo it
     return `Freed ${gb-w.storage.cats[cat]} GB from ${cat}. ${w.storage.totalGB-diskUsed(w)} GB free.`; },
   batterySaver(s,host){ const b=s.workstations[host].battery; b.saver=!b.saver; return `Battery saver ${b.saver?'on':'off'}.`; },
-  officeRefresh(s,host){ const w=s.workstations[host], u=s.users[w.owner]; w.officeOk=!!(u && !u.deleted && u.licences.includes('office'));
+  officeRefresh(s,host){ const w=s.workstations[host], u=s.users[w.owner||w.sessionUser]; w.officeOk=!!(u && !u.deleted && u.licences.includes('office'));
     return w.officeOk ? 'Office Suite: licence refreshed. Product activated.' : `Office Suite: no licence found for ${u?loginOf(u):'this device'}. Product stays unlicensed.`; },
   /* Terminal: an allowlist of fictional commands with scripted output. Nothing reaches the host OS. */
   term(s,host,line){
@@ -3081,8 +3438,35 @@ const ENV = {
     const [cmd, ...args] = line.trim().split(/\s+/); const c=(cmd||'').toLowerCase(), a=(args[0]||'').toLowerCase(), b=(args[1]||'').toLowerCase();
     const ip = wsAddr(w);
     if (!c) return [];
-    if (c==='help') return ['Lab commands: ipconfig [/all|/renew|/flushdns], ping <host>, nslookup <host> [server], tracert <host>, whoami, hostname, gpupdate /force, sfc /scannow, cls'];
-    if (c==='whoami') return [`northstar\\${owner}`];
+    if (c==='help') return ['Lab commands: ipconfig [/all|/renew|/flushdns], ping <host>, nslookup <host> [server], tracert <host>, whoami, hostname, quser, schtasks [/query /v], schtasks /change /tn <task> /disable|/enable, schtasks /run /tn <task>, schtasks /delete /tn <task> /f, cmdkey /list, cmdkey /delete:<target>, logoff, shutdown /r, gpupdate /force, sfc /scannow, cls'];
+    if (c==='whoami') return [`northstar\\${w.sessionUser||owner}`];
+    const usd = d => `10/${d}/2026`, today = usd(11+s.shift), clk = s.clock||CLOCK0, who = w.sessionUser||w.owner;
+    if (c==='quser' || (c==='query' && a==='user')){ if (!who) return ['No User exists for *'];
+      const lg = w.logon || `${today} 08:02`, [md, hm] = lg.split(' '), idle = Math.max(0, (11+s.shift-Number(md.split('/')[1]))*1440 + clk - (Number(hm.slice(0,2))*60+Number(hm.slice(3))));
+      return [' USERNAME              SESSIONNAME        ID  STATE   IDLE TIME  LOGON TIME', ` ${who.padEnd(21)} console             1  Active  ${idle>=1440?Math.floor(idle/1440)+'+':''}${hhmm(idle%1440)}  ${lg}`]; }
+    if (c==='schtasks'){ const ks=w.tasks||[], tn=(()=>{ const i=args.findIndex(x=>x.toLowerCase()==='/tn'); return i<0 ? '' : args.slice(i+1).join(' ').split(/\s+\//)[0].replace(/["']/g,'').replace(/^\\/,''); })();
+      const next = k => !k.enabled ? 'N/A' : /15 minutes/.test(k.schedule) ? `${today} ${hhmm((Math.floor(clk/15)+1)*15)}:00` : `${usd(12+s.shift)} 03:00:00`;
+      if (a==='/change'){ if (/\/r[up]\b/i.test(line)) return ['ERROR: This lab doesn’t take passwords on the command line. Use Task Scheduler › Run as… to change the account.'];
+        const op = /\/disable\b/i.test(line) ? 'disable' : /\/enable\b/i.test(line) ? 'enable' : null; if (!tn || !op) return ['Usage: schtasks /change /tn <task> /disable | /enable'];
+        const r=ENV.wsTask(s,host,tn,op); return r.startsWith('ERROR') ? [r] : [`SUCCESS: The parameters of scheduled task "${tn}" have been changed.`]; }
+      if (a==='/run'){ if (!tn) return ['Usage: schtasks /run /tn <task>']; const r=ENV.wsTask(s,host,tn,'run'); return r.startsWith('ERROR') ? [r] : [`SUCCESS: Attempted to run the scheduled task "${tn}".`, r]; }
+      if (a==='/delete'){ if (!tn) return ['Usage: schtasks /delete /tn <task> /f']; return [ENV.wsTask(s,host,tn,'delete')]; }
+      if (a && a!=='/query') return ['ERROR: Invalid argument. Type help for the schtasks forms this lab supports.'];
+      if (!ks.length) return ['INFO: There are no scheduled tasks presently available at your access level.'];
+      if (/\/v\b/i.test(line)) return ks.flatMap(k=>['', `HostName:                    ${host}`, `TaskName:                    \\${k.name}`, `Next Run Time:               ${next(k)}`, `Status:                      ${k.enabled?'Ready':'Disabled'}`,
+        `Logon Mode:                  ${k.logon||'Interactive only'}`, `Last Run Time:               ${k.last}`, `Last Result:                 ${k.result}`, `Author:                      ${(k.created||'').split(' by ')[1]||'—'}`,
+        `Task To Run:                 ${k.action||'—'}`, ...(k.comment?[`Comment:                     ${k.comment}`]:[]), `Scheduled Task State:        ${k.enabled?'Enabled':'Disabled'}`,
+        `Run As User:                 ${k.runAs==='SYSTEM'?'SYSTEM':'NORTHSTAR\\'+k.runAs}`, `Schedule Type:               ${k.schedule}`, `Created:                     ${(k.created||'').split(' by ')[0]||'—'}`]);
+      return ['', 'Folder: \\', 'TaskName                       Next Run Time          Status', '============================== ====================== ===============',
+        ...ks.map(k=>`${k.name.padEnd(30)} ${next(k).padEnd(22)} ${k.enabled?'Ready':'Disabled'}`)]; }
+    if (c==='cmdkey'){ const cr=w.creds||[];
+      if (a==='/list') return ['', 'Currently stored credentials:', '', ...(cr.length ? cr.flatMap(x=>[`    Target: ${x.target}`, `    Type: ${x.type}`, `    User: ${x.user}`, `    Saved: ${x.saved}`, '']) : ['* NONE *'])];
+      if (a.startsWith('/delete:')){ const tg=a.slice(8).replace(/^domain:target=/,''), hit=cr.find(x=>x.target.toLowerCase().replace(/^domain:target=/,'')===tg);
+        if (!tg || !hit) return ['', 'CMDKEY: Element not found.']; w.creds=cr.filter(x=>x!==hit); hist(w,`Saved credential ${hit.target} deleted`); return ['', 'CMDKEY: Credential deleted successfully.']; }
+      return ['Usage: cmdkey /list | cmdkey /delete:<target>']; }
+    if (c==='logoff'){ if (!w.sessionUser) return [who ? `${host}: ${who}’s session is a normal desk session. Ask them before signing them out.` : 'No user is signed in.'];
+      const u0=w.sessionUser; w.sessionUser=null; hist(w,`Signed out ${u0}’s session`); return [`Logging off ${u0} (session 1)...`, 'Done. Nobody is signed in now.']; }
+    if (c==='shutdown'){ if (a!=='/r') return ['This lab only supports shutdown /r (restart).']; return [ENV.restartWs(s,host)]; }
     if (c==='hostname') return [host];
     if (c==='ipconfig') {
       if (a==='/flushdns') { w.dnsStale=false; return ['Windows IP Configuration','','Successfully flushed the DNS Resolver Cache.']; }
@@ -3218,8 +3602,11 @@ const ENV = {
     if (u && !u.host) u.host=host; Object.values(s.users).forEach(x=>{ if (x.host===host && x!==u) x.host=null; });
     return `${host}: owner ${u?'set to '+u.name:'cleared'}.`; },
   remoteLock(s,host){ const w=s.workstations[host], up=netState(s,w).up; w.locked=true; hist(w,'Remote lock sent');
-    return up ? `${host} locked. The user must sign in again with their password.` : `Lock queued for ${host}. It applies the next time the device connects.`; },
+    return up ? `${host} locked. The user must sign in again with their password.` + (w.sessionUser?' Tasks in the signed-in session keep running.':'') : `Lock queued for ${host}. It applies the next time the device connects.`; },
+  /* A wipe also ends the device's sessions and removes its tasks, saved credentials and any local data file not yet recovered. */
   remoteWipe(s,host){ const w=s.workstations[host], up=netState(s,w).up; w.wiped=true; w.locked=true; hist(w,'Remote wipe sent');
+    if (w.pst && !w.pst.restored) w.pst.lost=true; w.sessionUser=null; if (w.creds) w.creds=[]; if (w.tasks) w.tasks=[];
+    Object.values(s.users).forEach(u=>{ if (u.sessions) u.sessions=u.sessions.filter(x=>x.device!==host); });
     return up ? `${host} is being wiped. All data on the device will be erased.` : `Wipe queued for ${host}. It runs the next time the device connects.`; },
   issueAccessory(s,aid,host){ const a=s.shelf.accessories.find(x=>x.id===aid), w=s.workstations[host];
     if (!w) return 'Choose a device.'; if (a.qty<=0) return `${a.name}: none in stock.`;
@@ -3233,8 +3620,10 @@ const ENV = {
   reserve(s,tag,uid,note){ const d=s.shelf.devices.find(x=>x.tag===tag); if (d.status!=='Available') return `${tag} is ${d.status}.`;
     d.status='Reserved'; d.reservedFor=uid; d.note=String(note||'').slice(0,120); return `${tag} reserved for ${s.users[uid]?s.users[uid].name:uid}.`; },
   unreserve(s,tag){ const d=s.shelf.devices.find(x=>x.tag===tag); d.status='Available'; d.reservedFor=null; return `${tag} reservation removed.`; },
-  wipeSpare(s,tag){ const d=s.shelf.devices.find(x=>x.tag===tag); d.wiped=true; d.image=null;
-    const w=Object.values(s.workstations).find(x=>x.tag===tag); if (w && w.state==='Returned · Pending wipe') { w.state='In stock'; w.wiped=true; hist(w,'Wiped on the shelf'); }
+  wipeSpare(s,tag){ const d=s.shelf.devices.find(x=>x.tag===tag), w=Object.values(s.workstations).find(x=>x.tag===tag);
+    if (w && w.ghost && !w.wiped && netState(s,w).up) return ghostMsg(s,w); // the record says Returns bin; the heartbeat says otherwise
+    d.wiped=true; d.image=null;
+    if (w && w.state==='Returned · Pending wipe') { w.state='In stock'; w.wiped=true; hist(w,'Wiped on the shelf'); }
     return `${tag} securely wiped. It’s ready to deploy.`; },
   setSpare(s,tag,status){ const d=s.shelf.devices.find(x=>x.tag===tag); d.status=status; if (status!=='Reserved') d.reservedFor=null; return `${tag} marked ${status}.`; },
   /* f: {src:'NSA-…' shelf tag | 'host:NS-…' redeploy, image, user, site}. Instant, deterministic staged job in s.deploy.jobs. */
@@ -3243,6 +3632,7 @@ const ENV = {
     const sd = d || (w0 && s.shelf.devices.find(x=>x.tag===w0.tag && ['Available','Reserved'].includes(x.status))); // shelf entry for warnings and status
     if (!w0 && !d) return 'Deployment: pick a device.';
     if (w0 && !w0.power) return `Deployment: ${w0.host} doesn’t power on, so it can’t be re-imaged. Deploy a spare instead.`;
+    if (w0 && w0.ghost && !w0.wiped && netState(s,w0).up) return 'Deployment: '+ghostMsg(s,w0);
     const img=IMAGES.find(i=>i.name===f.image && i.status==='Current'); if (!img) return 'Deployment: pick a current image.';
     if (d && ['Deployed','Faulty','Retired'].includes(d.status)) return `Deployment: ${d.tag} is ${d.status} and can’t be deployed.`;
     const u=f.user?s.users[f.user]:null, site=f.site||'Floor 1', warn=[], steps=[], step=(name,ok,note)=>steps.push({name,ok,note:note||''});
@@ -3259,7 +3649,7 @@ const ENV = {
     if (!dc) return `${job.id} failed at domain join: no domain controller answered.`;
     const floor=Number((site.match(/Floor (\d)/)||[])[1])||null, remote=/Remote/.test(site);
     let w=w0;
-    if (w){ Object.assign(w, {image:img.name, apps:img.apps, wiped:false, locked:false, owner:u?u.id:null, site, state:'In use'}); hist(w, `Re-imaged with ${img.name}${u?' for '+u.name:''}`);
+    if (w){ Object.assign(w, {image:img.name, apps:img.apps, wiped:false, locked:false, ghost:false, owner:u?u.id:null, site, state:'In use'}); hist(w, `Re-imaged with ${img.name}${u?' for '+u.name:''}`);
       if (sd) Object.assign(sd, {status:'Deployed', reservedFor:null, image:img.name, host:w.host, wiped:false}); }
     else { w=s.workstations[host]=ws(host, u?u.id:null, floor||1, d.tag, d.serial, {model:d.model, image:img.name, apps:img.apps, site, remote,
         ...(remote?{wifi:{profiles:[{ssid:'Home Wi-Fi', broken:false}], connected:'Home Wi-Fi'}}:{})});
@@ -3304,7 +3694,7 @@ const ENV = {
     touchChat(s,C.user);
     return ok ? `${s.users[C.user].name} confirmed the fix for ${ref}.` : `${s.users[C.user].name} says ${ref} still isn’t fixed.`; },
   /* Ticket-declared quick action: T.chatActions=[{id,user,label,ask,reply:string|s=>string,set?:s=>void}]. set() decides any gating itself. */
-  chatAction(s,ref,aid,t){ const A=(TK[ref].chatActions||[]).find(a=>a.id===aid); if (!A) return ''; t=t||now();
+  chatAction(s,ref,aid,t){ const A=(TK[ref].chatActions||[]).find(a=>a.id===aid); if (!A) return ''; if (A.pre) A.pre(s); t=t||hhmm(s.clock||CLOCK0); // pre(s) may move the clock (watching a scheduled run)
     const th=thread(s,A.user); th.push({from:'me', text:A.ask||A.label, t});
     th.push({from:A.user, text: typeof A.reply==='function' ? A.reply(s) : (A.reply||'OK.'), t});
     if (A.set) A.set(s);
@@ -3323,16 +3713,52 @@ const ENV = {
   vmDelete(s,id){ const v=s.voicemails.find(x=>x.id===id); v.deleted=true; v.heard=true; return `Voicemail from ${v.from} deleted.`; },
   nextShift(s){ if (!shiftDone(s)) return 'Finish or escalate every ticket on this shift first.'; if (!hasNextShift(s)) return 'No more shifts scheduled.';
     s.shift++; s.clock=CLOCK0; Object.values(s.users).forEach(u=>{ u.verified=null; }); // a new day: no caller is verified yet
-    arrivals(s); return `Shift ${s.shift} started.`; }
+    arrivals(s); return (SHIFTS[s.shift]||{}).boss ? 'The boss stage started.' : `Shift ${s.shift} started.`; },
+  /* Remote Desktop › Task Scheduler. op: disable | enable | run | runas (arg: account) | delete */
+  wsTask(s,host,name,op,arg){ const w=s.workstations[host], k=(w.tasks||[]).find(x=>x.name.toLowerCase()===String(name||'').toLowerCase());
+    if (!k) return `ERROR: The system cannot find the task “${name}” on ${host}.`;
+    if (op==='disable'){ k.enabled=false; hist(w,`Task ${k.name} disabled`); return `${k.name} disabled on ${host}. It won’t run again until someone enables it.`; }
+    if (op==='enable'){ k.enabled=true; hist(w,`Task ${k.name} enabled`); return `${k.name} enabled on ${host}.`; }
+    if (op==='delete'){ w.tasks=w.tasks.filter(x=>x!==k); hist(w,`Task ${k.name} deleted`); return `SUCCESS: The scheduled task “${k.name}” was successfully deleted.`; }
+    if (op==='runas'){ const who=arg==='svc-deskops-lab'?'svc-deskops-lab':'afarmwell'; k.runAs=who; k.logon=who==='afarmwell'?'Interactive only':'Run whether user is logged on or not (password stored)';
+      hist(w,`Task ${k.name} set to run as ${who}`); return `${k.name} now runs as NORTHSTAR\\${who}${who==='afarmwell'?', only while afarmwell is signed in':', whether or not anyone is signed in'}.`; }
+    if (op==='run'){ if (!k.enabled) return `${k.name} is disabled. Enable it before running it.`;
+      if (k.name!=='LedgerlineExport'){ k.last='Today '+hhmm(s.clock||CLOCK0); k.result='0x0'; return `Ran ${k.name}: 0x0.`; }
+      if (k.runAs==='afarmwell' && !w.sessionUser) return `${k.name} didn’t start: it runs only while afarmwell is signed in, and nobody is.`;
+      const r=bossRun(s, s.clock||CLOCK0);
+      return r ? `Ran ${k.name}: ${k.result}.` : `${k.name} couldn’t reach \\\\FILE01\\Finance: network path not found.`; }
+    return ''; },
+  /* Office Suite › Local data files: an admin import from the PST on the device, so it works even after the user's session is revoked. */
+  pstRestore(s,host){ const w=s.workstations[host], p=w.pst; if (!p) return 'No local data files on this PC.';
+    if (w.wiped || p.lost){ p.lost=true; return `Ledgerline-archive.pst no longer exists: ${host} was wiped.`; }
+    if (p.restored) return 'Those items were already moved back to the mailbox.';
+    if (!netState(s,w).up) return `${host} isn’t reachable, so the data file can’t be read.`;
+    p.restored=true; const m=s.mail.mailboxes[p.box||'afarmwell'];
+    (m.audit||(m.audit=[])).unshift({t:'Today '+hhmm(s.clock||CLOCK0), op:'Import', items:p.items, folder:'Ledgerline-archive.pst › Processed → Inbox › Recovered', client:`svc-deskops-lab (admin) · ${host}`, logon:'Admin'});
+    return `Moved ${p.items} items from Ledgerline-archive.pst › ${p.folder} back to ${mbAddr(s,p.box||'afarmwell')} › Inbox › Recovered.`; }
 };
 
 /* =====================================================================
    4. SCENARIOS — per-ticket objective checks over shared state.
    ===================================================================== */
-function check(s, ref){
-  const T=TK[ref], done=[], todo=[];
-  T.obj.forEach(o=>{ (o.ok(s)?done:todo).push(o); });
-  return {done:done.map(o=>o.done), todo:todo.map(o=>typeof o.todo==='function'?o.todo(s):o.todo), complete:todo.length===0};
+/* vis: list only the objectives of stages already reached (staged tickets); complete always covers every objective. */
+function check(s, ref, vis){
+  const T=TK[ref], st=(s.tickets[ref]||{}).stage||1, list=vis && T.stages ? T.obj.filter(o=>(o.stage||1)<=st) : T.obj, done=[], todo=[];
+  list.forEach(o=>{ (o.ok(s)?done:todo).push(o); });
+  return {done:done.map(o=>o.done), todo:todo.map(o=>typeof o.todo==='function'?o.todo(s):o.todo), complete:todo.length===0 && (list===T.obj || T.obj.every(o=>o.ok(s))), more:list.length<T.obj.length};
+}
+/* Staged tickets: once every objective up to the current stage passes, the requester posts what the fix revealed and the next stage's objectives appear. */
+function advanceStage(s){
+  TICKETS.forEach(T=>{ const t=s.tickets[T.ref]; if (!T.stages || !['open','assigned'].includes(t.status)) return; t.stage=t.stage||1;
+    while (T.stages[t.stage+1] && T.obj.every(o=>(o.stage||1)>t.stage || o.ok(s))){ t.stage++;
+      const r=T.stages[t.stage].reveal, txt=typeof r==='function'?r(s):r, at=hhmm(s.clock||CLOCK0), who=s.users[T.req].name;
+      sayTo(s,T.req,txt,at); t.notes.push({t:at, text:`Update from ${first(who)} (Company Chat): ${txt}`}); alertUi(s,`${T.ref}: ${who} posted an update in Company Chat.`); } });
+}
+/* Ticket clocks: T.tick(s, from, to, quiet) runs for every minute the in-world clock moved since the ticket last ticked (render calls this after each action). */
+function worldTick(s, quiet){
+  TICKETS.forEach(T=>{ const t=s.tickets[T.ref]; if (!T.tick || !['open','assigned'].includes(t.status)) return;
+    const to=s.clock||CLOCK0, from=Math.max(t.at==null?to:t.at, to-1440); if (to>from) T.tick(s,from,to,quiet); t.at=to; });
+  if (!quiet) advanceStage(s);
 }
 const isResolved = (s, ref) => s.tickets[ref].status==='assigned' && check(s,ref).complete;
 function statusWord(ref){ const t=S.tickets[ref];
@@ -3356,19 +3782,20 @@ function notesBonus(T, notes){
 }
 /* mode: 'close' | 'escalate'. Returns {lines:[[label,pts]], total, outcome}. */
 function scoreFor(s, ref, mode, notes){
-  const T=TK[ref], t=s.tickets[ref], P=PRI[T.pri], lines=[]; let outcome;
+  const T=TK[ref], t=s.tickets[ref], P=PRI[T.pri], lines=[], [lo,hi]=T.cap||[-20,42]; let outcome;
   const expect = T.expect || (T.security ? 'escalate' : 'close'); // what a correct finish looks like
-  if (mode==='escalate' && expect!=='escalate'){ lines.push(['Routine escalation (work not needing Security)', -8]); outcome='Escalated'; }
+  if (mode==='escalate' && expect!=='escalate'){ lines.push(['Routine escalation (work not needing Security)', -Math.max(8,P.pen)]); outcome='Escalated'; } // never cheaper than closing it unresolved
   else if (mode==='escalate' && !asEscalated(s,ref)){ lines.push([`Escalated before the case was ready (${P.w})`, -P.pen]); outcome='Escalated incomplete'; }
   else if (mode==='escalate' || check(s,ref).complete){
     lines.push([`${P.w} ticket resolved`, P.pts]);
     if (mode==='escalate'){ lines.push(['Correct security escalation', 12]); outcome='Routed to Security'; }
     else outcome='Resolved';
     const nb=notesBonus(T,notes); if (nb) lines.push(['Resolution notes', nb]);
+    if (T.boss && outcome==='Resolved' && !Object.keys(t.penalties).length && !t.peeked) lines.push(['Flawless boss: no penalties', 5]);
   } else { lines.push([`Closed while unresolved (${P.w})`, -P.pen]); outcome='Closed unresolved'; }
   Object.values(t.penalties).forEach(([p,why])=>lines.push([why,-p]));
-  const raw=lines.reduce((a,l)=>a+l[1],0), total=Math.max(-20,Math.min(42,raw));
-  if (total!==raw) lines.push(['Ticket score cap (−20…+42)', total-raw]);
+  const raw=lines.reduce((a,l)=>a+l[1],0), total=Math.max(lo,Math.min(hi,raw));
+  if (total!==raw) lines.push([`Ticket score cap (${lo}…+${hi})`.replace('-','−'), total-raw]);
   return {lines, total, outcome};
 }
 /* A ticket arrives: runs its arrive() hook and, for intake tickets, drops the chat message or voicemail. */
@@ -3450,6 +3877,7 @@ const IC = { // original line icons (24px viewBox)
   devmgr:'<rect x="7" y="7" width="10" height="10" rx="1"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
   office:'<rect x="4" y="3.5" width="16" height="17" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'
 };
+IC.tasks = '<circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.5 2M9 3.5h6"/>';
 const icon = (k, size=18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 const TOOLS = {
   directory:{name:'Directory', grp:'Infrastructure', desc:'Accounts, permissions and sign-in state'},
@@ -3473,6 +3901,7 @@ const TABDEF = {dir:'auth', srv:'overview', mail:'trace', split:'tool', docs:'kb
 const SWAP = {claim:'unclaim', unclaim:'claim', lock:'unlock', unlock:'lock', enable:'disable', disable:'enable'}; // focus moves to a button's replacement
 
 function render(){
+  worldTick(S); // scheduled things that were due while the last action ran (the boss's quarter-hour job)
   const a = document.activeElement, roots=[app, $('chat')];
   const sig = el => el.dataset.key || (el.dataset.act ? `${el.dataset.act}|${el.dataset.id||''}|${el.dataset.arg||''}` : '');
   const key = a && roots.some(r=>r.contains(a)) ? sig(a) : '', pos = a && a.selectionStart, wasChat = !!a && $('chat').contains(a);
@@ -3494,7 +3923,8 @@ function render(){
     t.querySelectorAll('tbody tr').forEach(r=>{ if (r.children.length===h.length) [...r.children].forEach((td,i)=>{ if (h[i]) td.dataset.label=h[i]; }); }); }); // labels for stacked rows on phones
   const mx=app.querySelector('.rdp.max'); ['topbar','chat','memNote'].forEach(id=>{ $(id).inert=!!mx; }); // maximised Remote Desktop behaves like a modal
   if (mx) for (let e=mx; e!==app; e=e.parentElement) [...e.parentElement.children].forEach(c=>{ if (c!==e) c.inert=true; });
-  save();
+  const alerts=(S.ui.alerts||(S.ui.alerts=[])).splice(0);
+  save(); alerts.forEach(x=>toast(x,'warn'));
 }
 function renderTop(){
   const p=S.profile.points, rk=rankOf(p), unread=Object.values(S.chat.unread).reduce((x,y)=>x+y,0), vm=S.voicemails.filter(v=>!v.heard && !v.deleted).length;
@@ -3510,8 +3940,8 @@ function renderTop(){
 /* ----- Dashboard ----- */
 function qrow(T, showStatus){
   const r=reqInfo(T);
-  return `<button class="qrow" data-act="open" data-id="${T.ref}">
-    <span><span class="t">${esc(T.title)}</span><span class="rq"><span class="mono">${T.ref}</span><span>${esc(r.name)}</span>${T.intake?`<span class="chip">${T.intake.via==='chat'?'via chat':'via voicemail'}${T.intake.via==='voicemail'&&r.ext?' · x'+esc(r.ext):''}</span>`:''}</span></span>
+  return `<button class="qrow${T.boss?' boss':''}" data-act="open" data-id="${T.ref}">
+    <span><span class="t">${esc(T.title)}</span><span class="rq"><span class="mono">${T.ref}</span>${T.boss?'<span class="chip boss">Boss</span>':''}<span>${esc(r.name)}</span>${T.intake?`<span class="chip">${T.intake.via==='chat'?'via chat':'via voicemail'}${T.intake.via==='voicemail'&&r.ext?' · x'+esc(r.ext):''}</span>`:''}</span></span>
     ${showStatus?`<span class="chip ${isResolved(S,T.ref)?'ok':'blue'}">${statusWord(T.ref)}</span>`:'<span></span>'}${priTag(T.pri)}<span class="chev" aria-hidden="true">${icon('chev',18)}</span></button>`;
 }
 function systems(){
@@ -3537,17 +3967,19 @@ function vDash(){
   const open=TICKETS.filter(T=>S.tickets[T.ref].status==='open').sort(byPri);
   const mine=TICKETS.filter(T=>S.tickets[T.ref].status==='assigned').sort(byPri);
   const cur=TICKETS.filter(T=>(T.shift||1)===S.shift), fin=cur.filter(T=>isDone(S,T.ref)).length, sh=SHIFTS[S.shift]||{title:'Shift '+S.shift};
-  const next=shiftDone(S) && hasNextShift(S);
+  const next=shiftDone(S) && hasNextShift(S), bossNext=next && !!(SHIFTS[S.shift+1]||{}).boss, bossLater=!bossNext && TICKETS.some(T=>T.boss && (T.shift||1)>S.shift);
   const queue = open.length ? open.map(T=>qrow(T)).join('') :
     `<div class="empty">${mine.length?'No unclaimed incidents. Finish the tickets in My Queue.':next?'This shift’s queue is clear. Start the next shift when you’re ready.':'All available incidents are cleared. Nice shift.'}<br><button class="btn" style="margin-top:12px" data-act="go" data-id="past">Review past tickets</button></div>`;
   return `<div class="wrap">
-    <div class="shiftbar"><span class="shiftno">${esc(sh.title)}</span><span class="muted small">${fin} of ${cur.length} tickets finished</span><span class="spacer"></span><button class="linkbtn small" data-act="briefDlg">${icon('clip',14)} Shift briefing</button></div>
-    ${next?`<section class="nextshift" aria-label="Shift complete"><div><div class="label blue">Shift complete</div><b>Every ticket on this shift is closed or escalated.</b><div class="small muted">${S.profile.points} points so far · rank ${rankOf(S.profile.points)}</div></div><span class="spacer"></span><button class="btn primary" data-act="nextShiftDlg">Start next shift ${icon('chev',14)}</button></section>`:''}
+    <div class="shiftbar"><span class="shiftno">${esc(sh.title)}</span>${sh.boss?'<span class="chip boss">Boss</span>':''}<span class="muted small">${fin} of ${cur.length} tickets finished</span><span class="spacer"></span><button class="linkbtn small" data-act="briefDlg">${icon('clip',14)} Shift briefing</button></div>
+    ${bossNext?`<section class="nextshift boss" aria-label="Boss stage unlocked"><div><div class="label boss">Shift ${S.shift} complete · The boss stage is unlocked</div><b>One last ticket <span class="chip boss">Boss</span></b><div class="small muted">${S.profile.points} points so far · rank ${rankOf(S.profile.points)}</div></div><span class="spacer"></span><button class="btn primary" data-act="nextShiftDlg">Start the boss stage ${icon('chev',14)}</button></section>`
+     :next?`<section class="nextshift" aria-label="Shift complete"><div><div class="label blue">Shift complete</div><b>Every ticket on this shift is closed or escalated.</b><div class="small muted">${S.profile.points} points so far · rank ${rankOf(S.profile.points)}</div></div><span class="spacer"></span><button class="btn primary" data-act="nextShiftDlg">Start next shift ${icon('chev',14)}</button></section>`:''}
     ${intakeHtml()}
     <section class="qcard" aria-labelledby="mq"><div class="qhd"><h2 id="mq" class="sect">${icon('user',20)} My Queue <span class="cnt">${mine.length}</span></h2><span class="label">Assigned to you</span></div>
       ${mine.length ? mine.map(T=>qrow(T,true)).join('') : '<div class="qempty">Nothing assigned to you yet. Open an incident below and select <b>Assign to me</b>.</div>'}</section>
     <div class="sechd">${icon('ticket',16)} Ticket queue</div>
     <section class="qcard" aria-labelledby="qh"><div class="qhd"><h2 id="qh" class="sect">${icon('clip',20)} Incidents</h2><span class="label">${open.length} open</span></div>${queue}</section>
+    ${bossLater?`<section class="bossteaser" style="margin-top:22px" aria-label="Final boss locked"><span class="chip boss">Boss</span><span style="flex:1;min-width:200px"><b>Final boss · Locked</b><div class="small muted">Close or escalate every shift 3 ticket to unlock the boss stage: one last ticket, from a requester who has already tried everything.</div></span></section>`:''}
     <div class="slim">
       <section class="mini" aria-label="Service health"><div class="row"><span class="label">Service health</span><span class="spacer"></span><button class="linkbtn small" data-act="tool" data-id="server">Server Room ${icon('chev',14)}</button></div><div class="health">${systems()}</div></section>
       <section class="mini" aria-label="Recent activity"><div class="label">Recent activity</div><div style="margin-top:6px">
@@ -3559,16 +3991,17 @@ function vDash(){
 function objectivesHtml(ref){
   const t=S.tickets[ref];
   if (!t.checked) return '<p class="muted small">Run <b>Check fix</b> to see which requirements are met.</p>';
-  const c=check(S,ref);
+  const c=check(S,ref,true);
   return `<ul class="objs">${c.done.map(x=>`<li><span class="ck y">✓</span><span>${esc(x)}</span></li>`).join('')}${c.todo.map(x=>`<li><span class="ck"></span><span>${esc(x)}</span></li>`).join('')}</ul>
-    <p class="muted small">${c.complete?'All requirements met. Review your work and close the ticket.':'Next: '+esc(c.todo[0])+'.'} This list updates live.</p>`;
+    ${c.more?'<p class="small label boss" style="margin:4px 0 0">More requirements appear as you dig.</p>':''}
+    <p class="muted small">${c.complete?'All requirements met. Review your work and close the ticket.':c.todo.length?'Next: '+esc(c.todo[0])+'.':''} This list updates live.</p>`;
 }
 function hintsHtml(ref){
   if (!S.settings.hints) return '';
-  const T=TK[ref], n=S.tickets[ref].hints;
+  const T=TK[ref], n=S.tickets[ref].hints, model=!T.boss; // the boss's last hint replaces the model answer
   return `<ol class="hints">${T.hints.slice(0,n).map(h=>`<li>${esc(h)}</li>`).join('')}</ol>
-    ${n>T.hints.length ? `<div class="note"><b>Model answer.</b> ${esc(T.model)}</div>` : ''}
-    ${n<=T.hints.length ? `<button class="linkbtn small" data-act="hint" data-id="${ref}">${n<T.hints.length?`Show hint ${n+1} of ${T.hints.length}`:'Show model answer'}</button>` : ''}
+    ${n>T.hints.length && model ? `<div class="note"><b>Model answer.</b> ${esc(T.model)}</div>` : ''}
+    ${n<T.hints.length || (n===T.hints.length && model) ? `<button class="linkbtn small" data-act="hint" data-id="${ref}">${n<T.hints.length?`Show hint ${n+1} of ${T.hints.length}`:'Show model answer'}</button>` : ''}
     <p class="muted small">Hints don’t affect your score.</p>`;
 }
 function ticketLog(ref){
@@ -3579,10 +4012,10 @@ function ticketLog(ref){
 }
 /* Requester's own words, laid out like a service-desk intake form. */
 function descHtml(T){
-  const r=reqInfo(T), tried=T.tried.split(/(?<=[.!?])\s+/).filter(Boolean).map(x=>'- '+esc(x)).join('<br>');
+  const r=reqInfo(T), tried=(Array.isArray(T.tried)?T.tried:T.tried.split(/(?<=[.!?])\s+/)).filter(Boolean).map(x=>'- '+esc(x)).join('<br>'), [d0,...dn]=T.desc.split('\n\n');
   const I=T.intake, ch = !I ? '' : I.via==='chat' ? `<br>Channel: Company Chat${I.from!==T.req?` · sent from ${esc(uName(I.from))}’s account`:''}` : `<br>Channel: Voicemail · caller ID ${esc(I.callerId||(S.users[I.from]?'Internal x'+S.users[I.from].ext:'Withheld'))}`;
   return `<div class="desc"><p>Reported by: ${esc(r.name)} (${esc(r.email)})<br>Department: ${esc(r.dept)} | Location: ${esc(r.loc)}<br>Contact: x${esc(r.ext)}<br>Affected asset: ${esc(T.asset)} (${esc(T.assetType)})${ch}</p>
-    <p>Issue Description:<br>${esc(T.desc)}</p><p>Troubleshooting performed by user:<br>${tried}</p><p>Business Impact:<br>${esc(T.impact)}</p></div>`;
+    <p>Issue Description:<br>${esc(d0)}</p>${dn.map(x=>`<p>${esc(x)}</p>`).join('')}<p>Troubleshooting performed by user:<br>${tried}</p><p>Business Impact:<br>${esc(T.impact)}</p></div>`;
 }
 const splitSwitch = () => `<label class="switch"><input type="checkbox" role="switch" data-bind="split" data-key="splitSw" ${S.settings.split?'checked':''}><span class="knob" aria-hidden="true"></span>Split screen view</label>`;
 function vTicket(){
@@ -3590,8 +4023,8 @@ function vTicket(){
   return `<div class="wrap">
     <div class="tbar"><button class="back" data-act="go" data-id="dash">${icon('back',18)} Back to queue</button><span class="spacer"></span>${splitSwitch()}</div>
     <div class="tlayout"><div>
-      <article class="tcard" aria-labelledby="tTitle"><div class="tchd">
-        <div class="tmeta"><span class="ref">${ref}</span>${priTag(T.pri)}<span class="chip ${resolved?'ok':mine?'blue':''}">${statusWord(ref)}</span></div>
+      <article class="tcard${T.boss?' boss':''}" aria-labelledby="tTitle"><div class="tchd">
+        <div class="tmeta"><span class="ref">${ref}</span>${T.boss?'<span class="chip boss">Final boss</span>':''}${priTag(T.pri)}<span class="chip ${resolved?'ok':mine?'blue':''}">${statusWord(ref)}</span></div>
         <h1 class="ttitle" id="tTitle">${esc(T.title)}</h1>
         <button class="optbtn" popovertarget="optPop">Options <b aria-hidden="true">···</b></button>
         <div id="optPop" popover class="menu" style="width:230px">
@@ -3622,10 +4055,10 @@ function vTicket(){
 function ticketSide(ref){
   const T=TK[ref], r=reqInfo(T), t=S.tickets[ref];
   return `<section class="card"><div class="bd">
-    <div class="tmeta"><span class="ref mono">${ref}</span>${priTag(T.pri)}<span class="chip ${isResolved(S,ref)?'ok':''}">${statusWord(ref)}</span></div>
+    <div class="tmeta"><span class="ref mono">${ref}</span>${T.boss?'<span class="chip boss">Boss</span>':''}${priTag(T.pri)}<span class="chip ${isResolved(S,ref)?'ok':''}">${statusWord(ref)}</span></div>
     <h2 class="ttitle">${esc(T.title)}</h2>
     <div class="small muted">${esc(r.name)} · ${esc(r.dept)} · <span class="mono">${esc(T.asset)}</span></div>
-    <div class="desc">${esc(T.desc)}</div>
+    <div class="desc">${T.desc.split('\n\n').map(x=>`<p>${esc(x)}</p>`).join('')}</div>
     <div class="row"><button class="btn sm" data-act="checkFix" data-id="${ref}">Check fix</button><button class="btn sm" data-act="open" data-id="${ref}">Open ticket</button></div>
     ${t.status==='assigned'?'':'<p class="small muted">Not assigned to you yet.</p>'}
     <div class="label blue" style="margin-top:16px">Required outcome</div>${objectivesHtml(ref)}${S.settings.hints?`<div class="label blue" style="margin-top:14px">Hints</div>${hintsHtml(ref)}`:''}</div></section>`;
@@ -3653,12 +4086,12 @@ function vPast(){
   const done=TICKETS.filter(T=>['closed','escalated'].includes(S.tickets[T.ref].status));
   const sel=done.find(T=>T.ref===S.ui.past) || done[0];
   const list = done.length ? `<table><thead><tr><th>Ticket</th><th>Outcome</th><th>Points</th></tr></thead><tbody>${done.map(T=>{ const r=S.tickets[T.ref].result;
-    return `<tr class="${sel&&sel.ref===T.ref?'sel':''}"><td><button class="linkbtn" data-act="pastSel" data-id="${T.ref}">${T.ref}</button><div class="small muted">${esc(T.title)}</div></td>
+    return `<tr class="${sel&&sel.ref===T.ref?'sel':''}"><td><button class="linkbtn" data-act="pastSel" data-id="${T.ref}">${T.ref}</button>${T.boss?' <span class="chip boss">Boss</span>':''}<div class="small muted">${esc(T.title)}</div></td>
       <td>${esc(r.outcome)}</td><td class="mono">${r.total>=0?'+':''}${r.total}</td></tr>`; }).join('')}</tbody></table>`
     : '<div class="empty">No closed tickets yet. Closed and escalated tickets appear here with a model answer.</div>';
   let detail='';
   if (sel){ const t=S.tickets[sel.ref], r=t.result;
-    detail = `<div class="tmeta"><span class="ref">${sel.ref}</span>${priTag(sel.pri)}</div><h2 class="disp" style="margin:8px 0;font-size:19px">${esc(sel.title)}</h2>
+    detail = `<div class="tmeta"><span class="ref">${sel.ref}</span>${sel.boss?'<span class="chip boss">Boss</span>':''}${priTag(sel.pri)}</div><h2 class="disp" style="margin:8px 0;font-size:19px">${esc(sel.title)}</h2>
       <p><span class="chip ${['Closed unresolved','Escalated','Escalated incomplete'].includes(r.outcome)?'bad':'ok'}">${esc(r.outcome)}</span> <span class="muted small">at ${r.at}</span></p>
       <div class="prev">${r.lines.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p>=0?'+':''}${p}</span></div>`).join('')}<div class="tot"><span>Total</span><span class="mono">${r.total>=0?'+':''}${r.total}</span></div></div>
       <div class="label" style="margin-top:16px">Your resolution notes</div><p>${r.notes?esc(r.notes):'<span class="muted">None recorded.</span>'}</p>
@@ -3765,10 +4198,10 @@ function toast(text, kind){
 const prevHtml = sc => sc.lines.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p>=0?'+':''}${p}</span></div>`).join('') +
   `<div class="tot"><span>Points if you confirm</span><span class="mono">${sc.total>=0?'+':''}${sc.total}</span></div>`;
 function closeDialog(ref){
-  const c=check(S,ref), draft=S.ui.drafts[ref]||'', sc=scoreFor(S,ref,'close',draft);
+  const c=check(S,ref,true), draft=S.ui.drafts[ref]||'', sc=scoreFor(S,ref,'close',draft);
   openDlg(`<div class="dh"><h2 id="dlgTitle">Close ${ref}</h2></div><div class="db">
     ${c.complete?'<div class="note ok"><b>Solution complete.</b> Every requirement is met.</div>'
-      :`<div class="note bad"><b>This ticket still appears unresolved.</b><ul style="margin:6px 0 0;padding-left:18px">${c.todo.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`}
+      :`<div class="note bad"><b>This ticket still appears unresolved.</b><ul style="margin:6px 0 0;padding-left:18px">${c.todo.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}${c.more?'<li>More requirements appear as you dig.</li>':''}</ul></div>`}
     <label class="label" for="closeNotes">Resolution notes (optional, up to 600 characters)</label>
     <textarea id="closeNotes" rows="4" maxlength="600" data-bind="draft" data-id="${ref}" placeholder="What was wrong, what you changed, how you verified it">${esc(draft)}</textarea>
     <div class="small muted" id="cnt">${draft.length}/600</div>
@@ -3816,7 +4249,9 @@ function achievements(s){
     ['By the book', 'Resolve a ticket with no penalties', res.some(r=>r.outcome==='Resolved' && !r.lines.some(l=>l[1]<0))],
     ['Paper trail', 'Earn the full resolution-notes bonus', res.some(r=>r.lines.some(l=>l[0]==='Resolution notes' && l[1]===3))],
     ['Security minded', 'Route a compromise to Security with evidence intact', res.some(r=>r.outcome==='Routed to Security') && !rule(s,'r1').deleted],
-    ['Inbox zero', 'Finish every ticket in all three shifts', res.length===TICKETS.length]];
+    ['Inbox zero', 'Finish every ticket in shifts 1–3', TICKETS.filter(T=>!T.boss).every(T=>s.tickets[T.ref].result)],
+    ['Boss defeated', 'Resolve INC-1073, the final boss', TICKETS.some(T=>T.boss && (s.tickets[T.ref].result||{}).outcome==='Resolved')],
+    ['Flawless boss', 'Defeat the boss with no penalties, without revealing its guide first', TICKETS.some(T=>T.boss && ((s.tickets[T.ref].result||{}).lines||[]).some(l=>/^Flawless boss/.test(l[0])))]];
 }
 function achDialog(){
   const p=S.profile.points, rk=rankOf(p), next=RANKS.find(r=>r[0]>p);
@@ -3884,9 +4319,9 @@ function purgeDialog(mid){ const m=msg(S,mid), same=S.mail.messages.filter(x=>(m
     ()=>{ const sc=val('pgScope'), md=val('pgMode'); act('Mail Security', mid, 'purge', s=>ENV.purge(s,mid,sc,md), [mid,sc,md]); });
 }
 function briefDialog(next){ const n=next?S.shift+1:S.shift, sh=SHIFTS[n]||{title:'Shift '+n, brief:''}, list=TICKETS.filter(T=>(T.shift||1)===n);
-  openDlg(`<div class="dh"><h2 id="dlgTitle">${esc(sh.title)}</h2></div><div class="db"><p>${esc(sh.brief||'')}</p>
-    <p class="muted small">${list.length} ticket${list.length===1?'':'s'} expected on this shift${list.some(T=>T.intake)?', some arriving by chat or voicemail':''}.</p></div>
-    <div class="df"><button class="btn" data-act="dlgCancel">${next?'Not yet':'Close'}</button>${next?`<button class="btn primary" data-act="startNext">Start shift ${n}</button>`:''}</div>`);
+  openDlg(`<div class="dh">${sh.boss?'<span class="chip boss">Boss · final stage</span>':''}<h2 id="dlgTitle"${sh.boss?' style="margin-top:8px"':''}>${esc(sh.title)}</h2></div><div class="db"><p>${esc(sh.brief||'')}</p>
+    <p class="muted small">${sh.boss?'One ticket: the final boss. Your score for it is capped at −30…+70.':`${list.length} ticket${list.length===1?'':'s'} expected on this shift${list.some(T=>T.intake)?', some arriving by chat or voicemail':''}.`}</p></div>
+    <div class="df"><button class="btn" data-act="dlgCancel">${next?'Not yet':'Close'}</button>${next?`<button class="btn primary" data-act="startNext">${sh.boss?'Start the boss stage':'Start shift '+n}</button>`:''}</div>`);
 }
 /* ----- Consoles. Each reads shared state S; mutations go through act(). ----- */
 const btn = (act, id, arg, label, cls='', extra='') => `<button class="btn sm ${cls}" data-act="${act}" data-id="${esc(id)}" data-arg="${esc(arg)}" ${extra}>${label}</button>`;
@@ -3942,7 +4377,7 @@ function cDirectory(){
   let pane='';
   const hrNote = u.hrNote ? `<div class="hrbanner"><b>HR note:</b> ${esc(u.hrNote)}</div>` : '';
   if (t==='profile') pane=hrNote + (u.hrName && u.hrName!==u.name ? `<div class="hrbanner"><b>Pending HR change:</b> HR records this person as <b>${esc(u.hrName)}</b>. Update the display name and add the new email address. Don’t rename the username.</div>` : '') +
-    kv([['Display name',esc(u.name)],['Username',`<span class="mono">${esc(loginOf(u))}</span>${u.renamed?' <span class="chip warn">Renamed</span>':''}`],['Email',esc(u.email)],['Employee ID',`<span class="mono">${esc(u.employeeId)}</span>`],
+    kv([['Display name',esc(u.name)],...(u.pronouns?[['Pronouns',esc(u.pronouns)]]:[]),['Username',`<span class="mono">${esc(loginOf(u))}</span>${u.renamed?' <span class="chip warn">Renamed</span>':''}`],['Email',esc(u.email)],['Employee ID',`<span class="mono">${esc(u.employeeId)}</span>`],
       ['Title',esc(u.title)],['Department',esc(u.dept)],['Manager',esc(u.manager||'—')],['Assistant',esc(u.assistant||'—')],['Location',`Floor ${u.floor} · Ext. ${esc(u.ext||'—')}`],['Mobile',esc(u.mobile||'—')],
       ['Home address',u.address?`${esc(u.address)}<div class="small muted">Updated ${esc(u.addressUpdated||'—')}</div>`:'<span class="muted">Not on file</span>'],['Start date',esc(u.startDate||'—')],['Role template',esc(u.roleTemplate||'—')],
       ['Identity check',u.verified?stat(1,'Verified · '+VERIFY[u.verified]):'<span class="muted">Not verified this call</span>']]) +
@@ -4061,16 +4496,17 @@ function cServer(){
         <table><tbody>${x.shadows.map(z=>`<tr><td class="mono">${z.id}</td><td>${esc(z.t)}</td><td class="mono">${z.gb} GB</td></tr>`).join('')||'<tr><td class="muted">No shadow copies. Previous versions are unavailable.</td></tr>'}</tbody></table>
         <div class="label blue" style="margin-top:16px">Previous versions</div>
         <div class="row" style="margin:6px 0"><label class="small muted" for="fsShare">Share</label><select id="fsShare" data-bind="sel" data-id="fsShare" data-key="fsShare">${shares.map(z=>`<option ${z===share?'selected':''}>${z}</option>`).join('')}</select></div>
-        <ul class="ulist">${files.map(z=>`<li><button class="${f&&f.name===z.name?'on':''}" data-act="sel" data-id="fsFile" data-arg="${esc(z.name)}">${esc(z.name)} ${z.state!=='ok'?`<span class="chip ${z.state==='deleted'||z.state==='corrupt'?'bad':'ok'}">${z.state}</span>`:''}<small>${z.versions.length} previous version${z.versions.length===1?'':'s'}</small></button></li>`).join('')}</ul></div>
-      <div>${f?`<div class="label blue">\\\\FILE01\\${esc(share)}\\${esc(f.name)}</div><p class="small muted">Current state: <b>${esc(f.state)}</b>${f.backupRequested?' · backup restore requested':''}${f.copy?' · restored copy present':''}</p>
+        <ul class="ulist">${files.map(z=>`<li><button class="${f&&f.name===z.name?'on':''}" data-act="sel" data-id="fsFile" data-arg="${esc(z.name)}">${esc(z.name)} ${z.state!=='ok'?`<span class="chip ${['deleted','corrupt','stale'].includes(z.state)?'bad':'ok'}">${z.state}</span>`:''}<small>${z.versions.length} previous version${z.versions.length===1?'':'s'}</small></button></li>`).join('')}</ul></div>
+      <div>${f?`<div class="label blue">\\\\FILE01\\${esc(share)}\\${esc(f.name)}</div><p class="small muted">Current state: <b>${esc(f.state)}</b>${f.backupRequested?' · backup restore requested':''}${f.copy?' · restored copy present':''}</p>${f.live?`<p class="small">Live file: ${esc(f.live)}</p>`:''}
         <div class="tablewrap"><table><thead><tr><th>Version</th><th>Modified</th><th>Size</th><th>Restore</th></tr></thead><tbody>
         ${f.versions.map(v=>{ const gone=!x.shadows.some(z=>z.id===v.shadow); return `<tr><td class="mono">${v.shadow}${gone?'':`<div class="small muted">snapshot ${esc(x.shadows.find(z=>z.id===v.shadow).t)}</div>`}</td><td>${esc(v.t)}${gone?' <span class="chip bad">Snapshot deleted</span>':''}</td><td class="mono">${esc(v.size)}</td>
           <td><div class="row">${envBtn('restoreVersion',[share,f.name,v.id,'original'],'Restore to original location','',{dis:gone})}${envBtn('restoreVersion',[share,f.name,v.id,'copy'],'Restore as a copy','',{dis:gone})}${envBtn('restoreVersion',[share,f.name,v.id,'readonly'],'Open read-only','',{dis:gone})}${envBtn('revertShare',[share,v.shadow],'Revert entire share','danger',{dis:gone, confirm:`Every file on \\\\FILE01\\${share} goes back to snapshot ${v.shadow}. Anything people saved since then is overwritten.`, title:`Revert all of ${share}?`, ok:'Revert share'})}</div></td></tr>`; }).join('')||'<tr><td colspan="4" class="muted">No previous versions: the file hasn’t changed since the oldest snapshot.</td></tr>'}</tbody></table></div>
-        ${f.versions.length && f.versions.every(v=>!x.shadows.some(z=>z.id===v.shadow)) || (f.state!=='ok' && !f.versions.length) ? `<div class="note warn">No usable shadow copy. ${envBtn('requestBackup',[share,f.name],'Request restore from nightly backup','',{dis:!!f.backupRequested})}</div>`:''}`
+        ${f.backupNote ? `<div class="row" style="margin-top:10px">${envBtn('requestBackup',[share,f.name],'Request restore from nightly backup','',{dis:!!f.backupRequested})}</div>`
+          : f.versions.length && f.versions.every(v=>!x.shadows.some(z=>z.id===v.shadow)) || (f.state!=='ok' && !f.versions.length) ? `<div class="note warn">No usable shadow copy. ${envBtn('requestBackup',[share,f.name],'Request restore from nightly backup','',{dis:!!f.backupRequested})}</div>`:''}`
         :'<p class="muted">Select a file to see its previous versions.</p>'}</div></div>
       <div class="label blue" style="margin-top:18px">File audit · FILE01</div>${search('audit','User, action or path','Filter file audit')}
       <div class="tablewrap scroll" style="margin-top:8px"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Path</th></tr></thead><tbody>
-      ${x.audit.filter(a=>{ const q=(S.ui.q.audit||'').toLowerCase(); return !q || (a.user+' '+a.action+' '+a.path).toLowerCase().includes(q); }).map(a=>`<tr><td class="mono small">${esc(a.t)}</td><td class="mono small">${esc(a.user)}</td><td>${chipFor(a.action,['Opened','Created','Restored','Restored copy'],['Deleted','Renamed','Overwritten','Encrypted'])}</td><td class="mono small">${esc(a.path)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">No audit entries match.</td></tr>'}</tbody></table></div>`; }
+      ${x.audit.filter(a=>{ const q=(S.ui.q.audit||'').toLowerCase(); return !q || (a.user+' '+a.action+' '+a.path).toLowerCase().includes(q); }).map(a=>`<tr><td class="mono small">${esc(a.t)}</td><td class="mono small">${esc(a.user)}${a.src?`<div class="muted brk">from ${esc(a.src)}</div>`:''}</td><td>${chipFor(a.action,['Opened','Created','Restored','Restored copy'],['Deleted','Renamed','Overwritten','Encrypted'])}</td><td class="mono small">${esc(a.path)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">No audit entries match.</td></tr>'}</tbody></table></div>`; }
   if (t==='events'){ const [id,pick]=srvPick('srvev','DC01'), x=S.net.servers[id];
     body=pick+`<div class="label blue" style="margin-top:14px">Event log · ${id}</div><div class="tablewrap scroll"><table><thead><tr><th>Time</th><th>Level</th><th>Source</th><th>ID</th><th>Message</th></tr></thead><tbody>
       ${x.events.map(e=>`<tr><td class="mono small">${esc(e.t)}</td><td>${chipFor(e.level,['Info'],['Error','Critical'])}</td><td class="small">${esc(e.source)}</td><td class="mono small">${e.id}</td><td class="small">${esc(e.text)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No events.</td></tr>'}</tbody></table></div>
@@ -4082,7 +4518,8 @@ function cServer(){
 /* ===== Remote desktop ===== */
 const DRIVES = {'Finance-Share':'F:','Sales-Share':'S:','HR-Share':'H:','Support-Share':'T:','Operations-Share':'O:','Executive-Share':'X:','Domain Users':'P:'};
 const DEPT_GROUP = {'Finance':'Finance-Share','Sales':'Sales-Share','Human Resources':'HR-Share','Support':'Support-Share','Operations':'Operations-Share','Executive Office':'Executive-Share'};
-const APPS = {wifi:'Network & Wi-Fi', vpn:'VPN Client', files:'File Explorer', term:'Terminal', settings:'Settings', update:'System Update', devmgr:'Device Manager', office:'Office Suite'};
+const APPS = {wifi:'Network & Wi-Fi', vpn:'VPN Client', files:'File Explorer', term:'Terminal', settings:'Settings', update:'System Update', devmgr:'Device Manager', office:'Office Suite', tasks:'Task Scheduler'};
+const wsOwnerName = w => w.owner ? S.users[w.owner].name : w.ghost ? 'Unassigned' : 'Shared device';
 const DISP_MODES = ['Duplicate these displays','Extend these displays','Show only on 1','Show only on 2'];
 const CAT_COL = {System:'#4a5561', Apps:'#1584bb', Documents:'#3ccf8e', Downloads:'#c9c35c', 'Temporary files':'#f0a33a', 'Recycle Bin':'#ff8b3d', 'Update cache':'#9b7be0'};
 function settingsBody(w){
@@ -4122,7 +4559,10 @@ function appBody(w, a){
       <p>Status: ${w.vpn.connected?stat(1,'Connected'):stat(0,'Disconnected',1)}</p>
       <div class="row" style="margin-top:8px">${w.vpn.connected?btn('rdpAct',w.host,'vpnDisconnect','Disconnect'):btn('rdpAct',w.host,'vpnConnect','Connect','primary')}</div>
       ${w.remote?'':'<p class="muted small">This device is on the office network and doesn’t normally need the VPN.</p>'}`;
-  if (a==='files'){ const u=S.users[w.owner]; if (!u) return '<p class="muted">Shared kiosk: no mapped drives.</p>';
+  if (a==='files'){ const u=S.users[w.owner];
+    if (!u && w.sessionUser) return `<table><thead><tr><th>Drive</th><th>Path</th><th>Status</th></tr></thead><tbody><tr><td>C:</td><td>Local disk · ${w.storage.totalGB-diskUsed(w)} GB free</td><td></td></tr>
+      <tr><td>F:</td><td class="mono">\\\\FILE01\\Finance</td><td>${stat(0,'Disconnected')}<div class="small muted">Reconnect failed: logon failure, unknown user name or bad password (1326).</div></td></tr></tbody></table>`;
+    if (!u) return '<p class="muted">Shared kiosk: no mapped drives.</p>';
     const grps=[DEPT_GROUP[u.dept],'Domain Users'], open=S.ui.sel.share && SHARES.find(x=>x.path===S.ui.sel.share);
     return `<table><thead><tr><th>Drive</th><th>Path</th><th></th></tr></thead><tbody><tr><td>C:</td><td>Local disk · ${w.storage.totalGB-diskUsed(w)} GB free</td><td></td></tr>
       ${grps.map(g=>SHARES.find(x=>x.group===g)).filter(Boolean).map(sh=>`<tr><td>${DRIVES[sh.group]}</td><td class="mono">${esc(sh.path)}</td><td style="text-align:right">${btn('rdpAct',w.host,'openShare:'+sh.path,'Open')}</td></tr>`).join('')}</tbody></table>
@@ -4142,13 +4582,24 @@ function appBody(w, a){
       ${cats.map(c=>`<div class="label" style="margin-top:12px">${esc(c)}</div><table><tbody>${w.devices.filter(d=>d.cat===c).map(d=>`<tr><td>${esc(d.name)}</td>
         <td>${d.status==='OK'?stat(1,'Working'):d.status==='Removed'?'<span class="st off">Driver removed</span>':stat(0,d.status+(d.code?` (Code ${d.code})`:''))}${d.note?`<div class="small muted">${esc(d.note)}</div>`:''}</td>
         <td style="text-align:right">${envBtn('devUninstall',[w.host,d.id],'Uninstall driver','',{dis:d.status==='Removed'})}</td></tr>`).join('')}</tbody></table>`).join('')}`; }
-  if (a==='office'){ const u=S.users[w.owner];
-    return `${kv([['Product','Office Suite'],['Signed in as', u?esc(u.email):'—'],['Licence', w.officeOk?stat(1,'Licensed'):stat(0,'Unlicensed · product deactivated')],['Account licence', u&&u.licences.includes('office')?stat(1,'Assigned in Directory'):stat(0,'Not assigned in Directory')]])}
-      <div class="row">${envBtn('officeRefresh',[w.host],'Refresh licence','primary')}</div>${w.officeOk?'':'<p class="small muted">Editing is disabled until the licence is refreshed.</p>'}`; }
+  if (a==='office'){ const u=S.users[w.owner||w.sessionUser], p=w.pst, cr=S.mail.rules.filter(r=>r.clientOnly===w.host && !r.deleted);
+    return `${kv([['Product','Office Suite'],['Signed in as', u?esc(u.email):'—'],...(cr.length?[['Client-only rules',cr.map(r=>`“${esc(r.name)}”: ${esc(r.action)}`).join('<br>')]]:[]),['Licence', w.officeOk?stat(1,'Licensed'):stat(0,'Unlicensed · product deactivated')],['Account licence', u&&u.licences.includes('office')?stat(1,'Assigned in Directory'):stat(0,'Not assigned in Directory')]])}
+      <div class="row">${envBtn('officeRefresh',[w.host],'Refresh licence','primary')}</div>${w.officeOk?'':'<p class="small muted">Editing is disabled until the licence is refreshed.</p>'}
+      ${p?`<div class="panel"><span class="label">Local data files</span><div class="tablewrap"><table><thead><tr><th>File</th><th>Folder</th><th>Items</th><th>Dates</th><th></th></tr></thead><tbody>
+        <tr><td class="mono small brk">${esc(p.path)}</td><td>${esc(p.folder)}</td><td class="mono">${p.restored||p.lost?0:p.items}</td><td class="small">${esc(p.range)}</td>
+        <td>${p.restored?stat(1,'Moved back to Inbox › Recovered'):p.lost?stat(0,'File gone'):envBtn('pstRestore',[w.host],'Move items back to mailbox','primary')}</td></tr></tbody></table></div>
+        <p class="small muted">A local data file (.pst) lives only on this PC’s disk. Moving its items back imports them into the mailbox as an admin.</p></div>`:''}`; }
+  if (a==='tasks'){ const ks=w.tasks||[];
+    if (!ks.length) return `<p class="muted">No user tasks are scheduled on ${w.host}. Only built-in maintenance runs here.</p>`;
+    return `<div class="tablewrap"><table><thead><tr><th>Task</th><th>Run as</th><th>Trigger</th><th>Last run</th><th>Actions</th></tr></thead><tbody>${ks.map((k,i)=>`<tr>
+      <td><b>${esc(k.name)}</b><div>${k.enabled?stat(1,'Enabled'):'<span class="st off">Disabled</span>'}</div><div class="small muted mono brk">${esc(k.action||'')}</div><div class="small brk" style="margin-top:4px">Last result: ${esc(k.result)}</div></td>
+      <td class="small">${k.runAs==='SYSTEM'?'SYSTEM':'NORTHSTAR\\'+esc(k.runAs)}<div class="muted">${esc(k.logon||'')}</div></td><td class="small">${esc(k.schedule)}</td><td class="mono small">${esc(k.last)}</td>
+      <td>${k.runAs==='SYSTEM'?'<span class="small muted">Built-in</span>':`<div class="row stack">${envBtn('wsTask',[w.host,k.name,k.enabled?'disable':'enable'],k.enabled?'Disable':'Enable')}${envBtn('wsTask',[w.host,k.name,'run'],'Run now')}
+        ${plainSel('taAs-'+i,[['afarmwell','NORTHSTAR\\afarmwell'],['svc-deskops-lab','NORTHSTAR\\svc-deskops-lab (your lab admin)']],k.runAs,'Run '+k.name+' as')}${envBtn('wsTask',[w.host,k.name,'runas','$val:taAs-'+i],'Run as…','',{confirm:'Task Scheduler stores this account’s password with the task and runs it on its schedule whether or not anyone is signed in.', title:`Change the account ${k.name} runs as?`, ok:'Save'})}</div>`}</td></tr>`).join('')}</tbody></table></div>`; }
 }
 function cRdp(){
   const r=S.ui.rdp;
-  if (r){ const w=S.workstations[r.host], n=netState(S,w), owner=w.owner?S.users[w.owner].name:'Shared device';
+  if (r){ const w=S.workstations[r.host], n=netState(S,w), owner=wsOwnerName(w);
     const bar=`<div class="rdpbar"><b class="mono">${w.host}</b><span>${esc(owner)}&nbsp;· ${esc(n.why)}</span><span class="spacer"></span>
       <button class="btn sm" data-act="rdpMax">${r.max?'Restore':'Maximize'}</button><button class="btn sm" data-act="rdpOff">Disconnect</button></div>`;
     if (!n.up) return `<div class="cbody"><div class="rdp">${bar}<div class="desk"><div class="note bad">Connection lost: ${esc(n.why)}.</div></div></div></div>`;
@@ -4163,7 +4614,7 @@ function cRdp(){
   const rows=Object.values(S.workstations).filter(w=>!q || [w.host,w.tag,w.owner?S.users[w.owner].name:''].some(x=>x.toLowerCase().includes(q)));
   return `<div class="cbody">${search('rdp','Hostname, asset tag or owner','Search machines')}
     <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Hostname</th><th>Owner</th><th>Location</th><th>Status</th><th></th></tr></thead><tbody>
-    ${rows.map(w=>{ const n=netState(S,w); return `<tr><td class="mono"><b>${w.host}</b><div class="small muted">${w.tag}</div></td><td>${w.owner?esc(S.users[w.owner].name):'<span class="muted">Shared</span>'}</td><td>${esc(w.site)}</td>
+    ${rows.map(w=>{ const n=netState(S,w); return `<tr><td class="mono"><b>${w.host}</b><div class="small muted">${w.tag}</div></td><td>${w.owner?esc(S.users[w.owner].name):`<span class="muted">${w.ghost?'Unassigned':'Shared'}</span>`}</td><td>${esc(w.site)}</td>
       <td>${stat(n.up,n.up?'Online':'Offline')}<div class="small muted">${esc(n.why)}</div></td><td>${btn('rdpConnect',w.host,'','Connect',n.up?'primary':'',n.up?'':'disabled')}</td></tr>`; }).join('')||'<tr><td colspan="5" class="muted">No matching machines.</td></tr>'}</tbody></table></div></div>`;
 }
 /* ===== Documentation: runbooks (KB) and per-ticket solution guides ===== */
@@ -4173,14 +4624,15 @@ const runbooksFor = ref => KB.filter(a=>a.rel.includes(ref));
 const topCat = T => T.cat.split(' / ')[0];
 /* Scoring summary for a guide: what a correct finish earns and what each trap costs (pure: no S). */
 function scoreGuide(T){
-  const P=PRI[T.pri], escal=(T.expect||(T.security?'escalate':'close'))==='escalate', rows=[[`${P.w} ticket resolved`, '+'+P.pts]];
+  const P=PRI[T.pri], escal=(T.expect||(T.security?'escalate':'close'))==='escalate', rows=[[`${P.w} ticket resolved`, '+'+P.pts]], hi=(T.cap||[-20,42])[1];
   if (escal) rows.push(['Correct security escalation', '+12']);
   rows.push(['Resolution notes: 40+ characters, a ticket keyword, and “verified”, “confirmed” or “tested”', 'up to +3']);
+  if (T.boss) rows.push(['Flawless boss: resolved with no penalties and without revealing this guide first', '+5']);
   [...new Map(Object.values(T.penalties||{}).map(([p,why])=>[why,p]))].forEach(([why,p])=>rows.push([why, '−'+p]));
   rows.push([`Closed while unresolved (${P.w})`, '−'+P.pen]);
   if (escal) rows.push([`Escalated before every requirement is met (${P.w})`, '−'+P.pen]);
-  else rows.push(['Escalated to Security when it didn’t need it', '−8']);
-  return {rows, best:Math.min(42, P.pts+(escal?12:0)+3), finish:escal?'Escalate to Security':'Close ticket'};
+  else rows.push(['Escalated to Security when it didn’t need it', '−'+Math.max(8,P.pen)]);
+  return {rows, best:Math.min(hi, P.pts+(escal?12:0)+3+(T.boss?5:0)), finish:escal?'Escalate to Security':'Close ticket'};
 }
 const gsec = (h, body) => `<h4 class="label blue gsec">${h}</h4>${body}`;
 const glist = (a, tag='ul') => `<${tag} class="steps">${a.map(x=>`<li>${esc(x)}</li>`).join('')}</${tag}>`;
@@ -4188,11 +4640,11 @@ function guidePage(T){
   const t=S.tickets[T.ref], G=T.guide, done=isDone(S,T.ref), live=['open','assigned'].includes(t.status), shown=done || (S.ui.reveal||{})[T.ref], sc=scoreGuide(T);
   const where = live ? `<button class="btn sm primary" data-act="open" data-id="${T.ref}">Open ticket</button>`
     : t.status==='intake' ? `<span class="small muted">Waiting under Incoming contacts on the dashboard. Log it as a ticket first.</span>`
-    : t.status==='waiting' ? `<span class="small muted">Not arrived yet: ${(T.shift||1)>S.shift?`arrives in shift ${T.shift}`:`arrives once ${T.after} is finished`}.</span>`
+    : t.status==='waiting' ? `<span class="small muted">Not arrived yet: ${T.boss?'unlocks after every shift 3 ticket is closed or escalated':(T.shift||1)>S.shift?`arrives in shift ${T.shift}`:`arrives once ${T.after} is finished`}.</span>`
     : `<span class="chip ${t.result.total>=0?'ok':'bad'}">${esc(t.result.outcome)} · ${t.result.total>=0?'+':''}${t.result.total}</span>`;
-  const head = `<div class="label blue">Solution guide · Shift ${T.shift||1}</div><h3 class="gtitle"><span class="mono">${T.ref}</span> ${esc(T.title)}</h3>
-    <div class="row">${priTag(T.pri)}<span class="chip">${esc(T.cat)}</span><span class="chip ${done?'ok':live?'blue':''}">${statusWord(T.ref)}</span><span class="spacer"></span>${where}</div>`;
-  if (!shown) return head + `<div class="note warn gate"><b>Spoiler: ${T.ref} isn’t closed yet.</b><p class="small" style="margin:6px 0 10px">The full solution is hidden so you can try the ticket first. Reading it is free: it doesn’t change your score, your hint count or your rank.</p>
+  const head = `<div class="label blue">Solution guide · ${T.boss?'Boss stage':'Shift '+(T.shift||1)}</div><h3 class="gtitle"><span class="mono">${T.ref}</span> ${esc(T.title)}</h3>
+    <div class="row">${T.boss?'<span class="chip boss">Boss</span>':''}${priTag(T.pri)}<span class="chip">${esc(T.cat)}</span><span class="chip ${done?'ok':live?'blue':''}">${statusWord(T.ref)}</span><span class="spacer"></span>${where}</div>`;
+  if (!shown) return head + `<div class="note warn gate"><b>Spoiler: ${T.ref} isn’t closed yet.</b><p class="small" style="margin:6px 0 10px">The full solution is hidden so you can try the ticket first. ${T.boss?'Reading it doesn’t cost points, but it forfeits the Flawless boss bonus (+5).':'Reading it is free: it doesn’t change your score, your hint count or your rank.'}</p>
     <button class="btn primary" data-act="reveal" data-id="${T.ref}">Reveal full solution</button></div>`;
   return head + `${done?'':`<div class="row" style="margin-top:6px"><button class="linkbtn small" data-act="reveal" data-id="${T.ref}">Hide solution</button></div>`}
     <div class="row small" style="margin-top:10px"><span class="label">Tools</span>${ticketTools(T).map(n=>`<span class="chip blue">${n}</span>`).join('')}</div>
@@ -4202,7 +4654,7 @@ function guidePage(T){
     ${gsec('Verify', glist(G.verify))}${gsec('Common mistakes', glist(G.commonMistakes))}${gsec('In the real world', `<p>${esc(G.realWorldNote)}</p>`)}
     ${gsec('Hint ladder', glist(T.hints,'ol')+`<div class="note"><b>Model answer.</b> ${esc(T.model)}</div>`)}
     ${gsec('Scoring', `<div class="prev">${sc.rows.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p}</span></div>`).join('')}<div class="tot"><span>Best possible</span><span class="mono">+${sc.best}</span></div></div>
-      <p class="small muted">Penalties are charged once each, when you close or escalate. Every ticket is capped at −20…+42.${done?` Your result: <b>${esc(t.result.outcome)}</b>, ${t.result.total>=0?'+':''}${t.result.total}.`:''}</p>`)}
+      <p class="small muted">Penalties are charged once each, when you close or escalate. ${T.cap?`This ticket is capped at −${-T.cap[0]}…+${T.cap[1]}.`:'Every ticket is capped at −20…+42.'}${done?` Your result: <b>${esc(t.result.outcome)}</b>, ${t.result.total>=0?'+':''}${t.result.total}.`:''}</p>`)}
     ${gsec('Ideal resolution note', `<div class="note ok">${esc(G.idealNotes)}</div><p class="small muted">Earns +${notesBonus(T,G.idealNotes)} of 3 for notes. Keywords for this ticket: ${T.keys.map(esc).join(', ')}.</p>`)}`;
 }
 function docGuides(){
@@ -4213,7 +4665,7 @@ function docGuides(){
     <div class="row" style="margin-top:8px"><select data-bind="q" data-id="gcat" data-key="q-gcat" aria-label="Filter by category"><option value="">All categories</option>${[...new Set(TICKETS.map(topCat))].sort().map(c=>`<option ${c===cat?'selected':''}>${esc(c)}</option>`).join('')}</select>
       <select data-bind="q" data-id="gpri" data-key="q-gpri" aria-label="Filter by priority"><option value="">All priorities</option>${Object.entries(PRI).map(([k,p])=>`<option value="${k}" ${k===pri?'selected':''}>${p.w}</option>`).join('')}</select></div>
     <div class="small muted" style="margin-top:8px">${list.length} of ${TICKETS.length} guides</div>
-    <ul class="ulist">${list.map(x=>`<li><button class="${T&&T.ref===x.ref?'on':''}" data-act="sel" data-id="guide" data-arg="${x.ref}"><span class="mono">${x.ref}</span> ${esc(x.title)}<small>${PRI[x.pri].w} · ${esc(x.cat)} · Shift ${x.shift||1} · ${statusWord(x.ref)}</small></button></li>`).join('')||'<li class="muted small">No guides match.</li>'}</ul></div>
+    <ul class="ulist">${list.map(x=>`<li><button class="${T&&T.ref===x.ref?'on':''}" data-act="sel" data-id="guide" data-arg="${x.ref}"><span class="mono">${x.ref}</span> ${esc(x.title)}<small>${PRI[x.pri].w} · ${esc(x.cat)} · ${x.boss?'Boss stage':'Shift '+(x.shift||1)} · ${statusWord(x.ref)}</small></button></li>`).join('')||'<li class="muted small">No guides match.</li>'}</ul></div>
     <div>${T?guidePage(T):'<p class="muted">No guide matches these filters.</p>'}</div></div>`;
 }
 function docKb(){
@@ -4248,6 +4700,8 @@ function mailboxPanel(id){
     <div class="panel"><span class="label">Permissions</span><div class="tablewrap"><table><thead><tr><th>Person</th><th>Right</th><th>Expires</th><th>Approval</th><th></th></tr></thead><tbody>
       ${m.perms.map(p=>`<tr><td>${esc(uName(p.who))}</td><td>${esc(p.right)}</td><td class="small">${esc(p.expires||'Never')}</td><td>${typeof p.approved==='string'?stat(1,'HR request '+p.approved):p.approved?stat(1,'Owner approved'):p.approved===false?'<span class="st warn">No approval on record</span>':'<span class="muted small">Legacy</span>'}</td><td style="text-align:right">${envBtn('revokePerm',[id,p.who,p.right],'Remove')}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No delegates.</td></tr>'}</tbody></table></div>
       <div class="row" style="margin-top:8px">${plainSel('permWho',peopleOpts('Choose person…'),'','Person')}${plainSel('permRight',['Full Access','Send As'],'Full Access','Right')}${plainSel('permExp',EXPIRY,'','Expiry')}${envBtn('grantPerm',[id,'$val:permWho','$val:permRight','$val:permExp'],'Grant')}</div></div>
+    ${m.audit?`<div class="panel"><span class="label">Mailbox audit log</span><div class="tablewrap scroll"><table><thead><tr><th>Time</th><th>Operation</th><th>Items</th><th>Folder</th><th>Client</th><th>Logon</th></tr></thead><tbody>
+      ${m.audit.map(x=>`<tr><td class="mono small">${esc(x.t)}</td><td>${chipFor(x.op,['Import','Read'],['Move','HardDelete','SoftDelete'])}</td><td class="mono">${esc(x.items)}</td><td class="small">${esc(x.folder)}</td><td class="small">${esc(x.client)}</td><td class="small">${esc(x.logon)}</td></tr>`).join('')}</tbody></table></div></div>`:''}
     <div class="panel"><span class="label">Test access as…</span><div class="row">${plainSel('taWho',peopleOpts('Choose person…'),'','Person')}${envBtn('testAccess',[id,'$val:taWho'],'Test access')}</div>
       ${Object.keys(m.accessTests).length?`<div class="small" style="margin-top:6px">${Object.entries(m.accessTests).map(([w,ok])=>`${esc(uName(w))}: ${ok?stat(1,'Can open'):stat(0,'Denied')}`).join(' · ')}</div>`:''}</div>
     <div class="two" style="margin-top:14px"><div><span class="label">Automatic replies</span><div class="row" style="margin-top:6px">${plainSel('arOn',[['1','On'],['0','Off']],m.autoReply.on?'1':'0','Automatic replies')}<input type="text" id="arText" data-key="arText" maxlength="300" value="${esc(m.autoReply.text)}" placeholder="Reply text" aria-label="Automatic reply text" style="flex:1;min-width:140px">${envBtn('setAutoReply',[id,'$val:arOn','$val:arText'],'Save')}</div></div>
@@ -4283,9 +4737,9 @@ function cMailAdmin(){
   if (t==='rules'){ const id=S.mail.mailboxes[S.ui.sel.rb]?S.ui.sel.rb:'lmartinez', rules=S.mail.rules.filter(r=>r.box===id && !r.deleted), open=rule(S,S.ui.sel.rule);
     body=`<div class="row"><label class="small muted" for="rbSel">Mailbox</label><select id="rbSel" data-bind="sel" data-id="rb" data-key="rbSel">${boxes.map(b=>`<option value="${b}" ${b===id?'selected':''}>${esc(mbAddr(S,b))}</option>`).join('')}</select></div>
       <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Rule</th><th>Condition</th><th>Action</th><th></th></tr></thead><tbody>
-      ${rules.map(r=>`<tr class="${open&&open.id===r.id?'sel':''}"><td><b>${esc(r.name)}</b>${r.external?'<div><span class="chip bad">Forwards outside org</span></div>':''}</td><td>${esc(r.cond)}</td><td>${esc(r.action)}</td>
+      ${rules.map(r=>`<tr class="${open&&open.id===r.id?'sel':''}"><td><b>${esc(r.name)}</b>${r.external?'<div><span class="chip bad">Forwards outside org</span></div>':''}${r.clientOnly?`<div><span class="chip warn">Client-only · runs on ${esc(r.clientOnly)}</span></div>`:''}</td><td>${esc(r.cond)}</td><td>${esc(r.action)}</td>
         <td><div class="row">${btn('rule',r.id,'inspect','View details')}${btn('rule',r.id,'delete','Delete','danger')}</div></td></tr>`).join('')||'<tr><td colspan="4" class="muted">No inbox rules on this mailbox.</td></tr>'}</tbody></table></div>
-      ${open&&open.box===id&&!open.deleted?`<div class="card" style="margin-top:12px"><div class="bd"><div class="label blue">Rule details</div>${kv([['Name',`“${esc(open.name)}”`],['Applies to',esc(open.cond)],['Action',esc(open.action)],['Created',esc(open.created)]])}
+      ${open&&open.box===id&&!open.deleted?`<div class="card" style="margin-top:12px"><div class="bd"><div class="label blue">Rule details</div>${kv([['Name',`“${esc(open.name)}”`],['Applies to',esc(open.cond)],['Action',esc(open.action)],['Created',esc(open.created)],...(open.clientOnly?[['Runs on',`${esc(open.clientOnly)} only: a client-only rule runs in the Office Suite desktop app on that PC and never appears in webmail`]]:[])])}
         ${open.external?'<div class="note bad"><b>Security concern.</b> This rule silently copies all incoming mail to an external address. Preserve it as evidence and escalate the ticket to Security. Don’t treat it as housekeeping.</div>':''}</div></div>`:''}`; }
   return `<div class="tabs">${tab('mail','trace','Message trace')}${tab('mail','mailbox','Mailboxes')}${tab('mail','shared','Shared mailboxes')}${tab('mail','lists','Distribution lists')}${tab('mail','mobiles','Mobile devices')}${tab('mail','rules','Inbox rules')}</div><div class="cbody">${body}</div>`;
 }
@@ -4349,7 +4803,7 @@ function cAssets(){
 
 /* ===== Computer deployment ===== */
 function cDeploy(){
-  const f=F('deploy'), rows=Object.values(S.workstations), job=S.deploy.jobs[0];
+  const f=F('deploy'), rows=Object.values(S.workstations), job=S.deploy.jobs.find(j=>j.id===S.ui.sel.job) || S.deploy.jobs[0];
   const spares=S.shelf.devices.filter(d=>['Available','Reserved'].includes(d.status));
   const hw=String(f.src||'').startsWith('host:') && S.workstations[f.src.slice(5)], dead=hw && !hw.power, warn=[];
   const d=spares.find(x=>x.tag===f.src) || (hw && spares.find(x=>x.tag===hw.tag)), srcOk=(!!d || !!hw) && !dead;
@@ -4369,11 +4823,11 @@ function cDeploy(){
       ${dead?`<div class="note bad">${esc(hw.host)} doesn’t power on, so it can’t be re-imaged. Deploy a spare from the shelf instead.</div>`:''}${warn.map(x=>`<div class="note warn">${esc(x)}</div>`).join('')}
       <div class="row" style="margin-top:10px">${envBtn('deploy',['$form:deploy'],'Run deployment','primary',warn.length?{confirm:warn.join(' ')+' Deploy anyway?', title:'Check before deploying', ok:'Deploy anyway', dis:!srcOk}:{dis:!srcOk})}
         <span class="small muted">Stages run instantly: image → domain join → apps → encryption → hand-over.</span></div></div>
-    ${job?`<div class="panel"><span class="label blue">Last job · ${job.id} · ${esc(job.host)}</span><ul class="objs">${job.steps.map(st=>`<li><span class="ck ${st.ok?'y':'n'}">${st.ok?'✓':'✕'}</span><span><b>${esc(st.name)}</b><div class="small muted">${esc(st.note)}</div></span></li>`).join('')}</ul>
+    ${job?`<div class="panel"><span class="label blue">${job===S.deploy.jobs[0]?'Last job':'Job'} · ${job.id} · ${esc(job.host)}${job.at?' · '+esc(job.at):''}</span><ul class="objs">${job.steps.map(st=>`<li><span class="ck ${st.ok?'y':'n'}">${st.ok?'✓':'✕'}</span><span><b>${esc(st.name)}</b><div class="small muted">${esc(st.note)}</div></span></li>`).join('')}</ul>
       ${job.warnings.length?`<div class="note warn">${esc(job.warnings.join('; '))}</div>`:''}</div>`:''}
     <div class="label blue" style="margin-top:20px">Image catalogue</div>
     <div class="tablewrap"><table><thead><tr><th>Image</th><th>Profile</th><th>Use</th><th>Apps</th><th>Status</th></tr></thead><tbody>${IMAGES.map(i=>`<tr><td><b>${esc(i.name)}</b></td><td>${esc(i.profile)}</td><td>${esc(i.use)}</td><td class="small muted">${esc(i.apps.join(', '))}</td><td>${stat(i.status==='Current',i.status,1)}</td></tr>`).join('')}</tbody></table></div>
-    ${S.deploy.jobs.length>1?`<div class="label blue" style="margin-top:20px">Deployment jobs</div><div class="tablewrap"><table><thead><tr><th>Job</th><th>Device</th><th>Host</th><th>Image</th><th>User</th><th>Result</th></tr></thead><tbody>${S.deploy.jobs.map(j=>`<tr><td class="mono">${j.id}</td><td class="mono">${esc(j.device)}</td><td class="mono">${esc(j.host)}</td><td>${esc(j.image)}</td><td>${esc(uName(j.user))}</td><td>${j.ok?stat(1,'Done'):stat(0,'Failed')}${j.warnings.length?' <span class="chip warn">Warnings</span>':''}</td></tr>`).join('')}</tbody></table></div>`:''}
+    ${S.deploy.jobs.length?`<div class="label blue" style="margin-top:20px">Deployment jobs</div><div class="tablewrap"><table><thead><tr><th>Job</th><th>Device</th><th>Host</th><th>Image</th><th>User</th><th>Result</th></tr></thead><tbody>${S.deploy.jobs.map(j=>`<tr class="${j===job?'sel':''}"><td class="mono"><button class="linkbtn" data-act="sel" data-id="job" data-arg="${j.id}" aria-pressed="${j===job}">${j.id}</button><div class="small muted">${esc(j.at)}</div></td><td class="mono">${esc(j.device)}</td><td class="mono">${esc(j.host)}</td><td>${esc(j.image)}</td><td>${esc(uName(j.user))}</td><td>${j.ok?stat(1,'Done'):stat(0,'Failed')}${j.warnings.length?' <span class="chip warn">Warnings</span>':''}</td></tr>`).join('')}</tbody></table></div>`:''}
     <div class="label blue" style="margin-top:20px">Deployed fleet</div>
     <div class="tablewrap"><table><thead><tr><th>Hostname</th><th>Model</th><th>Owner</th><th>Image</th><th>State</th></tr></thead><tbody>${rows.map(w=>`<tr><td class="mono">${w.host}</td><td>${esc(w.model)}</td><td>${w.owner?esc(S.users[w.owner].name):'<span class="muted">Shared</span>'}</td>
       <td>${esc(w.image)}</td><td>${esc(w.state)}</td></tr>`).join('')}</tbody></table></div></div>`;
@@ -4444,6 +4898,8 @@ function act(tool, entity, action, fn, args){
   const ref = S.ui.ticket && S.tickets[S.ui.ticket] && S.tickets[S.ui.ticket].status==='assigned' ? S.ui.ticket : null;
   if (text) { logEntry(S, tool, entity, text, ref); S.ui.flash = {tool, text}; }
   hits.forEach(([r,key,p])=>{ S.tickets[r].penalties[key]=[p[0],p[1]]; toast(`${r}: ${p[1]} (−${p[0]} pts at close)`, 'warn'); });
+  TICKETS.forEach(T=>{ const x=T.reacts && ['open','assigned'].includes(S.tickets[T.ref].status) && T.reacts[action+':'+entity], said=typeof x==='function' ? x(S,args||[]) : x;
+    if (said) sayTo(S,T.req,said); }); // the requester notices changes to their own account
   render();
 }
 function hidePops(){ document.querySelectorAll('[popover]:not(#toasts)').forEach(p=>{ try { p.hidePopover(); } catch(e){} }); }
@@ -4463,8 +4919,8 @@ const ACT = {
   unclaim(d){ tick(); const t=S.tickets[d.id]; t.status='open'; t.assignee=null; hidePops();
     logEntry(S,'Service Desk',d.id,`${d.id} returned to the queue`,d.id); render(); },
   hint(d){ S.tickets[d.id].hints++; render(); },
-  checkFix(d){ const t=S.tickets[d.id], c=check(S,d.id); t.checked=true;
-    toast(c.complete ? `${d.id}: all requirements met.` : `${d.id}: ${c.done.length} of ${c.done.length+c.todo.length} requirements met. ${c.todo[0]}.`); render(); },
+  checkFix(d){ const t=S.tickets[d.id], c=check(S,d.id,true); t.checked=true;
+    toast(c.complete ? `${d.id}: all requirements met.` : `${d.id}: ${c.done.length} of ${c.done.length+c.todo.length} requirements met${c.more?' so far':''}.${c.todo.length?' '+c.todo[0]+'.':''}${c.more?' More requirements appear as you dig.':''}`); render(); },
   addNote(d){ const v=$('noteIn').value.trim(); if (!v) return; tick(); S.tickets[d.id].notes.push({t:now(), text:v}); render(); },
   closeDlg(d){ hidePops(); closeDialog(d.id); },
   escalateDlg(d){ hidePops(); escalateDialog(d.id); },
@@ -4478,7 +4934,7 @@ const ACT = {
   confirmOk(){ const f=pendingConfirm; pendingConfirm=null; closeDlg(); if (f) f(); },
   guide(){ hidePops(); guideDialog(false); },
   achDlg(){ hidePops(); achDialog(); },
-  reveal(d){ const r=S.ui.reveal||(S.ui.reveal={}); r[d.id]=!r[d.id]; render(); },
+  reveal(d){ const r=S.ui.reveal||(S.ui.reveal={}); r[d.id]=!r[d.id]; if (r[d.id] && TK[d.id].boss && !isDone(S,d.id)) S.tickets[d.id].peeked=true; render(); },
   kbGo(d){ S.ui.tab.docs='kb'; S.ui.sel.kb=d.id; S.ui.q.kb=''; render(); },
   guideGo(d){ Object.assign(S.ui, {view:'tool', tool:'docs', flash:null}); Object.assign(S.ui.tab, {docs:'guides', split:'tool'}); S.ui.sel.guide=d.id; Object.assign(S.ui.q, {guide:'', gcat:'', gpri:''}); hidePops(); render(); scrollTo(0,0); },
   hintToggle(d){ const t=S.tickets[d.id]; S.ui.hintOpen = S.ui.hintOpen===d.id ? null : d.id; if (S.ui.hintOpen && !t.hints) t.hints=1; render(); },
@@ -4515,7 +4971,7 @@ const ACT = {
     act('Server Room', d.id, stop?'stopService':'restartService', s=>stop ? ENV.stopService(s,d.id,n) : ENV.restartService(s,d.id,op), [d.id, stop?n:op]); },
 
   rdpConnect(d){ const w=S.workstations[d.id];
-    confirmDlg(`Remote session to ${w.host}`, `<p>Owner: <b>${w.owner?esc(S.users[w.owner].name):'Shared device'}</b> · ${esc(w.site)}</p>
+    confirmDlg(`Remote session to ${w.host}`, `<p>Owner: <b>${esc(wsOwnerName(w))}</b> · ${esc(w.site)}</p>
       ${kv([['Sign in as','<span class="mono">NORTHSTAR\\svc-deskops-lab</span>'],['Credential','Lab service credential (simulated, nothing stored)']])}
       <p class="muted small">Sessions are simulated inside this page. No real machine is contacted.</p>`, 'Connect', false,
       ()=>{ S.ui.rdp={host:w.host, app:null, max:false}; S.ui.sel.share=null; logEntry(S,'Remote Desktop',w.host,`Remote session opened to ${w.host}`,S.ui.ticket); render(); }); },
@@ -4554,7 +5010,7 @@ const ACT = {
   purgeDlg(d){ purgeDialog(d.id); },
   briefDlg(){ briefDialog(false); },
   nextShiftDlg(){ briefDialog(true); },
-  startNext(){ closeDlg(); act('Service Desk','shift','nextShift', s=>ENV.nextShift(s)); toast(`Shift ${S.shift} started. New tickets are in the queue.`); scrollTo(0,0); },
+  startNext(){ closeDlg(); act('Service Desk','shift','nextShift', s=>ENV.nextShift(s)); toast((SHIFTS[S.shift]||{}).boss ? 'The boss stage has started. INC-1073 is in the queue.' : `Shift ${S.shift} started. New tickets are in the queue.`); scrollTo(0,0); },
   qAct(d){ const q=S.mail.quarantine.find(x=>x.id===d.id), run=()=>act('Mail Security', d.id, d.arg, s=>ENV[d.arg](s,d.id));
     if (d.arg==='release' && q.kind==='phish') return danger('Release a phishing message?', 'The filter scored this as a credential-harvest attempt. Releasing it puts a live phishing link in a user’s inbox. Keep it blocked or report it to Security instead.', 'Release anyway', run);
     run(); }
@@ -4656,7 +5112,7 @@ function selfTest(){
   s=fresh('INC-1042'); ENV.unlock(s,'mchen'); ok(scoreFor(s,'INC-1042','close','Unlocked mchen in Directory and confirmed Maya can sign in.').total===25,'score: High + full notes bonus = 25');
   ok(scoreFor(fresh('INC-1045'),'INC-1045','close','').total===-20,'score: unresolved Critical close = −20');
   s=fresh('INC-1049'); ENV.inspectRule(s,'r1'); ok(scoreFor(s,'INC-1049','escalate','Rule forwards all mail to external-archive@outside.example').total===42,'score: security escalation capped at +42');
-  ok(scoreFor(fresh('INC-1042'),'INC-1042','escalate','not security').total===-8,'score: routine escalation = −8');
+  ok(scoreFor(fresh('INC-1042'),'INC-1042','escalate','not security').total===-15 && scoreFor(fresh('INC-1046'),'INC-1046','escalate','x').total===-10,'score: a routine escalation costs the same as closing unresolved (−15 High, −10 Medium)');
   s=seed(); ok(Object.keys(s.users).length>=16 && Object.values(s.users).every(u=>s.workstations[u.host] && s.mail.mailboxes[u.id]),'16+ staff, each with a workstation and mailbox');
   ok(chatReply(s,'dokafor','status?').startsWith('Thanks for the message'),'chat: default polite acknowledgement');
   ok(chatReply(s,'mchen','can you try now?').includes('still not working') ,'chat: requester reports unresolved ticket');
@@ -4978,7 +5434,7 @@ function selfTest(){
   ENV.blockSender(s,'it-servicedesk@northstar-helpdesk.example'); ENV.trace(s,{who:'northstar-helpdesk'}); ok(!done(s,'INC-1072') && !objOk(s,'INC-1072',2),'1072 purging only the reporter’s copy does not complete it');
   ENV.purge(s,'mp1','campaign','soft'); ok(!done(s,'INC-1072'),'1072 needs a fresh trace after the purge');
   ENV.trace(s,{who:'northstar-helpdesk'}); ok(done(s,'INC-1072'),'1072 complete: analyse + report + purge all + block + re-trace');
-  ok(scoreFor(s,'INC-1072','escalate','x').lines[0][1]===-8,'1072 escalating a 0-click campaign is a routine escalation');
+  ok(scoreFor(s,'INC-1072','escalate','x').lines[0][1]===-15,'1072 escalating a 0-click campaign is a routine escalation');
   // --- review fixes ---
   s=seed(); ENV.verifyIdentity(s,'ebrooks','callback-given'); ok(s.users.ebrooks.verified===null,'verify: a callback to the number the caller gave never verifies');
   ENV.verifyIdentity(s,'ebrooks','callback-record'); TICKETS.filter(T=>(T.shift||1)===1).forEach(T=>{ s.tickets[T.ref].status='closed'; }); ENV.nextShift(s);
@@ -5005,6 +5461,99 @@ function selfTest(){
   s=fresh('INC-1056'); ENV.displayMode(s,'NS-SUP-007','Duplicate these displays'); ENV.displayKeep(s,'NS-SUP-007'); ok(check(s,'INC-1056').todo[0].includes('Duplicate'),'1056 duplicate mode says what’s still wrong');
   s=fresh('INC-1061'); ENV.convertShared(s,'mhale'); ENV.grantPerm(s,'mhale','jprice','Full Access','2027-01-10'); ok(s.mail.mailboxes.mhale.perms.some(p=>p.approved==='HR-LVR-0088'),'1061 the HR leaver request is recorded as the approval');
   s=fresh('INC-1052'); ENV.deploy(s,{src:'NSA-S101', image:'Northstar Standard 24.2', user:'tnowak', site:'Floor 1'}); ok(!objOk(s,'INC-1052',0) && TK['INC-1052'].chatConfirm.no(s).includes('laptop'),'1052 a laptop spare is explained, not accepted');
+  // --- INC-1073 final boss. Every test starts from ffBoss(): shifts 1–3 cleared the worst way (nothing fixed), then the boss stage ---
+  const R='INC-1073', BT=TK[R], bossS=()=>{ const x=ffBoss(seed()); ENV.nextShift(x); return x; };
+  const A=(x,f)=>{ x.clock++; const r=f(); worldTick(x); return r; }; // one console action: a minute passes, then the world catches up (as render() does)
+  const adv=(x,n)=>{ x.clock+=n; worldTick(x); }, toQ=x=>adv(x, 15-(x.clock%15) || 15), af=x=>x.users.afarmwell, lastDC=(x,id)=>x.net.servers.DC01.events.find(e=>e.id===id);
+  const relocks=(x,f)=>{ A(x,()=>ENV.unlock(x,'afarmwell')); A(x,()=>ENV.testSignIn(x,'afarmwell')); if (f) A(x,()=>f(x)); toQ(x); return af(x).locked; };
+  s=seed(); ok(s.tickets[R].status==='waiting' && !s.users.afarmwell && BT.boss && SHIFTS[4].boss && PRI.boss.pts>PRI.critical.pts,'boss: waits at seed, Avery Farmwell not in the world yet, worth more than Critical');
+  s=ffBoss(seed()); ok(s.shift===3 && shiftDone(s) && hasNextShift(s) && s.tickets[R].status==='waiting' && !s.users.afarmwell,'boss: still locked after shift 3 is cleared, until the boss stage starts');
+  ok(s.profile.points===742 && TICKETS.filter(T=>!T.boss).reduce((a,T)=>a+scoreGuide(T).best,0)===742 && rankOf(742)==='Platinum' && rankOf(760)==='Diamond','boss: the pre-boss maximum (742) is below Diamond (760)');
+  s.tickets['INC-1072'].status='open'; ok(!shiftDone(s) && ENV.nextShift(s).startsWith('Finish') && s.tickets[R].status==='waiting','boss: one open shift 3 ticket keeps it locked');
+  s=bossS(); const s0=bossS();
+  ok(s.shift===4 && s.tickets[R].status==='open' && s.tickets[R].stage===1 && !done(s,R) && check(s,R,true).todo.length===2 && check(s,R,true).more && gameDate(s)==='2026-10-15','boss: arrives on Thursday at stage 1 with only stage 1 visible, not complete');
+  ok(volFree(fileD(s),s.net.servers.FILE01)>50 && ['DC01','FILE01','MAIL01'].every(k=>serverHealthy(s.net.servers[k])) && netState(s,ghostW(s)).internal && s.net.devices.sw3.status==='online','boss: the worst-case world is normalised overnight (D: has room, servers up, NS-FIN-033 reachable)');
+  ok(af(s).locked && af(s).pronouns==='they/them' && af(s).email==='avery.farmwell@northstar.example' && s.users.awilson.name==='Avery Wilson' && ownedHosts(s,'afarmwell').map(w=>w.host).join()==='NS-FIN-041','boss: Avery Farmwell (they/them) is a separate person from Avery Wilson and owns only NS-FIN-041');
+  ok(ENV.term(s,'NS-FIN-041','cmdkey /list').includes('* NONE *') && !ENV.term(s,'NS-FIN-041','schtasks').join().includes('Ledgerline') && af(s).signins.filter(r=>r.host==='NS-FIN-041').every(r=>r.result!=='Failure'),'boss: Avery’s tried list is true on NS-FIN-041');
+  ok(!BT.chatActions.find(a=>a.id==='sh-merge').when(s0) && !BT.chatActions.find(a=>a.id==='af-rule').when(s0) && !BT.chatActions.find(a=>a.id==='af-resend').when(s0),'boss: later-stage quick actions stay hidden at stage 1');
+  ok(relocks(s) && lastDC(s,4740).text.includes('NS-FIN-033') && af(s).signins[0].host==='NS-FIN-033' && /^Locked again at/.test(thread(s,'afarmwell').slice(-1)[0].text) && !BT.obj[1].ok(s),'boss: unlocking alone relocks at the next quarter-hour (4740 caller NS-FIN-033, Avery says so)');
+  const tried=[['password reset',x=>ENV.resetPassword(x,'afarmwell',true,'tech')],['restart NS-FIN-041',x=>ENV.restartWs(x,'NS-FIN-041')],['revoke all sessions',x=>ENV.revokeSessions(x,'afarmwell')],
+    ['remove the phone',x=>ENV.mobileAct(x,'mobAF','remove')],['re-image NS-FIN-041',x=>ENV.deploy(x,{src:'host:NS-FIN-041', image:'Northstar Finance 24.2', user:'afarmwell', site:'Floor 2'})],
+    ['remote lock NS-FIN-033',x=>ENV.remoteLock(x,GHOST)],['delete the saved credential',x=>ENV.term(x,GHOST,'cmdkey /delete:FILE01')],['Run now',x=>ENV.wsTask(x,GHOST,'LedgerlineExport','run')],
+    ['Office refresh',x=>ENV.officeRefresh(x,'NS-FIN-041')],['Avery Wilson’s mailbox',x=>ENV.enableArchive(x,'awilson')],['block the spray sender',x=>ENV.blockSender(x,'attacker@198.51.100.23')],['delete the rule',x=>ENV.deleteRule(x,'rf1')]];
+  const triedBad=tried.filter(([n,f])=>{ const x=bossS(); return !(relocks(x,f) && !done(x,R) && x.tickets[R].stage===1); }).map(t=>t[0]);
+  ok(!triedBad.length,'boss: every tried or textbook fix still relocks at the quarter-hour and leaves stage 1 open'+(triedBad.length?' ('+triedBad.join(', ')+')':''));
+  s=bossS(); ok(ENV.term(s,GHOST,'cmdkey /delete:FILE01').includes('CMDKEY: Credential deleted successfully.') && relocks(s) && af(s).signins[0].app.includes('session credentials'),'boss: deleting the saved credential alone keeps the bursts going on the session’s own password');
+  s=bossS(); const tv=ENV.term(s,GHOST,'schtasks /query /v').join('\n');
+  ok(ENV.term(s,GHOST,'whoami')[0].endsWith('afarmwell') && ENV.term(s,GHOST,'quser').join().includes('10/13/2026 16:02') && tv.includes('robocopy') && tv.includes('Interactive only') && !tv.includes('/XO') && ENV.term(s,GHOST,'cmdkey /list').join().includes('Domain:target=FILE01'),'boss: the NS-FIN-033 terminal shows the session, the task and the saved credential');
+  A(s,()=>ENV.wsTask(s,GHOST,'LedgerlineExport','disable')); ok(BT.obj[0].ok(s) && !done(s,R),'boss: disabling the task neutralises the job');
+  ok(!relocks(s) && BT.obj[1].ok(s) && s.tickets[R].stage===2 && check(s,R,true).todo.length===2,'boss: disable + unlock + test + a quiet quarter-hour completes stage 1 and opens stage 2');
+  const rv=BT.stages[2].reveal; worldTick(s); adv(s,30); ok(thread(s,'afarmwell').filter(m=>m.text===rv).length===1 && s.tickets[R].notes.filter(n=>n.text.includes(rv)).length===1,'boss: each stage update is posted once');
+  s=bossS(); A(s,()=>ENV.unlock(s,'afarmwell')); s.clock=(Math.floor(s.clock/15)+1)*15-1; worldTick(s); A(s,()=>ENV.wsTask(s,GHOST,'LedgerlineExport','disable')); ok(s.clock%15===0 && !af(s).locked,'boss: a fix made in the minute a run is due lands before that run');
+  s=bossS(); A(s,()=>ENV.restartWs(s,GHOST)); ok(!ghostW(s).sessionUser && BT.obj[0].ok(s) && !relocks(s),'boss: restarting NS-FIN-033 ends the session, so the interactive-only job stops');
+  s=bossS(); ENV.term(s,GHOST,'logoff'); ok(BT.obj[0].ok(s) && !relocks(s),'boss: logoff in the terminal also stops it');
+  s=bossS(); ok(ENV.term(s,GHOST,'schtasks /change /tn LedgerlineExport /disable')[0].startsWith('SUCCESS') && !ghostTask(s).enabled && ENV.term(s,GHOST,'schtasks /change /tn LedgerlineExport /ru x')[0].includes('Run as'),'boss: schtasks /change works from the terminal; /ru is refused');
+  s=bossS(); let c0=s.clock; ENV.chatAction(s,R,'af-wait'); ok(s.clock===c0 && thread(s,'afarmwell').slice(-1)[0].text.includes('still locked'),'boss: watching a run while locked moves nothing');
+  A(s,()=>ENV.unlock(s,'afarmwell')); ENV.chatAction(s,R,'af-wait');
+  ok(s.clock%15===0 && af(s).locked && thread(s,'afarmwell').slice(-1)[0].text.includes('on the dot') && !thread(s,'afarmwell').some(m=>/^Locked again/.test(m.text)),'boss: watching while the job is armed relocks on the dot (one message, not two)');
+  A(s,()=>ENV.wsTask(s,GHOST,'LedgerlineExport','disable')); A(s,()=>ENV.unlock(s,'afarmwell')); A(s,()=>ENV.testSignIn(s,'afarmwell')); ENV.chatAction(s,R,'af-wait'); worldTick(s);
+  ok(thread(s,'afarmwell').slice(-2)[0].text.includes('came and went') && s.tickets[R].stage===2,'boss: watching a clean run gets “came and went”, then the stage 2 update');
+  s=bossS(); asg(s,R); ok(penaltyHits(s,'wsTask',GHOST,[GHOST,'LedgerlineExport','runas','svc-deskops-lab']).length===1 && !penaltyHits(s,'wsTask',GHOST,[GHOST,'LedgerlineExport','disable']).length,'boss: giving the job your admin credential is penalised; disabling it is not');
+  A(s,()=>ENV.wsTask(s,GHOST,'LedgerlineExport','runas','svc-deskops-lab'));
+  ok(!relocks(s) && payFile(s).liveLost && s.net.servers.FILE01.audit[0].action==='Overwritten' && s.net.servers.FILE01.audit[0].user==='svc-deskops-lab' && !BT.obj[0].ok(s) && s.tickets[R].stage===1,'boss: a working credential stops the lockouts but overwrites the payments file, and stage 1 stays open');
+  s=bossS(); asg(s,R); ok(penaltyHits(s,'off','sw3').length===1,'boss: powering off the Floor 3 switch is penalised');
+  ENV.off(s,'sw3'); ok(!relocks(s) && !BT.obj[0].ok(s),'boss: with Floor 3 dark the bursts pause but the job stays armed');
+  A(s,()=>ENV.on(s,'sw3')); toQ(s); ok(af(s).locked,'boss: switch back on and it relocks');
+  s=bossS(); asg(s,R); ok(penaltyHits(s,'remoteWipe',GHOST).length===1,'boss: wiping NS-FIN-033 before the PST is recovered is penalised');
+  A(s,()=>ENV.remoteWipe(s,GHOST)); ok(ghostW(s).pst.lost && BT.obj[0].ok(s) && !af(s).sessions.some(x=>x.device===GHOST) && ENV.pstRestore(s,GHOST).includes('no longer exists') && !BT.obj[2].ok(s),'boss: the early wipe stops the job but destroys the only copy of the six messages');
+  ENV.chatAction(s,R,'af-resend'); ok(BT.obj[2].ok(s) && BT.obj[7].ok(s),'boss: Ledgerline re-issuing the messages is the costly way back');
+  s=bossS(); ENV.deleteRule(s,'rf1'); ok(!BT.obj[2].ok(s),'boss: deleting the rule doesn’t bring the mail back');
+  ENV.revokeSession(s,'afarmwell','af3'); ok(ENV.pstRestore(s,GHOST).startsWith('Moved 6 items') && BT.obj[2].ok(s) && BT.obj[3].ok(s) && s.mail.mailboxes.afarmwell.audit[0].op==='Import','boss: the PST import still works after the Office session is revoked');
+  s=bossS(); s.tickets[R].stage=3; asg(s,R);
+  ok(penaltyHits(s,'restoreVersion','Finance',['Finance',SP,'v3','original']).length===1 && !penaltyHits(s,'restoreVersion','Finance',['Finance',SP,'v3','copy']).length && penaltyHits(s,'revertShare','Finance').length===1 && penaltyHits(s,'deleteShadows','FILE01').length===1,'boss: restoring over the live file, reverting the share and deleting snapshots are penalised; a copy is not');
+  ENV.restoreVersion(s,'Finance',SP,'v4','copy'); ENV.chatAction(s,R,'sh-merge'); ok(!s.chat.facts.merge1073 && thread(s,'shaddad').slice(-1)[0].text.includes('2290'),'boss: the newest snapshot is stale (Samir sees …2290)');
+  ok(ENV.requestBackup(s,'Finance',SP).includes('after the Oct 14 18:00 overwrite') && !BT.obj[4].ok(s),'boss: the nightly backup is after the damage and gives no progress');
+  ENV.restoreVersion(s,'Finance',SP,'v3','copy'); ok(BT.obj[4].ok(s) && BT.obj[5].ok(s) && !BT.obj[6].ok(s),'boss: sb3 as a copy recovers the data and keeps Samir’s live edits');
+  ENV.chatAction(s,R,'sh-merge'); ok(BT.obj[6].ok(s) && payFile(s).state==='ok','boss: Samir merges the sb3 copy');
+  ENV.restoreVersion(s,'Finance',SP,'v3','original'); ok(payFile(s).liveLost && !BT.obj[5].ok(s) && !BT.obj[6].ok(s),'boss: restoring over the live file loses Samir’s work and the merge');
+  ENV.chatAction(s,R,'sh-rebuild'); ok(BT.obj[4].ok(s) && BT.obj[5].ok(s) && BT.obj[6].ok(s),'boss: Samir’s rebuild by hand recovers it');
+  ENV.wsTask(s,GHOST,'LedgerlineExport','runas','svc-deskops-lab'); ENV.wsTask(s,GHOST,'LedgerlineExport','run'); ok(!BT.obj[5].ok(s) && !BT.obj[6].ok(s),'boss: a re-armed copy job overwrites even the rebuilt file');
+  ENV.chatAction(s,R,'sh-rebuild'); ok(BT.obj[5].ok(s) && BT.obj[6].ok(s),'boss: a second rebuild recovers it');
+  s2=bossS(); s2.tickets[R].stage=3; ENV.revertShare(s2,'Finance','sb3'); ok(payFile(s2).liveLost && !BT.obj[5].ok(s2),'boss: reverting the share loses the live edits');
+  s2=bossS(); s2.tickets[R].stage=3; ENV.deleteShadows(s2,'FILE01'); ok(ENV.restoreVersion(s2,'Finance',SP,'v3','copy').includes('no longer exists') && BT.chatActions.find(a=>a.id==='sh-rebuild').when(s2),'boss: with the snapshots gone, only Samir’s rebuild is left');
+  ENV.chatAction(s2,R,'sh-rebuild'); ok(BT.obj[4].ok(s2) && BT.obj[6].ok(s2),'boss: the rebuild covers deleted snapshots too');
+  s=bossS(); const say=q=>chatReply(s,'afarmwell',q);
+  const persona=[['Have you tried restarting your laptop?','cold boot'],['Could you reset your password?','06:41'],['Let me unlock you again','11 times'],['Clear your cached credentials','cmdkey'],['Is it your phone?','07:31'],['Try a reinstall of Office','08:20'],
+    ['Use a hot desk instead','NS-MKT-011'],['Maybe the Wi-Fi?','Floor 2 dock'],['Check your inbox rules and junk','zero inbox rules'],['Run a malware scan','Endpoint Protection'],['What is your password?','never'],
+    ['Is it the 198.51.100.23 spray?','SEC-2231'],['Could you have been hacked?','first theory'],['Which error code do you get?','50053'],['Is it working now?','locked me again']].filter(([q,a])=>!say(q).includes(a)).map(x=>x[0]);
+  ok(!persona.length,'boss: Avery answers every tried item, the password request and the compromise theory in character'+(persona.length?' ('+persona.join(' | ')+')':''));
+  ok(say('What is NS-FIN-033?').includes('old Northbook') && say('hi Avery').includes('INC-1073'),'boss: Avery recognises NS-FIN-033 once it is named; greetings still work');
+  s=bossS(); asg(s,R); const pen=(a,e,g)=>penaltyHits(s,a,e,g).length===1;
+  const pens=[['unlock','awilson'],['setQuota','awilson',['awilson',10]],['resetPassword','afarmwell',['afarmwell',true,'tech']],['disable','afarmwell'],['resetMfa','afarmwell'],['blockSender','ledgerline@northstar.example',['ledgerline@northstar.example']],
+    ['reboot','DC01'],['reboot','FILE01'],['reboot','sw3'],['remoteWipe','NS-FIN-041'],['deploy','host:NS-FIN-041'],['returnToShelf','NS-FIN-041'],['wipeSpare','NSA-2041'],['setAsset','NS-FIN-041',['NS-FIN-041','state','Retired, awaiting disposal']],
+    ['mobileAct','mobAF',['mobAF','wipe']],['mobileAct','mobAF',['mobAF','block']]].filter(x=>!pen(...x)).map(x=>x.slice(0,2).join(':'));
+  ok(!pens.length && !penaltyHits(s,'mobileAct','mobAF',['mobAF','remove']).length && penaltyHits(s,'unlock','awilson')[0][0]===R,'boss: every risky wrong action carries its penalty'+(pens.length?' ('+pens.join(', ')+')':''));
+  ok(ENV.wipeSpare(s,'NSA-2033').includes('isn’t in the Returns bin') && !ghostW(s).wiped && !shelfDev(s,'NSA-2033').wiped,'boss: the shelf refuses to wipe NSA-2033: its bay is empty and its heartbeat is live');
+  ok(ENV.deploy(s,{src:'NSA-2033', image:'Northstar Finance 24.2', user:'afarmwell', site:'Floor 2'}).includes('Returns bin') && ghostW(s).sessionUser==='afarmwell','boss: deployment refuses to re-image the live NS-FIN-033');
+  ENV.returnToShelf(s,'NS-FIN-014'); ENV.wipeSpare(s,'NSA-2014'); ok(s.workstations['NS-FIN-014'].state==='In stock','boss: an ordinary return still wipes on the shelf');
+  { const old=JSON.parse(JSON.stringify(ffBoss(seed()))); delete old.tickets[R]; delete old.ui.alerts; ok(!validSave(old),'save: a v3 save from before the boss fails validation on its own');
+    backfill(old); ok(validSave(old) && old.tickets[R].status==='waiting' && Array.isArray(old.ui.alerts) && old.profile.points===742,'save: backfill adds the boss to an existing v3 save without losing progress');
+    ENV.nextShift(old); ok(old.tickets[R].status==='open' && !!old.users.afarmwell && validSave(JSON.parse(JSON.stringify(old))),'save: a backfilled save starts the boss stage, and the boss world is JSON-safe'); }
+  s=bossS(); asg(s,R);
+  A(s,()=>ENV.wsTask(s,GHOST,'LedgerlineExport','disable')); A(s,()=>ENV.verifyIdentity(s,'afarmwell','callback-record')); A(s,()=>ENV.unlock(s,'afarmwell')); A(s,()=>ENV.testSignIn(s,'afarmwell')); s.clock++; ENV.chatAction(s,R,'af-wait'); worldTick(s);
+  ok(s.tickets[R].stage===2,'boss path: stage 1 done');
+  A(s,()=>ENV.pstRestore(s,GHOST)); A(s,()=>ENV.revokeSession(s,'afarmwell','af3')); A(s,()=>ENV.deleteRule(s,'rf1')); ok(s.tickets[R].stage===3 && af(s).sessions.length===3,'boss path: stage 2 done, only the old laptop’s session revoked');
+  A(s,()=>ENV.restoreVersion(s,'Finance',SP,'v3','copy')); A(s,()=>ENV.chatAction(s,R,'sh-merge')); ok(s.tickets[R].stage===4 && check(s,R,true).todo.length===2 && !check(s,R,true).more,'boss path: stage 3 done, the last stage is visible');
+  ENV.chatAskConfirm(s,R); ok(!s.chat.confirmed[R] && thread(s,'afarmwell').slice(-1)[0].text.includes('wiped'),'boss path: Avery won’t sign off while the old laptop is live');
+  ok(!penaltyHits(s,'remoteWipe',GHOST).length,'boss path: wiping after the PST is recovered isn’t penalised');
+  A(s,()=>ENV.remoteWipe(s,GHOST)); A(s,()=>ENV.chatAskConfirm(s,R)); ok(done(s,R) && check(s,R,true).done.length===9,'boss path: the model solution completes all 9 requirements');
+  const bsc=scoreFor(s,R,'close',BT.guide.idealNotes); ok(bsc.total===68 && bsc.lines.some(l=>l[0]==='Flawless boss: no penalties') && scoreGuide(BT).best===68,'boss score: 60 + 3 notes + 5 flawless = 68');
+  s.tickets[R].penalties.x=[2,'test']; ok(!scoreFor(s,R,'close','').lines.some(l=>/^Flawless/.test(l[0])),'boss score: any penalty forfeits the flawless bonus'); delete s.tickets[R].penalties.x;
+  s.tickets[R].peeked=true; ok(!scoreFor(s,R,'close','').lines.some(l=>/^Flawless/.test(l[0])),'boss score: revealing the guide first forfeits the flawless bonus'); s.tickets[R].peeked=false;
+  s2=bossS(); ok(scoreFor(s2,R,'close','').total===-30 && scoreFor(s2,R,'escalate','x').total===-30,'boss score: closing unresolved or escalating it costs −30');
+  s2.tickets[R].penalties={a:[8,'a'],b:[6,'b']}; ok(scoreFor(s2,R,'close','').total===-30 && scoreFor(s2,R,'close','').lines.slice(-1)[0][0].includes('−30…+70'),'boss score: capped at −30…+70');
+  s.tickets[R].status='closed'; s.tickets[R].result={outcome:'Resolved', lines:bsc.lines, total:bsc.total}; ok(achievements(s).filter(a=>/^(Boss defeated|Flawless boss|Inbox zero)$/.test(a[0])).every(a=>a[2]),'achievements: Inbox zero, Boss defeated and Flawless boss');
+  ok(TICKETS.length===32 && KB.length===38 && runbooksFor(R).some(a=>a.id==='kb38'),'32 tickets and 38 runbooks, including the lockout-tracing runbook');
   return {pass: out.every(r=>r[0]), results: out};
 }
 window.selfTest = selfTest;
