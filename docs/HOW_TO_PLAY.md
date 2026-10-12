@@ -30,9 +30,11 @@ To start, open `index.html` in a browser (double-clicking it is fine, even offli
 | Notes that say how you verified ("verified", "confirmed", "tested") | +1 |
 | Close a ticket that isn't resolved | −20 (Critical), −15 (High), −10 (Medium, Low) |
 | Escalate a routine ticket to Security | −8 |
+| Escalate a security ticket before its case is ready (evidence not gathered, or something changed that shouldn't have) | −20 (Critical), −15 (High), −10 (Medium, Low) instead of the resolve points |
 | A ticket-specific wrong action (rebooting the core router for one user, releasing phishing, deleting evidence, sending passwords to the wrong place…) | −2 to −6 each |
 
-- Wrong-action penalties are recorded when you make the mistake and charged once, when the ticket is closed or escalated.
+- Wrong-action penalties are recorded when you make the mistake and charged once, when the ticket is closed or escalated. They count as soon as the ticket has arrived (even before you assign it or after you return it to the queue), and one action is charged to one ticket.
+- The game has its own clock: each shift starts at 09:40 on its day (Monday Oct 12, 2026 for shift 1) and every action takes a minute, so timestamps never depend on your real time of day.
 - Each ticket's total is capped between −20 and +42.
 - Hints and the solution guides are free.
 - A perfect run through all three shifts scores 742 points.

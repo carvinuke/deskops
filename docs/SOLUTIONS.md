@@ -24,7 +24,8 @@ This file is generated from the ticket and runbook data in `index.html`, so it a
 | Resolution notes: 40+ characters, a ticket keyword, and “verified”, “confirmed” or “tested” | +1 each, up to +3 |
 | Close a ticket that isn’t resolved | −20 (Critical), −15 (High), −10 (Medium, Low) |
 | Escalate a routine ticket to Security | −8 |
-| Ticket-specific wrong actions (listed per ticket) | −2 to −6 each, charged once at close |
+| Escalate a security ticket before its case is ready | −20 (Critical), −15 (High), −10 (Medium, Low) |
+| Ticket-specific wrong actions (listed per ticket) | −2 to −6 each, charged once at close (they count from the moment the ticket arrives) |
 | Cap per ticket | −20 … +42 |
 
 Hints and these guides are free.
@@ -69,7 +70,7 @@ Hints and these guides are free.
 
 ## Shift 1 · Monday morning
 
-A busy Monday: lockouts after the weekend, a floor outage and printing problems. Work critical tickets first.
+A busy Monday: lockouts after the weekend, a floor outage and printing problems. Work critical tickets first. Your team lead Dana Okafor has left you a message in Company Chat.
 
 <a id="inc-1042"></a>
 
@@ -217,7 +218,9 @@ Two faults on one account, and each needs its own fix. Unlock clears the lockout
 
 #### Wrong actions and penalties
 
-No ticket-specific penalties.
+| Wrong action | Points |
+|---|---|
+| Sent the temporary password by chat or to a personal email address | −3 |
 
 Closing it unresolved costs −15. Escalating it to Security costs −8.
 
@@ -300,7 +303,9 @@ Authentication answers “who are you?”; authorization answers “what may you
 
 #### Wrong actions and penalties
 
-No ticket-specific penalties.
+| Wrong action | Points |
+|---|---|
+| Added Maya to share groups her Finance role doesn’t need (least privilege) | −3 |
 
 Closing it unresolved costs −10. Escalating it to Security costs −8.
 
@@ -389,6 +394,8 @@ Work outward from the impact. Floors 1 and 2 work, and every floor shares the in
 | Powered off the edge router — every floor lost access | −4 |
 | Rebooted the main firewall — every floor dropped briefly | −4 |
 | Powered off the firewall — every floor lost access | −4 |
+| Powered off the healthy Floor 1 switch — the whole floor lost its network | −3 |
+| Powered off the healthy Floor 2 switch — the whole floor lost its network | −3 |
 
 Closing it unresolved costs −20. Escalating it to Security costs −8.
 
@@ -642,7 +649,9 @@ The mailbox has reached its 5 GB quota, so the mail server rejects new messages.
 
 #### Wrong actions and penalties
 
-No ticket-specific penalties.
+| Wrong action | Points |
+|---|---|
+| Gave an executive mailbox the 50 GB shared-mailbox quota, which isn’t an approved remedy | −2 |
 
 Closing it unresolved costs −10. Escalating it to Security costs −8.
 
@@ -805,14 +814,16 @@ Every print job goes through the Print Spooler service on PRINT01, which crashed
 
 #### Common mistakes
 
-- Rebooting printers one by one in Topology: the flash says jobs are still waiting in the PRINT01 queue.
+- Rebooting printers one by one in Server Room › Devices: the flash says jobs are still waiting in the PRINT01 queue.
 - Sending the test page before starting the spooler: it sticks in the queue and doesn’t count.
-- Rebooting the whole PRINT01 server when one service needs starting. It works, but it also drops the Print Web Portal and takes longer.
+- Rebooting the whole PRINT01 server when one service needs starting. It works, but it also drops the Print Web Portal, takes longer and costs 3 points.
 - Closing without a test page.
 
 #### Wrong actions and penalties
 
-No ticket-specific penalties.
+| Wrong action | Points |
+|---|---|
+| Rebooted the whole print server for one stopped service: the Print Web Portal dropped for everyone | −3 |
 
 Closing it unresolved costs −15. Escalating it to Security costs −8.
 
@@ -978,7 +989,7 @@ Scope first: one machine and one user, so it isn’t the network or a server. A 
 
 #### Required outcome (what Check fix tests)
 
-- Clean spare NSA-S202 deployed to Tomasz on Floor 1
+- Clean Desk 24 spare deployed to Tomasz on Floor 1
 - Dead unit NS-OPS-030 retired and queued for secure disposal
 - The unwiped spare NSA-S201 wasn’t handed to anyone
 - Tomasz confirmed the dispatch board works on the new PC
@@ -2246,7 +2257,7 @@ Help-desk MFA resets after a phone call were the way in for several well-known b
 - The sender in Company Chat is Maya Chen, not Leah. The person typing is unconfirmed.
 - Directory › Leah Fontaine shows an HR note: disabled by the leave workflow LOA-0193, return date today, Office licence released.
 - Authentication shows three problems: Disabled, password Expired, and no Office Suite licence.
-- Licence pools › Office Suite (Standard) shows 0 free, and one holder is a disabled leaver from July.
+- Licence pools › Office Suite (Standard) shows 0 free (unless Marcus Hale’s seat from INC-1061 has already gone back to the pool), and one holder is a disabled leaver from July.
 
 #### Diagnosis
 
@@ -2260,7 +2271,7 @@ The visible symptom (disabled) is only the first of three layers the leave workf
 4. Select Verify identity…, choose “Callback to number on record” and select Run check. Leah answers x4418 and quotes E44181.
 5. On Authentication select Enable account.
 6. Select Reset password…, keep “User must change password at next sign-in” ticked, choose “Read to user on a verified call” and select Reset password.
-7. Open the Licences tab: Office Suite (Standard) shows 0 free and Assign is greyed out. Select View licence pools.
+7. Open the Licences tab: Office Suite (Standard) shows 0 free and Assign is greyed out. Select View licence pools. (If you already released Marcus Hale’s seat in INC-1061, one seat is free and Assign works straight away: you can skip the next step.)
 8. In Licence pools › Office Suite (Standard), find Tara Morgan · Disabled · last sign-in Jul 31 and select Remove.
 9. Back in Users › Leah Fontaine › Licences, select Assign on Office Suite (Standard).
 10. On Authentication select Test sign-in. Expect “Sign-in test passed for lfontaine. They’ll be asked to choose a new password.”
@@ -2304,7 +2315,7 @@ Closing it unresolved costs −10. Escalating it to Security costs −8.
 #### Hint ladder
 
 1. The chat came from Maya’s account. Who are you actually talking to? Then read the HR note on Leah’s Directory record: more than one thing changed while she was away.
-2. Verify Leah through her own record (desk extension x4418 or her registered mobile). Then check Licences: the Office pool is full, so look for a seat held by someone who has left.
+2. Verify Leah through her own record (desk extension x4418 or her registered mobile). Then check Licences: if the Office pool is full, look for a seat held by someone who has left.
 3. Verify identity… (callback to number on record), Enable account, Reset password… (must change, read to user on the verified call), remove Office Suite from leaver tmorgan in Licence pools and assign it to Leah, Test sign-in, then Remote Desktop › NS-FIN-027 › Office Suite › Refresh licence.
 
 #### Model answer
