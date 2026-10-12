@@ -1191,7 +1191,7 @@ const TICKETS = [
    yes:'Both screens are back and the queue is on the big one. Thanks!', no:'Not quite. I need the second screen as extra space so I can drag the queue across, and I can’t yet.'},
  obj:[O(s=>{ const w=s.workstations['NS-SUP-007']; return w.display.mode==='Extend these displays' && monitors(w).active===2 && w.devices.every(d=>d.status==='OK'); }, 'Both screens active in Extend mode',
      s=>/Duplicate/.test(s.workstations['NS-SUP-007'].display.mode) ? 'Both screens show the same thing (Duplicate), so the second screen isn’t extra space yet' : 'Only one display is in use'),
-   O(s=>!s.ship.shipments.some(x=>x.recipient==='iduarte') && !s.workstations['NS-SUP-007'].accessories.length, 'No unnecessary hardware sent', 'Replacement hardware was sent for a settings fault'),
+   O(s=>!s.ship.shipments.some(x=>x.recipient==='iduarte') && !s.workstations['NS-SUP-007'].accessories.some(n=>/monitor|dock/i.test(n)), 'No unnecessary hardware sent', 'Replacement hardware was sent for a settings fault'),
    O(s=>s.chat.confirmed['INC-1056']==='iduarte', 'Ines confirmed she can drag windows to the second screen', 'Ines hasn’t confirmed the fix')],
  guide:{
   symptomsToNotice:['“No signal” on the monitor means it isn’t receiving a picture. That can be a cable or a setting.',
@@ -1415,7 +1415,7 @@ const TICKETS = [
    O(s=>s.users.hclarke.email==='hannah.osei@northstar.example', 'Primary email is hannah.osei@northstar.example', 'The primary address hasn’t changed'),
    O(s=>s.users.hclarke.aliases.includes('hannah.clarke@northstar.example'), 'Old address kept as an alias so supplier mail still arrives', 'hannah.clarke@ isn’t an alias, so supplier mail would bounce'),
    O(s=>!s.users.hclarke.renamed && loginOf(s.users.hclarke)==='hclarke', 'Sign-in username left unchanged', 'The sign-in username was renamed, so Hannah’s profile and drives will break'),
-   O(s=>s.mail.mailboxes.hclarke.aliasTestOk && s.users.hclarke.aliases.includes('hannah.clarke@northstar.example'), 'Test mail to the old address delivered to Hannah’s mailbox', 'Delivery to the old address hasn’t been tested since the change'),
+   O(s=>s.mail.mailboxes.hclarke.aliasTested==='hannah.clarke@northstar.example' && s.users.hclarke.aliases.includes('hannah.clarke@northstar.example'), 'Test mail to the old address delivered to Hannah’s mailbox', 'Delivery to the old address hasn’t been tested since the change'),
    O(s=>s.chat.confirmed['INC-1060']==='hclarke', 'Hannah confirmed the new name looks right', 'Hannah hasn’t confirmed the change')],
  guide:{
   symptomsToNotice:['HR has already recorded the change (the Pending HR change banner), so the request is legitimate and authorised.',
@@ -3159,7 +3159,7 @@ const ENV = {
   testMailTo(s,id,addr){ const m=s.mail.mailboxes[id], r=resolveAddr(s,addr);
     if (!r || r.box!==id) { m.testOk=false; return `Test to ${addr} bounced: 550 5.1.1 no such recipient.`; }
     if (!canReceive(m)) { m.testOk=false; return 'Test message bounced: 550 5.2.2 Recipient mailbox full.'; }
-    m.testOk=true; if (r.alias) m.aliasTestOk=true; return `Test message to ${addr} delivered to ${mbName(s,id)}’s mailbox.`; },
+    m.testOk=true; if (r.alias) { m.aliasTestOk=true; m.aliasTested=addr; } return `Test message to ${addr} delivered to ${mbName(s,id)}’s mailbox.`; },
   inspectRule(s,id){ const r=rule(s,id); r.inspected=true; return `Opened details for rule “${r.name}”.`; },
   deleteRule(s,id){ const r=rule(s,id); r.deleted=true; return `Rule “${r.name}” deleted.`; },
   convertShared(s,id){ const m=s.mail.mailboxes[id], u=s.users[id];
@@ -4828,6 +4828,7 @@ function selfTest(){
   ENV.displayMode(s,'NS-SUP-007','Extend these displays'); ENV.displayKeep(s,'NS-SUP-007'); ENV.devUninstall(s,'NS-SUP-007','gpu'); ENV.chatAskConfirm(s,'INC-1056'); ok(!done(s,'INC-1056'),'1056 removed display driver breaks it');
   ENV.devScan(s,'NS-SUP-007'); ENV.chatAskConfirm(s,'INC-1056'); ok(done(s,'INC-1056'),'1056 complete: Extend + keep + confirm');
   ENV.issueAccessory(s,'mon24','NS-SUP-007'); ok(!done(s,'INC-1056'),'1056 issuing a monitor fails the no-hardware objective');
+  { const s2=fresh('INC-1056'); ENV.issueAccessory(s2,'dpcable','NS-SUP-007'); ok(TK['INC-1056'].obj[1].ok(s2),'1056 issuing a cable does not soft-lock the ticket'); }
   // 1057 social engineering
   s=fresh('INC-1057'); ok(!done(s,'INC-1057'),'1057 not complete at arrival');
   ENV.chatAction(s,'INC-1057','aw-verify'); s.tickets['INC-1057'].status='escalated'; ok(done(s,'INC-1057'),'1057 complete: verified in chat + escalated, nothing changed');
@@ -4854,6 +4855,7 @@ function selfTest(){
   ENV.testSignIn(s,'komensah'); ENV.chatAskConfirm(s,'INC-1059'); ok(done(s,'INC-1059'),'1059 complete: komensah + groups + licences + laptop + creds to manager + test + HR confirm');
   // 1060 name change
   s=fresh('INC-1060'); ok(!done(s,'INC-1060'),'1060 not complete at arrival');
+  { const s2=fresh('INC-1060'); ENV.editUser(s2,'hclarke',{name:'Hannah Osei'}); ENV.addAlias(s2,'hclarke','hannah.osei@northstar.example'); ENV.testMailTo(s2,'hclarke','hannah.osei@northstar.example'); ENV.makePrimary(s2,'hclarke','hannah.osei@northstar.example'); ok(!TK['INC-1060'].obj[4].ok(s2),'1060 testing the new address does not count as testing the old one'); }
   ENV.editUser(s,'hclarke',{name:'Hannah Osei', login:'hosei'}); ENV.addAlias(s,'hclarke','hannah.osei@northstar.example'); ENV.makePrimary(s,'hclarke','hannah.osei@northstar.example');
   ENV.testMailTo(s,'hclarke','hannah.clarke@northstar.example'); ENV.chatAskConfirm(s,'INC-1060'); ok(!done(s,'INC-1060') && !objOk(s,'INC-1060',3),'1060 renaming the username fails it');
   s=fresh('INC-1060'); ENV.editUser(s,'hclarke',{name:'Hannah Osei'}); ENV.addAlias(s,'hclarke','hannah.osei@northstar.example'); ENV.makePrimary(s,'hclarke','hannah.osei@northstar.example');
