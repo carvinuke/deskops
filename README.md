@@ -1,48 +1,72 @@
 # DeskOps Lab
 
-An offline IT service-desk training game. You're a first-line technician at the fictional Northstar Office Group: pick a ticket, claim it, diagnose it in simulated admin consoles, fix it, verify, close it and get scored.
+An offline IT service-desk training game. You're a first-line technician at the fictional Northstar Office Group: pick a ticket, claim it, investigate in simulated admin consoles, fix the right thing, verify it, then close or escalate it and get scored.
 
 Everything is fictional and local. No account, server, mailbox or command is real, and the page makes no network requests.
 
-## Play
+## Run it
 
-Download `index.html` and double-click it. That's the whole game: no install, no server, no internet, no login. It works from a `file://` path in current Chrome, Edge, Firefox and Safari.
+Download `index.html` and double-click it. That's the whole game: no install, no build step, no server, no internet, no login. It runs from a `file://` path.
+
+New here? Read [docs/HOW_TO_PLAY.md](docs/HOW_TO_PLAY.md) for the core loop, scoring, ranks, shifts, a tour of the tools and keyboard tips.
 
 ## Progress and reset
 
-Progress (points, tickets, history, chat and every change you make to the simulated environment) is saved in your browser's local storage on that machine, under `deskops-lab-v3`. Saves from older versions are ignored, so you start a fresh shift.
+Progress (points, tickets, notes, chat, and every change you make to the simulated environment) is saved in your browser's local storage on that computer, under the key `deskops-lab-v3`. Saves from older versions are ignored, so you start a fresh shift.
 
-- **Reset:** click your name (top right) › **Reset progress…** and confirm.
-- If the browser blocks local storage, the game still runs and shows a banner saying progress lasts only until the tab closes.
-- A corrupted save is detected on load; the game starts a fresh shift and tells you.
+- **Reset:** click your name (top right), select **Reset progress…** and confirm.
+- **Storage blocked:** the game still runs and shows a banner saying progress lasts only until the tab closes.
+- **Corrupted save:** detected on load. The game starts a fresh shift and tells you.
 
 ## What's in it
 
-- **10 tickets** (INC-1042 to INC-1051): account lockout, expired password, missing group membership, floor-wide outage, broken Wi-Fi profile, quarantined mail, full mailbox, suspicious forwarding rule (escalate to Security), stuck print spooler, stale VPN profile. INC-1044 and INC-1051 arrive after INC-1042 and INC-1043 are closed.
-- **Dark, queue-first interface:** My Queue and the Incidents queue on the home screen, an intake-style ticket page with an "I don't know how to fix this" hint ladder, a split-screen toggle, and a Tools menu in a centred modal.
-- **Consoles:** Directory, Server Room (overview, clickable topology, devices, servers), Remote Desktop (Wi-Fi settings, VPN client, File Explorer, a terminal with an allowlist of simulated commands), Computer Deployment, PC Shelf, Mail Admin, Mail Security, Documentation, Asset Management, Ship Manager. Deployment, PC Shelf and Ship Manager are read-only inventory views for now.
-- **Company Chat:** a side panel with 12 fictional Northstar staff (search, Recent / Contacts / Pinned, presence dots). Replies are scripted: a requester tells you whether their problem is still happening.
-- **Voicemails:** transcripts of calls to the desk that match tickets in the queue.
-- **Rank and achievements:** Trainee, Bronze (40), Silver (100), Gold (180), Platinum (280), plus five achievements worked out from your shift.
-- **Ticket checks** read the shared environment state, so a ticket is only complete when the right entity is actually fixed and verified. **Check fix** lists what's done and what's missing; **hints** are free.
-- **Shifts:** tickets belong to a shift. When every ticket on the current shift is closed or escalated, the dashboard offers **Start next shift** with a briefing. Some tickets arrive as a Company Chat message or a voicemail and must be logged first. Shift 1 has 10 tickets. Shift 2 has 10 (hardware: dead PC swap, new-starter build, remote laptop replacement, full disk, second screen, a social-engineering voicemail, a weak charger, a new laptop stuck on a 169.254 address because the Floor 2 DHCP scope is full, a new phone waiting in mail quarantine, and a shared-mailbox access request that needs the owner’s approval). Shift 3 has 11 (joiner, name change, leaver, MFA reset after a lost phone, a returner from parental leave asking through a colleague’s chat, a vishing voicemail for an executive’s password, an office-wide DNS failure, a provider outage, a full file server, a deleted HR spreadsheet to restore from previous versions, and reported phishing to contain). Each new ticket carries a step-by-step solving guide (`guide` on the ticket).
-- **Consoles:** Directory (create/edit users, aliases, licences and pools, sessions, identity verification, starters/leavers), Server Room (topology, DHCP scopes and leases, volumes, shadow copies and previous versions, file audit, event logs, scheduled tasks, ISP faults), Remote Desktop (Wi-Fi, VPN, files, terminal with ipconfig/ping/nslookup/tracert, Settings › Display/Storage/Power, System Update, Device Manager, Office, restart), Computer Deployment (staged imaging from the PC Shelf), PC Shelf (reservations, wipes, accessories), Ship Manager (shipments and return labels), Asset Management (record health, lock, wipe, return to shelf, mobiles), Mail Admin (trace, mailboxes, shared mailboxes and permissions, lists, mobile devices, rules), Mail Security (quarantine, reported messages, purge, blocked senders), Company Chat (quick actions, #office-announcements).
-- **Scoring:** Low 10, Medium 15, High 22, Critical 30, up to +3 for useful notes, +12 for a correct security escalation; penalties for closing unresolved tickets, risky changes and needless escalations. Each ticket is capped at −20…+42.
+- **31 tickets over three shifts.** Shift 1 (10 tickets): lockouts, an expired password, share permissions, a floor outage, Wi-Fi, quarantined mail, a full mailbox, a malicious forwarding rule, a crashed print spooler and a VPN profile. Shift 2 (10): hardware swaps, new starters, a remote laptop replacement, a full disk, displays, a social-engineering voicemail, a weak charger, a full DHCP scope, a new phone and shared-mailbox access. Shift 3 (11): joiner, name change, leaver, MFA reset, a returner, a vishing call, a DNS outage, a provider outage, a full file server, a file restore and reported phishing.
+- **Ticket intake like a real desk:** a queue sorted by priority, plus requests that arrive as Company Chat messages or voicemails and must be logged first. Some tickets only appear after another is finished.
+- **Ten consoles:** Directory, Server Room, Remote Desktop, Computer Deployment, PC Shelf, Mail Admin, Mail Security, Documentation, Asset Management and Ship Manager. Every action in them is real within the simulation, and tickets are checked against that shared state.
+- **Company Chat and Voicemails:** 16 fictional staff at the start (more join as tickets arrive), with presence, scripted replies, ticket quick actions (ask to confirm the fix, ask for approval) and an #office-announcements channel. Voicemails are transcripts with caller ID, and you can log, save, forward or delete them.
+- **Documentation:**
+  - 37 runbooks, one per procedure the tickets use, each with purpose, prerequisites, steps, verification and when to escalate.
+  - A solution guide for every ticket: symptoms to notice, diagnosis, click-by-click steps, how to verify, common mistakes, a real-world note, the hint ladder, scoring with every penalty, and an ideal resolution note.
+  - Guides for tickets you haven't closed sit behind a "Reveal full solution" gate. Revealing one is free.
+- **Help when stuck:** Check fix lists what's done and what's missing, and a free three-step hint ladder ends in the model answer and a link to the guide.
+- **Scoring:**
+  - Low 10, Medium 15, High 22 and Critical 30 points, up to +3 for useful notes, and +12 for a correct security escalation.
+  - Penalties for closing unresolved tickets, risky changes and needless escalations.
+  - Each ticket is capped at −20…+42, and a perfect run scores 742.
+- **Ranks and achievements:** Trainee, Bronze (40), Silver (100), Gold (180) and Platinum (280), plus five achievements.
+- **Past tickets:** your score breakdown, notes, the model answer and the action log for every finished ticket.
+
+## Documentation files
+
+- [docs/HOW_TO_PLAY.md](docs/HOW_TO_PLAY.md): how the game works. No spoilers.
+- [docs/SOLUTIONS.md](docs/SOLUTIONS.md) **(spoilers)** has, for every ticket:
+  - an index table: ref, title, priority, category, tools and shift;
+  - the full guide, required outcome, wrong actions and their penalties, hint ladder, model answer and ideal note.
+
+  It ends with all 37 runbooks. It is generated from the ticket and runbook data in `index.html`, so it matches the game; regenerate it rather than editing it by hand.
 
 ## Checks performed
 
-- `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, including the wrong paths (password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, deleting the suspicious rule isn't rewarded) and the scoring rules. All 274 checks pass, including a model fix and at least one tempting wrong action for every shift 2–3 ticket, including the v3 consoles (deployment, shelf, shipping, DNS/DHCP, storage, shadow copies, mail permissions, chat confirmations, shifts), the chat replies, voicemails, rank thresholds and save schema.
-- Headless Chromium, opened from `file://`, with every non-file request and console error treated as a failure (none occurred):
-  - first-run welcome, queue order (Critical first), claim/unclaim
-  - closing unresolved shows the penalty and Cancel changes nothing
-  - INC-1042 end to end in split view: Directory › unlock › Check fix › close with notes (+25) › Past Tickets
-  - INC-1044 arrives after INC-1042 closes
-  - Server Room topology: rebooting the edge router asks for confirmation and applies the penalty; powering on the Floor 3 switch fixes INC-1045
-  - Remote Desktop on NS-OPS-021: forget the broken Wi-Fi profile, reconnect, `ping 10.0.0.1`
-  - reload keeps points and environment changes; a corrupted save recovers; blocked storage shows the banner
-  - split-screen toggle, hint ladder, Tools modal opening Ship Manager, PC Shelf and Computer Deployment, marking a voicemail as listened, and a Company Chat conversation with a scripted reply
-  - screenshots at 1366×768, 1024×768 and 390×844 (no horizontal scroll at 390)
+- **Self-test:** `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, and all 278 checks pass. They cover:
+  - wrong paths: a password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, and deleting the suspicious rule isn't rewarded;
+  - scoring rules, and a model fix plus at least one tempting wrong action for every shift 2–3 ticket;
+  - the consoles, chat replies, voicemails, shifts, ranks and save schema;
+  - the documentation: every ticket has a full guide whose ideal note earns the full notes bonus and at least one runbook, and every runbook has all five sections.
+- **Headless Chromium, from `file://`:** every non-file request and console error counts as a failure, and none occurred. The run covers:
+  - the first-run welcome and queue order;
+  - claiming and closing tickets, including the unresolved-close penalty;
+  - Server Room topology, Remote Desktop, reload persistence, a corrupt save and blocked storage;
+  - every console, Company Chat and Voicemails;
+  - Documentation: runbooks, filters, the spoiler gate, links between guides and runbooks, and opening a ticket from its guide;
+  - screenshots at 1366, 1024 and 390 px wide, with no sideways scrolling at 390 px.
+- **Play-throughs:** every ticket has been played in the browser to a clean resolution with no penalties. The 10 shift 1 guides and six of the shift 2–3 guides were followed click by click and reached the best possible score.
 
-## Not built yet
+## Not built, and known limits
 
-Actions in Computer Deployment, PC Shelf and Ship Manager, chat replies tailored to each ticket, the extra desktop apps (mail, chat, browser, system update), live calls and save export/import.
+- Only tested in Chromium. The Tools menu and Escape-to-close-chat rely on the Popover API, so check older Firefox and Safari versions.
+- Voicemails are transcripts only: no audio and no live calls.
+- Chat replies are scripted. Typing to a requester gets a reply based on the ticket's state, but confirmations that a ticket requires only come from the quick-action buttons.
+- The 31 tickets are fixed and play out the same way every time. There's no random or procedurally generated content and no shifts beyond three.
+- PCs only use DC01 for DNS, so when DC01's DNS stops, name lookups fail even though DC02 is running. `nslookup <name> dc02` is the only way to query DC02.
+- No save export or import. Progress lives in one browser on one computer.
+- Phone-width (390 px) layouts are checked automatically for sideways scrolling, but most shift 2 and 3 screens haven't been reviewed by eye at that width.

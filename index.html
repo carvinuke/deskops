@@ -310,6 +310,9 @@ body.chat-open #chat{display:flex}
 .kb>div{padding:18px}
 .kb>div+div{border-left:1px solid var(--line)}
 .steps li{margin:7px 0}
+.gtitle{font-size:19px;margin:4px 0 10px}
+.gsec{margin:20px 0 6px}
+.gate{margin-top:16px}
 .mailpane{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:8px;align-items:end;margin-bottom:14px}
 .mailpane label{font-size:12px;color:var(--text2);display:grid;gap:3px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
@@ -317,6 +320,7 @@ body.chat-open #chat{display:flex}
 @container app (max-width:860px){
   .dir,.kb{grid-template-columns:1fr}
   .dir>div+div,.kb>div+div{border-left:0;border-top:1px solid var(--line)}
+  .kb .ulist{max-height:320px;overflow:auto}
   .stats{grid-template-columns:1fr 1fr}
   .mailpane{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mailpane select,.mailpane input{width:100%}
@@ -581,7 +585,32 @@ const TICKETS = [
  hints:['Because a colleague can reach the share, start with Maya’s account rather than the network.','Search for Maya in Directory and open the Authentication tab.','Unlock mchen.'],
  model:'Verified the requester’s account, cleared the lockout in Directory, asked the requester to sign in again and confirmed Finance share access.',
  keys:['mchen','maya','ns-fin-014'],
- obj:[O(s=>!s.users.mchen.locked && s.users.mchen.enabled, 'Maya’s account is unlocked', 'Maya’s account is still locked')]},
+ obj:[O(s=>!s.users.mchen.locked && s.users.mchen.enabled, 'Maya’s account is unlocked', 'Maya’s account is still locked')],
+ guide:{
+  symptomsToNotice:['Maya is back from vacation and the message says “locked”. That word points at her account, not the network or the share.',
+    'A colleague can still open \\\\FILE01\\Finance, so FILE01, the share and the network are all working.',
+    'Directory › Maya Chen › Authentication: Account Enabled, Lockout Locked, Password Current, MFA Enrolled.',
+    'Last sign-in Sep 26, 17:42: nothing since she went away, so the lockout came from failed attempts, not from a working session.',
+    'Restarting the laptop twice didn’t help: a lockout is held on the domain controller, not on the PC.'],
+  diagnosis:'One user, one account, a clear error message and healthy colleagues: this is an authentication problem on a single account. Read every flag on the Authentication tab before changing anything, because locked, disabled, expired and MFA are separate states with separate fixes. Only Lockout is wrong here, so the whole fix is Unlock account. A password reset wouldn’t clear the lockout (the game tells you so) and would make Maya learn a new password for no reason.',
+  perfectSteps:['Open INC-1042 from the Incidents queue and select Assign to me.',
+    'Select Open Tools › Directory. Type “maya” in the search box and select Maya Chen (mchen · Finance). The Authentication tab opens.',
+    'Read every row: Account Enabled, Lockout Locked, Password Current, MFA Enrolled, Last sign-in Sep 26, 17:42.',
+    'Good practice: select Verify identity…, choose “Callback to number on record” and select Run check before you change her account.',
+    'Select Unlock account. The flash reads “Maya Chen’s account is unlocked.” and Lockout changes to Not locked.',
+    'Select Test sign-in. Expect “Sign-in test passed for mchen.”',
+    'Optional: open Company Chat › Maya Chen, type “Can you try signing in now?” and press Enter. Maya replies that it’s working.',
+    'Select Check fix (in the ticket column, or after Back to INC-1042). “Maya’s account is unlocked” turns green.',
+    'Select Close ticket, write a resolution note and select Close ticket in the dialog.'],
+  verify:['Directory › Maya Chen › Authentication: Lockout Not locked, Account Enabled, Last sign-in test Passed.',
+    'Check fix: 1 of 1 requirement met, and the ticket chip reads Resolved.',
+    'Optional: Remote Desktop › NS-FIN-014 › File Explorer › Open on F: (\\\\FILE01\\Finance) reads “Opened \\\\FILE01\\Finance.”'],
+  commonMistakes:['Resetting the password instead of unlocking. The reset succeeds, but the flash warns that a password reset doesn’t clear a lockout.',
+    'Investigating FILE01 or the network although a colleague can open the same share.',
+    'Selecting Disable account: that is a different state and stops her signing in at all.',
+    'Closing before Check fix is green: closing an unresolved High ticket costs 15 points.'],
+  realWorldNote:'Lockouts after a holiday are among the most common service-desk calls. The usual cause is a device still trying an old or mistyped password (a phone mail app, or a mapped drive with saved credentials), which trips the lockout threshold. Real desks verify the caller before unlocking, and if the lockout comes back they look up the lockout source in the domain controller logs and fix that device.',
+  idealNotes:'Cause: mchen locked out after vacation (last sign-in Sep 26); password current and account enabled. Action: verified Maya by callback to the number on record, then Directory › Authentication › Unlock account. No password reset needed. Verified: sign-in test passed and Maya confirmed in chat that she can sign in.'}},
 
 {ref:'INC-1043', pri:'high', cat:'Access / Password', req:'ebrooks', asset:'NS-SALES-008', assetType:'Windows laptop', created:'08:20',
  title:'Locked out after the password expired',
@@ -594,7 +623,31 @@ const TICKETS = [
  obj:[O(s=>!s.users.ebrooks.locked, 'Evan’s account is unlocked', 'Evan’s account is still locked'),
       O(s=>!s.users.ebrooks.pwdExpired, 'Expired password was reset', 'Evan’s password is still expired'),
       O(s=>s.users.ebrooks.mustChange, 'Must change password at next sign-in', 'The new password isn’t set to change at next sign-in'),
-      O(s=>s.users.ebrooks.signInOk, 'Sign-in test passed after the fix', 'Sign-in hasn’t been tested since the fix')]},
+      O(s=>s.users.ebrooks.signInOk, 'Sign-in test passed after the fix', 'Sign-in hasn’t been tested since the fix')],
+ guide:{
+  symptomsToNotice:['“Yesterday it kept telling me to change my password”: the password expired overnight.',
+    '“Now it says the account is locked”: trying the old password again and again tripped the lockout.',
+    'Directory › Evan Brooks › Authentication: Lockout Locked and Password Expired. Two separate flags.',
+    'He can’t reach Sales Hub either: every app signs in with the same account, so this isn’t an app fault.',
+    'Last sign-in Yesterday 17:55 from his laptop, before the password expired.'],
+  diagnosis:'Two faults on one account, and each needs its own fix. Unlock clears the lockout but leaves the password expired; a password reset clears the expiry but not the lockout. The ticket is only done when both are fixed, the temporary password must be changed at the next sign-in (so only Evan ends up knowing it), and a sign-in test proves the account works. Run the test last, because every unlock or reset clears the previous test result.',
+  perfectSteps:['Open INC-1043 and select Assign to me.',
+    'Open Tools › Directory, search “evan” and select Evan Brooks. On Authentication read Lockout Locked and Password Expired.',
+    'Select Verify identity…, choose “Callback to number on record” and select Run check. Identity check now reads Callback to number on record.',
+    'Select Unlock account. The flash adds “The password is still expired.”',
+    'Select Reset password…. Keep “User must change password at next sign-in” ticked, leave “Deliver the temporary password” on “Read to user on a verified call” and select Reset password.',
+    'Select Test sign-in. Expect “Sign-in test passed for ebrooks. They’ll be asked to choose a new password.”',
+    'Select Check fix: all four requirements are green.',
+    'Select Close ticket, write a resolution note and select Close ticket in the dialog.'],
+  verify:['Authentication: Lockout Not locked; Password Current with the chip “Must change at next sign-in” and “reset 1× today · sent via Read to user on a verified call”; Last sign-in test Passed.',
+    'Check fix: 4 of 4 requirements met.'],
+  commonMistakes:['Fixing only one of the two flags. Unlock alone, or a reset alone, still leaves Evan unable to sign in.',
+    'Unticking “User must change password at next sign-in”: the desk would then know his working password.',
+    'Running Test sign-in before the last change. Any unlock or reset clears the result, so test last.',
+    'Sending the temporary password by chat or to a personal email address instead of reading it to him on a verified call.',
+    'Resetting before verifying: the reset dialog warns that the caller hasn’t been verified.'],
+  realWorldNote:'Expired-then-locked is a classic chain: the expiry prompt gets ignored, the user keeps typing the old password and the lockout policy trips. Remote staff hit it more often because a laptop that can’t reach a domain controller can’t change its password before it expires. Many desks offer self-service password reset with MFA so this call never reaches a technician.',
+  idealNotes:'Cause: ebrooks password expired overnight; repeated attempts with the old password locked the account. Action: verified Evan by callback to the number on record, unlocked the account and reset the password (must change at next sign-in), temporary password read to him on the verified call. Verified: Test sign-in passed and he is prompted to set a new password.'}},
 
 {ref:'INC-1044', pri:'medium', cat:'Access / Permissions', req:'mchen', asset:'NS-FIN-014', assetType:'Windows workstation', created:'10:05', after:'INC-1042',
  arrive:s=>{ const u=s.users.mchen; u.groups=u.groups.filter(g=>g!=='Finance-Share'); u.tokenStale=false; },
@@ -606,7 +659,30 @@ const TICKETS = [
  model:'Confirmed identity, restored the missing Finance-Share group membership, had the user refresh her session and verified the share opens.',
  keys:['mchen','maya','finance-share'],
  obj:[O(s=>s.users.mchen.groups.includes('Finance-Share'), 'Maya is a member of Finance-Share', 'Maya isn’t a member of Finance-Share'),
-      O(s=>s.users.mchen.groups.includes('Finance-Share') && !s.users.mchen.tokenStale, 'Group change applied to Maya’s session', 'Maya’s session hasn’t picked up the group change')]},
+      O(s=>s.users.mchen.groups.includes('Finance-Share') && !s.users.mchen.tokenStale, 'Group change applied to Maya’s session', 'Maya’s session hasn’t picked up the group change')],
+ guide:{
+  symptomsToNotice:['“My login works now”: authentication is healthy. Directory › Maya Chen › Authentication confirms Enabled and Not locked.',
+    'Access Denied on \\\\FILE01\\Finance while a teammate opens it: the share and FILE01 are up, so the problem is Maya’s permissions.',
+    'Directory › Maya Chen › Groups: only Domain Users. Finance-Share, the group the Finance share requires, is missing.',
+    'Signing out and in once didn’t help because she wasn’t in the group yet: group membership is read at sign-in.'],
+  diagnosis:'Authentication answers “who are you?”; authorization answers “what may you open?”. Maya’s sign-in works, so stop looking at passwords. The Finance share is granted through the Finance-Share group and Maya isn’t in it any more. Add the one missing group and nothing else. A Windows session reads group membership when the user signs in, so the change only takes effect after she signs out and back in.',
+  perfectSteps:['INC-1044 arrives after you close INC-1042. Open it and select Assign to me.',
+    'Open Tools › Directory, search “maya” and select Maya Chen. On Authentication confirm Enabled and Not locked. Don’t reset or unlock anything.',
+    'Open the Groups tab: only Domain Users is listed.',
+    'Optional evidence: Tools › Remote Desktop › NS-FIN-014 › Connect › File Explorer › Open on F: (\\\\FILE01\\Finance) reads “Access is denied.”',
+    'Back in Directory › Maya Chen › Groups, choose Finance-Share in “Add to group” and select Add. A warning reads “Group changes apply after Maya signs in again.”',
+    'Select “Ask user to sign out & back in” in that warning. The flash reads “Maya signed out and back in. Group changes now apply to the session.”',
+    'Verify: Remote Desktop › NS-FIN-014 › File Explorer › Open on F: now reads “Opened \\\\FILE01\\Finance.”',
+    'Select Check fix (2 of 2), write a resolution note and select Close ticket.'],
+  verify:['Directory › Maya Chen › Groups lists Domain Users and Finance-Share, and the “Group changes apply after Maya signs in again” warning has gone.',
+    'File Explorer on NS-FIN-014 opens \\\\FILE01\\Finance and lists Payroll_Oct.xlsx.',
+    'Check fix: 2 of 2 requirements met.'],
+  commonMistakes:['Resetting the password or unlocking again: sign-in already works.',
+    'Adding the group but not refreshing the session. Check fix keeps “Maya’s session hasn’t picked up the group change”.',
+    'Adding extra groups such as Executive-Share or HR-Share “to be safe”, which breaks least privilege.',
+    'Restarting the PC or File Explorer and expecting the change to apply without a fresh sign-in.'],
+  realWorldNote:'Access is almost always granted to groups rather than to people, so a “suddenly denied” ticket usually means a group membership changed, often during an access review or a clean-up script. Windows reads group membership into the user’s sign-in token, which is why every group change ends with “sign out and back in”. Check with the manager before adding a group that the person’s role doesn’t already include.',
+  idealNotes:'Cause: mchen authenticates fine but was missing Finance-Share, the group \\\\FILE01\\Finance requires. Action: added mchen to Finance-Share only (no other groups) and had her sign out and back in to refresh her token. Verified: \\\\FILE01\\Finance opens from NS-FIN-014 in File Explorer.'}},
 
 {ref:'INC-1045', pri:'critical', cat:'Network / Outage', reqName:'Multiple users', reqDept:'Floor 3 · Marketing & Design', reqLoc:'Floor 3', reqExt:'4900', reqEmail:'floor3-leads@northstar.example', asset:'Floor 3 network', assetType:'Shared network segment', created:'08:31',
  title:'Nobody on the third floor can reach the network',
@@ -617,7 +693,31 @@ const TICKETS = [
  model:'Compared the outage scope with the topology, identified the failed Floor 3 switch, restored it and confirmed the segment came back online.',
  keys:['floor 3','switch','10.0.3.1'],
  penalties:{'reboot:edge':[4,'Rebooted the edge router — every floor dropped briefly'],'off:edge':[4,'Powered off the edge router — every floor lost access'],'reboot:fw':[4,'Rebooted the main firewall — every floor dropped briefly'],'off:fw':[4,'Powered off the firewall — every floor lost access']},
- obj:[O(s=>s.net.devices.sw3.status==='online', 'Floor 3 Switch is back online', 'Floor 3 Switch is still down')]},
+ obj:[O(s=>s.net.devices.sw3.status==='online', 'Floor 3 Switch is back online', 'Floor 3 Switch is still down')],
+ guide:{
+  symptomsToNotice:['Everyone on Floor 3 is down while Floors 1 and 2 work: the scope is one floor, not the whole office.',
+    'It started for the whole floor at once, about five minutes ago: one shared device failed, not dozens of PCs.',
+    'Dashboard › Service health: Floor switches 2/3 online.',
+    'Server Room › Overview: Devices 9 / 10, Network load “Segment down”, and Device status lists Floor 3 Switch (Server Room B · 10.0.3.1) offline.',
+    'Server Room › Topology: the Floor 3 Switch box is red with a dashed link; Edge Router, Main Firewall and the other switches are green.',
+    'Remote Desktop lists the Floor 3 hot desks NS-MKT-011 and NS-MKT-012 as Offline: “Unreachable: Floor 3 Switch is down”.'],
+  diagnosis:'Work outward from the impact. Floors 1 and 2 work, and every floor shares the internet link, the edge router and the firewall, so those must be fine. The narrowest component that only Floor 3 depends on is the Floor 3 switch, and the topology shows it offline. Restore that one device. Rebooting the edge router or the firewall “just in case” would drop every floor and fix nothing.',
+  perfectSteps:['Open INC-1045 (Critical, top of the queue) and select Assign to me.',
+    'Open Tools › Server Room. On Overview read Devices 9 / 10 and find Floor 3 Switch · offline under Device status.',
+    'Open the Topology tab. Follow the path Internet › MetroFiber ISP › Edge Router › Main Firewall: all online. Only the Floor 3 Switch box is red.',
+    'Select the Floor 3 Switch box. Its panel shows 10.0.3.1, Server Room B, offline, and a Power on button.',
+    'Select Power on. The flash reads “Floor 3 Switch powered on and reports Online.”',
+    'Optional: Tools › Remote Desktop now lists NS-MKT-011 and NS-MKT-012 as Online.',
+    'Select Check fix, write a resolution note and select Close ticket.'],
+  verify:['Topology: every box is green, and the dashboard shows Floor switches 3/3 online.',
+    'Remote Desktop: the Floor 3 hosts show Online · On the office network.',
+    'Check fix: Floor 3 Switch is back online.'],
+  commonMistakes:['Rebooting or powering off the Edge Router or Main Firewall: every floor drops, and each one costs 4 points.',
+    'Treating it as a Wi-Fi or PC fault and restarting users’ machines one by one.',
+    'Powering off a working floor switch while “testing”: that floor loses its network too.',
+    'Closing without noting why the switch went down, so nobody follows up on its power.'],
+  realWorldNote:'Scope is the fastest diagnostic tool on a service desk. One user usually means their device; one floor means that floor’s switch, its uplink or its power; the whole office means the core or the provider. Floor switches often drop because a power supply or UPS failed, so after restoring one, raise a follow-up with Facilities or the network team to find the root cause.',
+  idealNotes:'Cause: Floor 3 Switch (10.0.3.1, Server Room B) was offline; Floors 1–2, the edge router and the firewall were healthy, so the outage was isolated to that switch. Action: powered on the Floor 3 switch in Server Room › Topology without touching the core devices. Verified: switch reports Online and Floor 3 hosts are reachable again. Follow-up: Facilities to check the switch power.'}},
 
 {ref:'INC-1046', pri:'medium', cat:'Network / Wi-Fi', req:'jprice', asset:'NS-OPS-021', assetType:'Windows laptop', created:'08:47',
  title:'Wi-Fi keeps dropping during calls',
@@ -630,30 +730,98 @@ const TICKETS = [
  penalties:{'reboot:edge':[4,'Rebooted the edge router for a single-user Wi-Fi problem'],'off:edge':[4,'Powered off the edge router for a single-user Wi-Fi problem']},
  obj:[O(s=>!s.workstations['NS-OPS-021'].wifi.profiles.some(p=>p.broken), 'Broken saved Wi-Fi profile removed', 'A broken saved Wi-Fi profile is still on NS-OPS-021'),
       O(s=>s.workstations['NS-OPS-021'].wifi.connected==='Northstar-Staff', 'Connected to Northstar-Staff', 'NS-OPS-021 isn’t connected to Northstar-Staff'),
-      O(s=>s.workstations['NS-OPS-021'].netOk, 'Internal connectivity tested', 'Connectivity hasn’t been tested from NS-OPS-021')]},
+      O(s=>s.workstations['NS-OPS-021'].netOk, 'Internal connectivity tested', 'Connectivity hasn’t been tested from NS-OPS-021')],
+ guide:{
+  symptomsToNotice:['One laptop drops while the people sitting next to Jordan are fine, so the access points and the network are healthy.',
+    'Jordan’s 08:44 voicemail says the same: it’s just his laptop.',
+    'Remote Desktop › NS-OPS-021: the session bar reads “Wi-Fi disconnected”.',
+    'Network & Wi-Fi › Saved networks: Northstar-Staff shows “Can’t connect: saved security settings don’t match the network”.',
+    'Forgetting from the taskbar and rejoining didn’t help: the broken saved profile is still on the laptop.'],
+  diagnosis:'When one device fails and its neighbours work, look at that device. The laptop holds a saved Northstar-Staff profile whose security settings no longer match the network, so every connection attempt fails authentication. Remove the bad profile, join Northstar-Staff again so a fresh profile is created, and prove the route to the gateway with a ping. The guest network isn’t a fix: it gives internet only and no access to company drives.',
+  perfectSteps:['Open INC-1046 and select Assign to me. Optional: Voicemails › Jordan Price › Mark as listened, then Save to INC-1046.',
+    'Open Tools › Remote Desktop, search “NS-OPS-021”, select Connect, then Connect in the dialog. The session bar reads Wi-Fi disconnected.',
+    'Open Network & Wi-Fi. Under Saved networks, Northstar-Staff shows “Can’t connect: saved security settings don’t match the network”.',
+    'Select Forget on the Northstar-Staff row. It moves to Available networks.',
+    'Under Available networks select Connect on Northstar-Staff (not Northstar-Guest). Expect “NS-OPS-021 connected to Northstar-Staff.”',
+    'Open Terminal, type ping 10.0.0.1 and press Enter. Expect three replies and “Received = 3”.',
+    'Optional: run ipconfig to see the 10.0.1.x address and Default Gateway 10.0.0.1.',
+    'Select Check fix (3 of 3), write a resolution note and select Close ticket.'],
+  verify:['Network & Wi-Fi: Status connected to Northstar-Staff · On the office network.',
+    'Terminal: ping 10.0.0.1 gets 3 replies (0% loss).',
+    'Check fix: broken profile removed, connected to Northstar-Staff, internal connectivity tested.'],
+  commonMistakes:['Rebooting or powering off the Edge Router for one person’s Wi-Fi: every floor drops, and it costs 4 points.',
+    'Selecting Connect on the broken profile again: authentication fails every time.',
+    'Connecting to Northstar-Guest: it has internet only, so Jordan loses his shared drives.',
+    'Skipping the ping: “connected” only proves the radio link, not a working route.'],
+  realWorldNote:'Corrupt or outdated saved Wi-Fi profiles are common after a network changes its security settings or certificate. Forgetting the network from the taskbar doesn’t always remove a profile that was pushed by policy, so desks remove it remotely (for example with netsh wlan delete profile). If several laptops of the same model start dropping at once, suspect a Wi-Fi driver update instead.',
+  idealNotes:'Cause: NS-OPS-021 (jprice) had a corrupt saved Northstar-Staff profile failing authentication; nearby users and the network were healthy. Action: removed the broken profile in Remote Desktop › Network & Wi-Fi and reconnected to Northstar-Staff. Verified: ping 10.0.0.1 from the laptop got 3 of 3 replies.'}},
 
 {ref:'INC-1047', pri:'high', cat:'Email / Delivery', req:'pshah', asset:'priya.shah@northstar.example', assetType:'Mailbox', created:'08:39',
  title:'Supplier email is missing from the inbox',
  desc:'A supplier sent today’s onboarding spreadsheet, but it never arrived. They say they got no bounce. I checked Junk and it isn’t there.',
  impact:'HR onboarding for Monday’s starters is delayed.',
  tried:'Checked Junk and asked the supplier to resend once.',
- hints:['No bounce and not in Junk: find out where the message stopped.','Run a Message Trace in Mail Admin for Priya’s address. “Quarantined” means the filter is holding it.','Release the matching legitimate message in Mail Security, then re-run the trace to confirm delivery.'],
- model:'Traced the message, confirmed the filtering service quarantined it, released the verified legitimate item and confirmed delivery in Message Trace.',
+ hints:['No bounce and not in Junk: find out where the message stopped.','Run Mail Admin › Message trace for Priya’s address. “Quarantined” means the filter is holding it.','Release the matching legitimate message in Mail Security, then re-run the trace to confirm delivery.'],
+ model:'Traced the message, confirmed the filtering service quarantined it, released the verified legitimate item and confirmed delivery in Message trace.',
  keys:['pshah','priya','quarantine','brightpath'],
  penalties:{'release:q2':[6,'Released a phishing message into a user’s inbox']},
  obj:[O(s=>msg(s,'m1').status==='Delivered', 'Supplier message released', 'The supplier message is still quarantined'),
-      O(s=>msg(s,'m1').verified, 'Delivery confirmed in Message Trace', 'Delivery hasn’t been confirmed in Message Trace')]},
+      O(s=>msg(s,'m1').verified, 'Delivery confirmed in Message trace', 'Delivery hasn’t been confirmed in Message trace')],
+ guide:{
+  symptomsToNotice:['No bounce for the supplier and nothing in Junk: the message was accepted, then held somewhere before the inbox.',
+    'Mail Admin › Message trace for “priya.shah”: “Onboarding pack – October starters (spreadsheet)” from BrightPath Staffing at 09:02, status Quarantined, “Held by the content filter: strict attachment policy”.',
+    'The same trace shows a second Quarantined message to Priya, “Action required: verify your payroll account” from secure-docs@paylink-verify.example, held as phishing.',
+    'Mail Security › Quarantine: the BrightPath item’s reason is Strict attachment policy (score 5.1); the payroll message is Phishing: credential-harvest link (score 9.6).'],
+  diagnosis:'A missing message with no bounce is a tracing job, not a mailbox job. Message trace shows exactly where it stopped: the content filter quarantined it under a strict attachment policy. The sender is a known staffing supplier, the subject is what Priya expects and the score is low, so it’s a false positive and safe to release. The other message held for Priya is real phishing and must stay blocked. Release only the one you checked, then trace again to prove it was delivered.',
+  perfectSteps:['Open INC-1047 and select Assign to me.',
+    'Open Tools › Mail Admin. On Message trace, type “priya.shah” in “Sender, recipient or display name” and select Search.',
+    'Find the BrightPath Staffing row (09:02, “Onboarding pack – October starters (spreadsheet)”): Quarantined, held by the strict attachment policy.',
+    'Open Tools › Mail Security › Quarantine. Check sender, recipient, subject and reason on each row.',
+    'On the BrightPath row (Strict attachment policy, score 5.1) select Release. Expect “Released … Delivered to priya.shah@northstar.example.”',
+    'Leave the paylink-verify.example row held, or select Report to Security on it. Never select Release on a phishing item.',
+    'Back in Mail Admin › Message trace, select Search again. The BrightPath row now reads Delivered, “Released from quarantine and delivered to inbox”.',
+    'Select Check fix (2 of 2), write a resolution note and select Close ticket.'],
+  verify:['Message trace for priya.shah: the BrightPath message shows Delivered.',
+    'Mail Security › Quarantine: BrightPath shows Released · Delivered; the payroll phishing message is still held, or Blocked · Reported.',
+    'Check fix: supplier message released and delivery confirmed in Message trace.'],
+  commonMistakes:['Releasing the “verify your payroll account” message: it’s credential phishing, the release dialog warns you, and it costs 6 points.',
+    'Releasing without running the trace again: Check fix wants delivery confirmed in Message trace.',
+    'Asking the supplier to resend again: the new copy would be held by the same policy.',
+    'Releasing every quarantined item for the user “to be safe”.'],
+  realWorldNote:'Quarantine false positives are normal: strict attachment policies catch spreadsheets with macros or unusual file types from senders the filter hasn’t seen before. Real desks check the sender domain, the headers and whether the user expects the message before releasing, and ask Security to tune the policy or allow-list a supplier if it keeps happening. Phishing is never released, even when the user insists.',
+  idealNotes:'Cause: BrightPath Staffing onboarding spreadsheet (09:02) to pshah was quarantined by the strict attachment policy (score 5.1), a false positive. Action: checked sender and subject, released only that message in Mail Security; the payroll phishing message stays blocked. Verified: Message trace shows the BrightPath message Delivered.'}},
 
 {ref:'INC-1048', pri:'medium', cat:'Email / Mailbox', req:'awilson', asset:'avery.wilson@northstar.example', assetType:'Mailbox', created:'09:02',
  title:'Mailbox is full and new mail bounces',
  desc:'People get a bounce when they email me, with a “mailbox full” message. I can still sign in to webmail and read old messages.',
  impact:'The Executive Office can’t receive new messages.',
  tried:'Signed out of webmail and tried again.',
- hints:['Sign-in still works, so this is mailbox delivery, not identity.','Open Avery’s mailbox in Mail Admin › Mailbox Admin and look at storage.','Enable the online archive (or raise the quota to the approved 10 GB), then send a test message.'],
+ hints:['Sign-in still works, so this is mailbox delivery, not identity.','Open Avery’s mailbox in Mail Admin › Mailboxes and look at storage.','Enable the online archive (or raise the quota to the approved 10 GB), then send a test message.'],
  model:'Checked mailbox properties, found quota enforcement blocking delivery, enabled the approved archive remedy and confirmed delivery with a test message.',
  keys:['awilson','avery','quota','archive'],
  obj:[O(s=>canReceive(s.mail.mailboxes.awilson), 'Mailbox has room to receive mail', 'Avery’s mailbox is still full'),
-      O(s=>s.mail.mailboxes.awilson.testOk, 'Test message delivered', 'No test message has been delivered yet')]},
+      O(s=>s.mail.mailboxes.awilson.testOk, 'Test message delivered', 'No test message has been delivered yet')],
+ guide:{
+  symptomsToNotice:['Senders get a “mailbox full” bounce but Avery can sign in and read old mail: identity is fine, delivery isn’t.',
+    'Mail Admin › Message trace for “avery.wilson”: “Board pack draft v3” and “Itinerary update – Thursday” Failed with 550 5.2.2 Recipient mailbox full.',
+    'Mail Admin › Mailboxes › avery.wilson@northstar.example: Storage 4.95 GB of 5 GB (99%), Delivery “Blocked: quota exceeded”, Online archive Not enabled, Retention policy Executive (7 years).',
+    'Server Room › Servers › MAIL01 › Event log: warning 4010, “Delivery to avery.wilson@northstar.example failed: mailbox full.”'],
+  diagnosis:'The mailbox has reached its 5 GB quota, so the mail server rejects new messages. There are two approved remedies: enable the online archive (older items move out and the mailbox drops to about 2.2 GB), or raise the quota to the 10 GB approved for executives. The archive is the better first choice because it keeps the 7-year retention policy and leaves room to grow. Deleting an executive’s mail is never the fix. Finish with a test message, because a storage number alone doesn’t prove delivery.',
+  perfectSteps:['Open INC-1048 and select Assign to me.',
+    'Open Tools › Mail Admin › Message trace, type “avery.wilson” and select Search. Note the two Failed messages with 550 5.2.2 Recipient mailbox full.',
+    'Open the Mailboxes tab. It opens on avery.wilson@northstar.example (otherwise choose it in the Mailbox list). Read Storage 4.95 GB of 5 GB and Delivery Blocked: quota exceeded.',
+    'Select Enable online archive. Expect “Online archive enabled. Older items moved, mailbox now at 2.23 GB of 5 GB.”',
+    'Alternative: choose “10 GB (approved for executives)” in the Quota list and select Apply quota.',
+    'Leave “Send test to” on avery.wilson@northstar.example and select Send test message. Expect “Test message to avery.wilson@northstar.example delivered to Avery Wilson’s mailbox.”',
+    'Select Check fix (2 of 2), write a resolution note and select Close ticket.'],
+  verify:['Mailboxes › avery.wilson@northstar.example: Delivery Receiving, Online archive Enabled, “Last test delivered”.',
+    'Check fix: the mailbox has room to receive mail and a test message was delivered.'],
+  commonMistakes:['Resetting Avery’s password or checking MFA: sign-in works, so it’s a storage problem.',
+    'Choosing the 50 GB quota: that size is for shared mailboxes, not an approved executive remedy.',
+    'Fixing storage but never sending a test message, so delivery isn’t proven.',
+    'Asking the Chief of Staff to delete mail that sits under a 7-year retention policy.'],
+  realWorldNote:'Mailbox-full bounces (550 5.2.2) are common for executives who keep everything. An online archive moves older mail to a separate archive mailbox that is still searchable from the mail client, which suits retention policies far better than deleting. The server doesn’t retry a hard 5.x.x failure, so tell the user that anyone whose message bounced has to send it again.',
+  idealNotes:'Cause: awilson mailbox at 4.95 of 5 GB, so new mail bounced with 550 5.2.2 (board pack, itinerary). Action: enabled the online archive (approved remedy, 7-year retention kept); mailbox now at 2.23 GB. Verified: test message delivered. Asked Avery to have the board office resend the board pack.'}},
 
 {ref:'INC-1049', pri:'critical', cat:'Security / Mailbox', req:'lmartinez', asset:'leo.martinez@northstar.example', assetType:'Mailbox', created:'08:58', security:true,
  title:'Unknown forwarding address in my mailbox',
@@ -666,7 +834,31 @@ const TICKETS = [
  penalties:{'deleteRule:r1':[4,'Deleted the suspicious rule and destroyed evidence']},
  obj:[O(s=>rule(s,'r1').inspected, 'Forwarding rule inspected', 'The suspicious rule hasn’t been inspected'),
       O(s=>!rule(s,'r1').deleted, 'Rule preserved as evidence', 'The rule was deleted, so evidence is lost'),
-      O(s=>s.tickets['INC-1049'].status==='escalated', 'Routed to Security', 'Not yet routed to Security')]},
+      O(s=>s.tickets['INC-1049'].status==='escalated', 'Routed to Security', 'Not yet routed to Security')],
+ guide:{
+  symptomsToNotice:['Replies to Leo’s password-reset emails are disappearing, and he found a forwarding address he didn’t create.',
+    'Mail Admin › Inbox rules (mailbox leo.martinez@northstar.example): a rule named “.” on All incoming messages, tagged “Forwards outside org”.',
+    'View details: Action “Forward a copy to external-archive@outside.example, mark as read”; Created “Oct 9, 02:14 from an unrecognized web session”.',
+    'Message trace for “leo.martinez”: the 09:10 “Rota for next week” was “Delivered to inbox (copy forwarded by rule to external-archive@outside.example)”.',
+    'Directory › Leo Martinez › Mailbox warns “1 inbox rule forwards mail outside the organization”.'],
+  diagnosis:'A rule with a near-invisible name (a single dot), created at 02:14 from an unknown web session, that silently forwards everything outside the company and marks it as read is a textbook sign of a compromised mailbox. Attackers use rules like this to keep reading mail, including password resets, even after the password changes. This isn’t housekeeping: the rule, its creation time and the session behind it are evidence Security needs to scope the breach. Inspect it, write it down, change nothing, and escalate. Security takes ownership and contains the account.',
+  perfectSteps:['Open INC-1049 (Critical) and select Assign to me.',
+    'Open Tools › Mail Admin › Inbox rules. The Mailbox list opens on leo.martinez@northstar.example.',
+    'On the rule named “.” (Forwards outside org) select View details. Note Applies to: All incoming messages; Action: forward a copy to external-archive@outside.example and mark as read; Created: Oct 9, 02:14 from an unrecognized web session.',
+    'Don’t select Delete. If you open the delete dialog by mistake, select Cancel.',
+    'Optional evidence: Message trace for “leo.martinez” shows the 09:10 message copied to external-archive@outside.example.',
+    'Optional: add a work note on the ticket with the rule details, so the evidence is on record.',
+    'Select Escalate to Security (Resolution card, or Options ···). Under “Evidence for Security” write the rule name, target address, creation time and source, and that nothing was deleted (at least 15 characters).',
+    'Select Escalate. The ticket moves to Past tickets as Routed to Security.'],
+  verify:['Before escalating, Check fix shows 2 of 3: rule inspected and rule preserved. The third, Routed to Security, completes when you escalate.',
+    'The escalation dialog’s preview includes “Correct security escalation +12”.',
+    'Past tickets: outcome Routed to Security. Inbox rules still lists the rule, now marked as disabled by Security with evidence preserved.'],
+  commonMistakes:['Deleting the rule: it destroys evidence and costs 4 points (the dialog warns you first).',
+    'Closing instead of escalating: “Not yet routed to Security” stays unmet and it scores as closed unresolved (−20).',
+    'Treating it as routine and only resetting Leo’s password: the forwarding rule keeps working after a reset.',
+    'Escalating with a vague note. Security needs the rule, the address and the timestamps.'],
+  realWorldNote:'Malicious forwarding rules are one of the most common steps attackers take after compromising a mailbox (business email compromise). They name rules “.” or similar to hide them and forward to free external mailboxes. A real Security team revokes sessions, resets the password and MFA, exports the rule and sign-in logs, looks for other affected mailboxes and checks what was sent out. The desk’s job is to spot it, preserve it and hand over quickly.',
+  idealNotes:'Evidence: lmartinez inbox rule “.” forwards all incoming mail to external-archive@outside.example and marks it read; created Oct 9 02:14 from an unrecognized web session. Message trace confirms copies were forwarded (09:10 rota). Rule inspected and preserved, nothing deleted. Escalated to Security to contain the suspected compromise.'}},
 
 {ref:'INC-1050', pri:'high', cat:'Server / Printing', reqName:'Multiple users', reqDept:'Office-wide · All departments', reqLoc:'All floors', reqExt:'4000', reqEmail:'office-managers@northstar.example', asset:'PRINT01', assetType:'Print server', created:'08:25',
  title:'Shared printers are stuck on “Printing”',
@@ -677,7 +869,30 @@ const TICKETS = [
  model:'Identified the shared print server rather than a single printer, restarted the stopped spooler service and confirmed a test page printed.',
  keys:['print01','spooler'],
  obj:[O(s=>svcUp(s,'PRINT01','Print Spooler'), 'Print Spooler running on PRINT01', 'Print Spooler on PRINT01 is still stopped'),
-      O(s=>s.net.servers.PRINT01.testPageOk, 'Test page printed', 'No test page has printed')]},
+      O(s=>s.net.servers.PRINT01.testPageOk, 'Test page printed', 'No test page has printed')],
+ guide:{
+  symptomsToNotice:['Every printer in the office is stuck on “Printing”, across all models: one shared component, not a printer fault.',
+    'Power-cycling a printer didn’t help, as Tomasz’s 08:22 voicemail also says.',
+    'Dashboard › Service health: Printing Degraded.',
+    'Server Room › Servers: PRINT01 (Print Server, 10.0.0.30) is Degraded. Its Services show Print Spooler stopped and Print Web Portal running.',
+    'PRINT01 › Event log & scheduled tasks: error 7031 at 08:19, “The Print Spooler service terminated unexpectedly. 0 recovery actions configured.”'],
+  diagnosis:'Every print job goes through the Print Spooler service on PRINT01, which crashed at 08:19 and had no automatic restart configured. With the spooler down, jobs pile up in the queues and every printer looks busy. Restarting printers doesn’t help because nothing is being sent to them. Start the one stopped service instead of rebooting the whole server, then send a test page to prove jobs are flowing again.',
+  perfectSteps:['Open INC-1050 and select Assign to me. Optional: Voicemails › Tomasz Nowak (08:22) › Mark as listened, then Save to INC-1050.',
+    'Open Tools › Server Room › Servers. PRINT01 shows Degraded.',
+    'Select Services on the PRINT01 row: Print Spooler is stopped.',
+    'Optional: select “Event log & scheduled tasks” and read event 7031 at 08:19, then go back to the Servers tab (PRINT01’s services stay open).',
+    'Select Start next to Print Spooler. Expect “Print Spooler restarted on PRINT01 and is Running.”',
+    'Select Send test page on the PRINT01 row. Expect “Test page printed on PRN-F1-01.”',
+    'Select Check fix (2 of 2), write a resolution note and select Close ticket.'],
+  verify:['Server Room › Servers: PRINT01 Healthy, Print Spooler running.',
+    'Send test page reports “Test page printed on PRN-F1-01.”',
+    'Dashboard › Service health: Printing Healthy.'],
+  commonMistakes:['Rebooting printers one by one in Topology: the flash says jobs are still waiting in the PRINT01 queue.',
+    'Sending the test page before starting the spooler: it sticks in the queue and doesn’t count.',
+    'Rebooting the whole PRINT01 server when one service needs starting. It works, but it also drops the Print Web Portal and takes longer.',
+    'Closing without a test page.'],
+  realWorldNote:'A crashed print spooler is a classic Windows print-server failure, often caused by a faulty printer driver or a corrupt job. Restarting the service fixes it for now. The follow-up is to set the service to restart automatically after a failure, and to find the job or driver that crashed it (event 7031 and the spooler logs) so it doesn’t happen again tomorrow.',
+  idealNotes:'Cause: Print Spooler on PRINT01 crashed at 08:19 (event 7031, no recovery actions), so every queue stalled office-wide. Action: started the Print Spooler service on PRINT01 (no server reboot, no printer reboots). Verified: test page printed on PRN-F1-01. Follow-up: set spooler recovery to restart automatically.'}},
 
 {ref:'INC-1051', pri:'high', cat:'Network / VPN', req:'ebrooks', asset:'NS-SALES-008', assetType:'Windows laptop', created:'11:20', after:'INC-1043',
  title:'VPN profile invalid when working from home',
@@ -689,7 +904,31 @@ const TICKETS = [
  keys:['ebrooks','evan','vpn','northstar-staff','ns-sales-008'],
  obj:[O(s=>s.workstations['NS-SALES-008'].vpn.profile==='Northstar-Staff', 'Current VPN profile selected', 'The VPN client still uses the retired profile'),
       O(s=>s.workstations['NS-SALES-008'].vpn.connected, 'VPN connected', 'The VPN isn’t connected'),
-      O(s=>s.workstations['NS-SALES-008'].netOk, 'Internal access verified', 'Internal access hasn’t been verified')]},
+      O(s=>s.workstations['NS-SALES-008'].netOk, 'Internal access verified', 'Internal access hasn’t been verified')],
+ guide:{
+  symptomsToNotice:['Evan is at home and normal websites work, so his home internet and Wi-Fi are fine.',
+    'The VPN says the connection profile is invalid, and the company drive can’t be reached: the tunnel isn’t coming up.',
+    'Remote Desktop › NS-SALES-008: the session bar reads “Off-site — VPN not connected”.',
+    'VPN Client: Connection profile Northstar-Legacy, Status Disconnected. Connect fails with “profile invalid. Gateway vpn-legacy.northstar.example has been retired.”',
+    'File Explorer › Open on S: (\\\\FILE01\\Sales): “The network path … wasn’t found. Connect the VPN first.”'],
+  diagnosis:'Internet works and only internal resources fail, so the problem is the tunnel into the company, not his router. The VPN client still uses the Northstar-Legacy profile, which points at a retired gateway, so it can never connect. Switch to the current Northstar-Staff profile, connect, and prove internal access by opening his Sales drive or pinging FILE01. INC-1051 only arrives once INC-1043 is closed, because Evan needs a working account first.',
+  perfectSteps:['INC-1051 arrives after you close INC-1043. Open it and select Assign to me.',
+    'Open Tools › Remote Desktop, search “NS-SALES-008”, select Connect, then Connect in the dialog. The session bar reads Off-site — VPN not connected.',
+    'Open VPN Client. Connection profile shows Northstar-Legacy.',
+    'Optional: select Connect to see the failure, “Connection failed: profile invalid. Gateway vpn-legacy.northstar.example has been retired.”',
+    'Choose Northstar-Staff in the Connection profile list. The flash reads “VPN profile set to Northstar-Staff.”',
+    'Select Connect. Expect “VPN connected with Northstar-Staff. Internal address 10.8.0.14.”',
+    'Open File Explorer and select Open on S: (\\\\FILE01\\Sales). Expect “Opened \\\\FILE01\\Sales.” Alternatively open Terminal and run ping file01.',
+    'Select Check fix (3 of 3), write a resolution note and select Close ticket.'],
+  verify:['VPN Client: Status Connected; the session bar reads Connected over VPN.',
+    'File Explorer opens \\\\FILE01\\Sales and lists Pipeline_Q4.xlsx, Pricing_2026.pdf and Client_Notes.',
+    'Check fix: current profile selected, VPN connected, internal access verified.'],
+  commonMistakes:['Troubleshooting Evan’s home router or Wi-Fi when ordinary websites work.',
+    'Connecting the Legacy profile again and again: its gateway has been retired.',
+    'Stopping at “Connected” without opening a drive or pinging an internal server.',
+    'Leaving INC-1043 unresolved: a locked or expired account can’t open the share even with the VPN up.'],
+  realWorldNote:'When a VPN gateway is retired, clients that still hold the old profile fail with “profile invalid”. Well-run desks push the new profile through device management before switching the old gateway off, and chase the laptops that haven’t checked in, because remote machines miss updates. Always verify with an internal resource: many VPN clients show “connected” before routes and DNS are actually working.',
+  idealNotes:'Cause: NS-SALES-008 (ebrooks, working from home) still used the Northstar-Legacy VPN profile, whose gateway was retired; home internet was fine. Action: switched the VPN client to Northstar-Staff and connected (10.8.0.14). Verified: \\\\FILE01\\Sales opens over the VPN from his laptop.'}},
 
 /* ===== Shift 2 · hardware, starters, remote staff ===== */
 {ref:'INC-1052', shift:2, pri:'critical', cat:'Hardware / Desktop failure', req:'tnowak', asset:'NS-OPS-030', assetType:'Desk 24 workstation', created:'08:41',
@@ -791,7 +1030,7 @@ const TICKETS = [
     'Adding extra share groups “just in case”.',
     'Sending the temporary password to the manager to pass on.'],
   realWorldNote:'Joiner builds are driven by role templates (“birthright” access) so every analyst gets the same thing and audits stay simple. Day-one credentials are a classic leak: good desks hand them over in person, or through a self-service activation link, after an ID check. They don’t go to the manager.',
-  idealNotes:'New starter nrahman (Finance Analyst, starts Oct 19). Role template: Northstar Finance 24.2 + Finance-Share. Deployed reserved NSA-S120 (HR-2290) with Northstar Finance 24.2 (Ledgerline + Payroll Desktop) to nrahman on Floor 2. Added Finance-Share only. Handover agreed with Maya Chen: ID check and temporary password in person Monday 09:00 (must change at first sign-in). No credentials sent over chat.'}},
+  idealNotes:'New starter nrahman (Finance Analyst, starts Oct 19). Role template: Northstar Finance 24.2 + Finance-Share. Deployed reserved NSA-S120 (HR-2290) with Northstar Finance 24.2 (Ledgerline + Payroll Desktop) to nrahman on Floor 2. Added Finance-Share only. Handover agreed with Maya Chen: ID check and temporary password in person Monday 09:00 (must change at first sign-in). No credentials sent over chat. Verified: Asset Management shows the NSA-S120 host In use for nrahman with Northstar Finance 24.2.'}},
 
 {ref:'INC-1054', shift:2, pri:'high', cat:'Hardware / Remote replacement', req:'ckeller', asset:'NS-SALES-019', assetType:'Northbook 14 laptop', created:'08:52',
  intake:{via:'voicemail', from:'ckeller', callerId:'Mobile +1 555-0122 (on record)', dur:'0:52',
@@ -1090,9 +1329,9 @@ const TICKETS = [
   perfectSteps:['Open INC-1059 and select Assign to me.',
     'Open Tools › Directory › Starters, select Kofi Mensah (HR-2291) and note dept Sales, title Account Executive, manager Rosa Delgado, floor 1, ext 3113, licences Office Suite + Sales Hub CRM.',
     'Open Tools › Documentation, search “username” and read “Username standard”.',
-    'In Directory › Users search “mensah”: kmensah is Kwame Mensah, Disabled. Directory › Leavers › HR-LVR-0031 says never reuse it. Change nothing.',
+    'In Directory › Users search “mensah”: kmensah is Kwame Mensah, Disabled. Directory › Leavers › Kwame Mensah (HR-LVR-0031) says never reuse it. Change nothing.',
     'Search “delgado”, select Rosa Delgado › Groups: Domain Users + Sales-Share is the team baseline.',
-    'Directory › Starters › HR-2291 › Create account from this record…. Change Username to komensah (the hint turns green). Keep Department Sales, Manager Rosa Delgado. Tick Sales Hub CRM as well as Office Suite and Endpoint Protection, keep “Add the department share group” ticked, and select Create user.',
+    'Directory › Starters › Kofi Mensah › Create account from this record…. Change Username to komensah (the hint turns green). Keep Department Sales, Manager Rosa Delgado. Tick Sales Hub CRM as well as Office Suite and Endpoint Protection, keep “Add the department share group” ticked, and select Create user.',
     'Check komensah › Groups (Domain Users, Sales-Share) and › Licences (Office Suite, Sales Hub CRM assigned; the flash said the mailbox was provisioned).',
     'Open Tools › Computer Deployment. Device: an Available, Wiped Northbook 14 (for example NSA-S131), image Sales Mobile · Northstar Sales 24.2, Assign to: Kofi Mensah (komensah), Location: Floor 1. Select Run deployment. Leave the faulty NSA-S305 alone.',
     'Directory › komensah › Authentication › Reset password…: keep “User must change password at next sign-in” ticked and set delivery to “Company Chat to their manager”. Select Reset password.',
@@ -1696,7 +1935,7 @@ const TICKETS = [
     'Open Tools › Server Room › Servers and select Services on FILE01: both services are running, so this isn’t a service outage.',
     'Open the Storage tab (server FILE01). D: Shares shows a red bar with 1 GB free and no unallocated space.',
     'Read the folder list: Scans is by far the biggest, and nearly all of it is older than 30 days. Shadow copies are listed separately.',
-    'Open Events & tasks with FILE01 selected. Read event 2013 at 08:06, and note that “Purge Scans older than 30 days” is Disabled since the Sep 14 maintenance window.',
+    'Open Events & tasks and choose FILE01 in the Server list. Read event 2013 at 08:06, and note that “Purge Scans older than 30 days” is Disabled since the Sep 14 maintenance window.',
     'Back on Storage, select Purge older than 30 days on the Scans row. Don’t use Delete entire folder or Delete all shadow copies.',
     'On Events & tasks, select Enable on “Purge Scans older than 30 days”.',
     'On Storage, select Test write on D:. Expect “Test file written to D: and removed”.',
@@ -1813,66 +2052,445 @@ const TICKETS = [
 ];
 const TK = Object.fromEntries(TICKETS.map(t=>[t.ref,t]));
 
+/* Runbooks: one per distinct procedure used across the tickets (purpose, prerequisites, steps, verification, escalation). rel lists the tickets that use it. */
 const KB = [
  {id:'kb1', cat:'Identity', title:'Unlocking a locked account', tools:['Directory'], rel:['INC-1042','INC-1043'],
-  steps:['Confirm the caller’s identity (username or employee ID) before changing anything.','Directory › search the user › Authentication.','Check every flag: locked, disabled, password expired and MFA are separate states.','Select Unlock. A password reset does not clear a lockout.','Ask the user to sign in again, or run a sign-in test.']},
- {id:'kb2', cat:'Identity', title:'Resetting an expired password', tools:['Directory'], rel:['INC-1043'],
-  steps:['Directory › user › Authentication.','Reset password issues a temporary password. Keep “User must change password at next sign-in” ticked.','Unlock the account too if it’s locked.','Run Test sign-in to confirm the account can authenticate.']},
- {id:'kb3', cat:'Identity', title:'Share access denied (group membership)', tools:['Directory','Remote Desktop'], rel:['INC-1044'],
-  steps:['If sign-in works but a share says Access Denied, check authorization, not the password.','Directory › user › Groups: compare with the group the share requires (e.g. Finance-Share).','Add the missing group.','Group changes apply at next sign-in: use “Ask user to sign out & back in”.','Optionally verify with File Explorer in a Remote Desktop session.']},
- {id:'kb4', cat:'Network', title:'Triage a floor-wide outage', tools:['Server Room'], rel:['INC-1045'],
-  steps:['Scope first: one user, one floor, or everyone?','Server Room › Topology: follow the path from ISP to the affected area.','If other floors work, the edge router and firewall are probably fine. Don’t reboot them.','Restore the narrowest failed shared device (usually the floor switch) and confirm it reports Online.']},
+  purpose:'Restore sign-in for someone whose account locked after too many failed password attempts, without changing anything else on the account.',
+  prereq:['The ticket is assigned to you.','You can confirm the caller is the account owner (Verify identity…).'],
+  steps:['Open Tools › Directory, search by name, username or email, and select the person.',
+    'On Authentication read every row: Account, Lockout, Password, MFA, Last sign-in. Locked, disabled, expired and MFA are separate problems with separate fixes.',
+    'Select Verify identity… and use “Callback to number on record” or “Code to registered mobile”.',
+    'Select Unlock account. Don’t reset the password unless it has also expired: a reset doesn’t clear a lockout.',
+    'If Password also reads Expired, continue with “Resetting a password safely”.',
+    'Select Test sign-in last, after every other change, because each change clears the previous result.'],
+  verify:['Lockout reads Not locked and Last sign-in test reads Passed.','The user confirms in Company Chat that they can sign in.'],
+  escalate:['The account locks again within minutes: a device or script is still using an old password. Ask the identity team to trace the lockout source.','The sign-in log shows failures from devices or places the user doesn’t recognise: treat it as an attack and escalate to Security.']},
+
+ {id:'kb2', cat:'Identity', title:'Resetting a password safely', tools:['Directory'], rel:['INC-1043','INC-1059','INC-1063'],
+  purpose:'Issue a temporary password when a password has expired or been forgotten, so that only the user ends up knowing the new one.',
+  prereq:['The caller is verified: Identity check shows a trusted method (callback to a number on record, or a code to the registered mobile).','The account is enabled, or HR has confirmed the person is back and you have enabled it.'],
+  steps:['Directory › person › Authentication: confirm Password reads Expired, or that the user has forgotten it.',
+    'Select Reset password…. If the dialog warns “This caller hasn’t been verified yet”, select Cancel and verify first.',
+    'Keep “User must change password at next sign-in” ticked.',
+    'Under “Deliver the temporary password” keep “Read to user on a verified call” unless the ticket’s process says otherwise. A starter whose manager is meeting them can use “Company Chat to their manager” (INC-1059). Never use “Personal email on file”.',
+    'Select Reset password. If Lockout still reads Locked, select Unlock account too.',
+    'Select Test sign-in.'],
+  verify:['Password reads Current with the chip “Must change at next sign-in”, and the reset line names the delivery route.','Test sign-in passes with “They’ll be asked to choose a new password.”'],
+  escalate:['You can’t verify the caller through any number or code on record: don’t reset. Ask their manager to raise it, or escalate to Security if the caller pushes.','Several resets on the same account in one day, or someone requesting a reset on an executive’s behalf: escalate to Security.']},
+
+ {id:'kb3', cat:'Identity', title:'Share access denied: group membership', tools:['Directory','Remote Desktop'], rel:['INC-1044','INC-1053'],
+  purpose:'Give someone access to a shared drive through the group the share trusts, granting no more than their role needs.',
+  prereq:['Sign-in works (Authentication shows Enabled and Not locked).','You know which group the share needs, and the access matches the person’s role or role template.'],
+  steps:['Directory › person › Groups: compare their groups with the group the share needs (for example Finance-Share for \\\\FILE01\\Finance).',
+    'Choose the missing group in “Add to group” and select Add. Add only that group.',
+    'A warning reads “Group changes apply after … signs in again”. Select “Ask user to sign out & back in”.',
+    'Verify from the user’s PC: Remote Desktop › Connect › File Explorer › Open on the share’s drive letter.'],
+  verify:['The warning has gone and File Explorer reads “Opened \\\\FILE01\\…”.'],
+  escalate:['The person needs a group their role doesn’t include: get the data owner’s or manager’s approval in writing first.','The share fails for everyone in the group: it’s a server problem (see “File server volume full”, or check FILE01’s services).']},
+
+ {id:'kb4', cat:'Network', title:'Triaging a floor-wide outage', tools:['Server Room','Remote Desktop'], rel:['INC-1045'],
+  purpose:'Find and restore the one shared network device behind an outage that affects a single floor.',
+  prereq:['You know the scope: which floors or groups of people are affected and which still work.'],
+  steps:['Scope first: one user, one floor, or the whole office?',
+    'Open Tools › Server Room › Overview and read Devices and Device status.',
+    'Open Topology and follow the path from Internet › MetroFiber ISP › Edge Router › Main Firewall down to the affected floor.',
+    'If the other floors work, the ISP, edge router and firewall are fine. Don’t reboot or power them off.',
+    'Select the narrowest failed device (usually that floor’s switch) and select Power on, or Reboot if it’s online but misbehaving.',
+    'Confirm hosts on that floor are reachable again in Remote Desktop.'],
+  verify:['Topology shows every box green and the dashboard reads Floor switches 3/3 online.','Hosts on the floor show Online in Remote Desktop.'],
+  escalate:['The device won’t come back, or drops again: send it to the network team or Facilities (power, UPS, hardware).','More than one floor or the core is down: treat it as a major incident and tell the service desk manager.']},
+
  {id:'kb5', cat:'Network', title:'Fixing a broken Wi-Fi profile', tools:['Remote Desktop'], rel:['INC-1046'],
-  steps:['If only one device drops, inspect that device.','Remote Desktop › connect › Network & Wi-Fi.','Forget a saved profile marked as failing authentication.','Connect to Northstar-Staff again (guest Wi-Fi has no internal access).','Terminal: ping 10.0.0.1 to confirm the gateway answers.']},
+  purpose:'Get one laptop back on the staff Wi-Fi when its saved network profile is corrupt.',
+  prereq:['Other people in the same area are connected, so the access points are healthy.','The laptop appears in Remote Desktop.'],
+  steps:['Open Tools › Remote Desktop, search the hostname, select Connect and confirm.',
+    'Open Network & Wi-Fi and read Saved networks. A profile reading “Can’t connect: saved security settings don’t match the network” is broken.',
+    'Select Forget on that profile.',
+    'Under Available networks select Connect on Northstar-Staff. Northstar-Guest gives internet only, with no access to company drives.',
+    'Open Terminal and run ping 10.0.0.1.'],
+  verify:['Status reads connected to Northstar-Staff · On the office network.','ping 10.0.0.1 returns 3 replies.'],
+  escalate:['Several laptops drop at once, or the profile breaks again after a fresh connect: suspect the access points or a driver and pass it to the network team.']},
+
  {id:'kb6', cat:'Email', title:'Finding and releasing quarantined mail', tools:['Mail Admin','Mail Security'], rel:['INC-1047'],
-  steps:['Mail Admin › Message Trace: filter by recipient and search.','Status Quarantined means the filtering service is holding the message.','Mail Security › Quarantine: confirm sender, subject and reason. Only release legitimate business mail.','Phishing or malware stays blocked. Report it to Security instead.','Re-run the trace and confirm the status is Delivered.']},
+  purpose:'Find an expected message that never arrived, and release it only if it is legitimate.',
+  prereq:['You know the recipient and roughly when the message was sent.'],
+  steps:['Open Tools › Mail Admin › Message trace, type the recipient (for example priya.shah) and select Search.',
+    'Status Quarantined means the content filter is holding the message. Read the reason under the subject.',
+    'Open Tools › Mail Security › Quarantine. Check the sender, recipient, subject, reason and score on every row.',
+    'Select Release only on legitimate business mail the user expects (a low-scoring policy hold from a known supplier).',
+    'Phishing or malware stays held: select Keep blocked or Report to Security, never Release.',
+    'Run the Message trace search again.'],
+  verify:['The trace shows the message as Delivered (“Released from quarantine and delivered to inbox”).'],
+  escalate:['The user insists on a message scored as phishing: don’t release it; send it to Security.','The same supplier is held repeatedly: ask Security to review the policy or allow-list the sender.']},
+
  {id:'kb7', cat:'Email', title:'Mailbox over quota', tools:['Mail Admin'], rel:['INC-1048'],
-  steps:['If webmail sign-in works but senders get “mailbox full”, it’s storage, not identity.','Mail Admin › Mailbox Admin › select the mailbox.','Approved remedies: enable the online archive, or raise the quota to 10 GB for executive mailboxes.','Send a test message to confirm delivery.']},
- {id:'kb8', cat:'Security', title:'Suspicious inbox forwarding rules', tools:['Mail Admin'], rel:['INC-1049'],
-  steps:['A rule that forwards all mail outside the organization is a compromise indicator.','Inspect the rule (Mail Admin › Inbox Rules › View details) and note its name, condition, target and creation time.','Do not delete it: Security needs it as evidence and will contain the account.','Escalate the ticket to Security with the evidence in your notes.']},
+  purpose:'Restore mail delivery to a mailbox that has reached its storage quota, using an approved remedy.',
+  prereq:['Sign-in to webmail works (so it isn’t an identity problem).','You know the mailbox’s retention policy.'],
+  steps:['Mail Admin › Message trace for the address: bounces read 550 5.2.2 Recipient mailbox full.',
+    'Open Mail Admin › Mailboxes and choose the mailbox. Read Storage, Delivery and Online archive.',
+    'Preferred: select Enable online archive. Older items move out and the mailbox drops to under half its size.',
+    'Alternative for executives: choose “10 GB (approved for executives)” in Quota and select Apply quota. 50 GB is for shared mailboxes only.',
+    'Under “Send test to” keep the primary address and select Send test message.',
+    'Tell the user that senders whose mail bounced need to send it again.'],
+  verify:['Delivery reads Receiving and “Last test delivered” appears.'],
+  escalate:['The archive is already enabled and the mailbox is still full at 10 GB: raise it with the messaging team rather than deleting mail under retention.']},
+
+ {id:'kb8', cat:'Security', title:'Suspicious inbox forwarding rules', tools:['Mail Admin','Directory'], rel:['INC-1049'],
+  purpose:'Recognise a forwarding rule that points to a mailbox compromise and preserve it for Security.',
+  prereq:['The ticket mentions disappearing mail, unknown forwarding, or Directory › Mailbox warns that a rule forwards outside the organization.'],
+  steps:['Open Tools › Mail Admin › Inbox rules and choose the mailbox.',
+    'A rule tagged “Forwards outside org” is a compromise indicator, especially with a hidden name such as “.”.',
+    'Select View details and note the name, condition, action, target address and Created time and source.',
+    'Optional: Message trace for the user shows copies forwarded by the rule.',
+    'Don’t select Delete: the rule is evidence, and deleting it doesn’t remove the attacker’s access.',
+    'Follow “Escalating to Security with evidence”.'],
+  verify:['The rule still exists, inspected, and the ticket is escalated with the details in the evidence box.'],
+  escalate:['Always: any rule forwarding outside the company that the user didn’t create goes to Security.']},
+
  {id:'kb9', cat:'Server', title:'Print jobs stuck for everyone', tools:['Server Room'], rel:['INC-1050'],
-  steps:['If every printer is stuck, suspect the print server, not a printer.','Server Room › Servers › PRINT01 › Services.','Restart the Print Spooler service.','Send a test page to confirm jobs flow.']},
+  purpose:'Restore office-wide printing when every queue is stuck.',
+  prereq:['The fault affects every printer or model, not a single device.'],
+  steps:['Open Tools › Server Room › Servers. A Degraded print server points to a stopped service.',
+    'Select Services on PRINT01 and read each service.',
+    'Optional: select “Event log & scheduled tasks” and read the error (7031 means the service crashed).',
+    'Select Start next to Print Spooler. Avoid a full server Reboot when one service is down.',
+    'Select Send test page on the PRINT01 row.'],
+  verify:['PRINT01 reads Healthy and the test page prints.','Dashboard › Service health shows Printing Healthy.'],
+  escalate:['The spooler stops again soon after starting: a bad driver or job is crashing it. Send it to the server team with the event IDs.']},
+
  {id:'kb10', cat:'Network', title:'VPN profile invalid', tools:['Remote Desktop'], rel:['INC-1051'],
-  steps:['If home internet works but company resources don’t, look at the VPN client.','The Northstar-Legacy profile points to a retired gateway. Select Northstar-Staff.','Connect, then verify by opening a mapped drive or pinging FILE01.']},
- {id:'kb11', cat:'Identity', title:'Username standard', tools:['Directory'], rel:['INC-1059','INC-1060'],
-  steps:['Usernames are the first initial plus the surname, all lowercase, no spaces or accents: Maya Chen → mchen.','If that username is taken, add the middle initial (mjchen). If there is no middle initial, add the next letter of the first name (machen).','Never reuse a leaver’s username while their account is still in the recycle bin.','The email address is first.last@northstar.example and is generated from the display name when the account is created.','Don’t rename a username for a name change. Add the new email address as an alias, make it primary and keep the old address so mail still arrives.']},
+  purpose:'Reconnect a remote worker whose VPN client still uses a retired profile.',
+  prereq:['The user’s ordinary internet works.','Their account can sign in (an expired or locked account fails even with the VPN up).'],
+  steps:['Remote Desktop › Connect to the laptop. The session bar reads “Off-site — VPN not connected”.',
+    'Open VPN Client. Northstar-Legacy points to a retired gateway.',
+    'Choose Northstar-Staff in Connection profile, then select Connect.',
+    'Open File Explorer and Open a mapped drive, or run ping file01 in Terminal.'],
+  verify:['VPN Client reads Connected and the drive opens (“Opened \\\\FILE01\\…”).'],
+  escalate:['Northstar-Staff also fails for several remote users: the VPN gateway is down; tell the network team.']},
+
+ {id:'kb11', cat:'Identity', title:'Username standard', tools:['Directory','Documentation'], rel:['INC-1059','INC-1060'],
+  purpose:'Give every person one predictable, permanent username and keep sign-ins stable through name changes.',
+  prereq:['You have the person’s legal first and last name from HR.'],
+  steps:['Usernames are the first initial plus the surname, lowercase, with no spaces or accents: Maya Chen becomes mchen.',
+    'If that username is taken, add the middle initial (mjchen). If there is no middle initial, add the next letter of the first name (machen).',
+    'Never reuse a leaver’s username, even if the account is disabled or in the recycle bin.',
+    'The email address is first.last@northstar.example and is generated from the display name when the account is created.',
+    'Don’t rename a username for a name change. Change the display name, add the new email address as an alias, make it primary and keep the old one.'],
+  verify:['Create user shows the username hint in green (“… is available”).'],
+  escalate:['Two people would end up with the same username and display name: ask HR how they want them told apart before creating the account.']},
+
  {id:'kb12', cat:'Hardware', title:'Deploying a computer from the PC Shelf', tools:['PC Shelf','Computer Deployment','Asset Management'], rel:['INC-1052','INC-1053','INC-1054','INC-1059'],
-  steps:['PC Shelf: pick an Available device. Respect reservations: a Reserved device belongs to someone else’s request.','Unwiped returns must be wiped before they go to a new person.','Computer Deployment: choose the device, the image that matches the person’s role, the assignee and the location, then Run deployment.','Every stage (image, domain join, apps, encryption, hand-over) must pass. Domain join needs a domain controller.','Asset Management shows the new record. Return the old device to the shelf, or send a return label if the person is remote.']},
- {id:'kb13', cat:'Hardware', title:'Shipping hardware to remote staff', tools:['Ship Manager','Directory'], rel:['INC-1054'],
-  steps:['Check the address in Directory before shipping. The Ship Manager address book can be out of date.','New shipment › choose the asset, the recipient and the address source.','Send a return label for the old or faulty device at the same time.','Advance tracking as the carrier updates it, then mark it delivered and update Asset Management.']},
+  purpose:'Build and hand over a clean, correctly imaged device to the right person.',
+  prereq:['You know who it’s for, their role (which decides the image) and where they sit or work.','A domain controller is running (domain join needs one).'],
+  steps:['Open Tools › PC Shelf › Devices. Pick an Available device that reads Wiped. A Reserved device belongs to someone else’s request unless it’s reserved for this person.',
+    'Never deploy a device that reads Not wiped: wipe it first (Wipe) or pick another.',
+    'Open Tools › Computer Deployment. Set Device, Build profile / image (matching the role: Finance, Sales Mobile, Standard Office…), Assign to and Location.',
+    'If a “Check before deploying” warning appears, stop and read it. “Deploy anyway” is almost never right.',
+    'Select Run deployment and read the five stages: image, domain join, apps, encryption, hand-over.',
+    'Open Asset Management to see the new host record (owner, image, location, state In use).',
+    'Deal with the old device: Return to shelf, retire it, or send a return label if the person is remote.'],
+  verify:['Last job shows five green stages.','Asset Management shows the new host owned by the right person with the right image.'],
+  escalate:['A stage fails (for example domain join because a domain controller is down): fix that first or pass it to the server team.','No suitable clean spare is available: tell the manager and order one; don’t take a reserved device.']},
+
+ {id:'kb13', cat:'Hardware', title:'Replacing a remote worker’s laptop', tools:['Remote Desktop','Asset Management','Directory','Ship Manager','Company Chat'], rel:['INC-1054'],
+  purpose:'Get a working replacement to someone working from home, ship to the right address and recover the damaged device for repair.',
+  prereq:['You’ve confirmed it’s a hardware fault (Device Manager shows Error with a code that a driver reinstall won’t clear).','You know the warranty and accidental-damage cover from Asset Management › Details.'],
+  steps:['Remote Desktop › Device Manager: note the failing device and its code (for example Code 43 on the internal display).',
+    'Asset Management › Open › Details: warranty and Accidental damage cover decide repair rather than scrap.',
+    'Directory › person › Profile: read the home address and when HR last updated it.',
+    'Deploy a spare with the person’s role image and Location Remote (home) (see “Deploying a computer from the PC Shelf”).',
+    'Ship Manager: Type Outbound to a person, Item the new host, Recipient the person, Address from Directory (HR record). If the preview warns that the saved address book differs, trust Directory. Select Create shipment.',
+    'Ship Manager: Type Return label (person sends to IT), Item the damaged host, Address from Directory (HR record), then Create return label.',
+    'When the courier delivers, select Mark delivered on the outbound row.',
+    'Company Chat: ask the person to confirm they can sign in and work.'],
+  verify:['The outbound shipment reads Delivered to the Directory address.','The old device reads Return in transit; the user confirms in chat.'],
+  escalate:['The address in Directory looks wrong or outdated: confirm with HR before shipping.','The damage isn’t covered: ask the manager to approve the replacement cost.']},
+
  {id:'kb14', cat:'Identity', title:'Verifying a caller’s identity', tools:['Directory'], rel:['INC-1057','INC-1062','INC-1063','INC-1065'],
-  steps:['Never reset a password or MFA for an unverified caller.','Preferred: call back the number on record, or send a code to the registered mobile.','A number the caller gives you proves nothing: an attacker can give their own number.','Manager attestation is acceptable when the registered phone is lost, but only through a channel you trust (Company Chat).','Deliver temporary passwords on the verified call. Don’t send them by chat or to personal email.']},
- {id:'kb15', cat:'Server', title:'DNS, DHCP and name resolution', tools:['Server Room','Remote Desktop'], rel:['INC-1066','INC-1067'],
-  steps:['“Can’t find host” for names while IP addresses work means DNS. Check the DNS Server service on DC01.','After fixing DNS, run ipconfig /flushdns on affected PCs, then nslookup the name again.','A 169.254.x.x address means the PC got no DHCP lease. Check the scope in Server Room › DHCP.','Delete inactive leases first. Deleting all leases disrupts every working device on the floor.','Shorten a long lease time (1 day or less) so one-day guest devices can’t fill the scope again. Never widen a range over fixed addresses below .100.',
-    'Then run ipconfig /renew on the affected PC and ping the gateway.']},
- {id:'kb16', cat:'Email', title:'Reported phishing: analyse, purge, block', tools:['Mail Security','Mail Admin'], rel:['INC-1072'],
-  steps:['Never click a link in a reported message. Use Analyze.','Message Trace shows who else received the same campaign.','Report the sample to Security so they have the headers and indicators.','Search & purge every copy across all recipients with a soft delete, so Security can still recover a sample.','Block the sender (or @domain). Never block northstar.example.','Trace the sender again and check every copy shows Purged.','Escalate to Security instead if anyone clicked or entered credentials.']},
- {id:'kb17', cat:'Hardware', title:'Dead PC: swap or repair?', tools:['Asset Management','PC Shelf','Computer Deployment'], rel:['INC-1052'],
-  steps:['No lights and no fans means power supply or board, not Windows. Check Asset Management › Health for the last heartbeat and event.','Details shows the warranty and where the user’s data lives. If it’s redirected to a server, a swap loses nothing.','Out of warranty or business-critical: deploy a clean spare (Available and Wiped) instead of waiting for a repair.','Set the dead unit to “Retired, awaiting disposal” so the disk goes through certified destruction. Never jump straight to Disposed.']},
- {id:'kb18', cat:'Hardware', title:'Updates fail and the PC is slow (full disk)', tools:['Remote Desktop'], rel:['INC-1055'],
-  steps:['If “restart to update” keeps coming back, read the error in System Update instead of restarting again.','0x80070070 means there isn’t enough free space. Settings › Storage shows what uses the disk.','Clean up Temporary files and the Update cache, and empty the Recycle Bin. Documents are protected; ask before removing Downloads.','Retry install, restart, then check System Update says Up to date. Never pause updates to hide the prompt.']},
- {id:'kb19', cat:'Hardware', title:'Second screen shows “No signal”', tools:['Remote Desktop'], rel:['INC-1056'],
-  steps:['Ask what changed: a presentation or projector often leaves the laptop on one screen.','Device Manager: if the dock and monitor are Working, the hardware is fine.','Settings › Display: compare displays detected with displays active.','Set Multiple displays to “Extend these displays” and select Keep changes. Duplicate mirrors the screen, which isn’t what most people want at a desk.']},
- {id:'kb20', cat:'Hardware', title:'Laptop not charging while plugged in', tools:['Remote Desktop','PC Shelf','Asset Management'], rel:['INC-1058'],
-  steps:['Settings › Power & battery shows the adapter wattage, battery health and cycle count.','A Northbook needs a 65 W charger. Any USB-C plug fits, so a weaker charger lights up but can’t keep up.','Healthy battery (above 80%, few cycles)? Don’t replace the battery or the laptop.','Issue the right charger from PC Shelf › Accessories against the device, so the asset record stays accurate, then ask the user to swap and confirm.']},
- {id:'kb21', cat:'Security', title:'Urgent requests to send devices or passwords somewhere new', tools:['Directory','Asset Management','Company Chat'], rel:['INC-1057','INC-1065'],
-  steps:['Urgency + authority + a new address or phone number is the classic pretexting pattern.','Never use contact details the requester gives you. Check against what you already hold.','Look for evidence: does Directory show a recent sign-in? Is the “lost” device online in Asset Management?','Contact the real person through a trusted channel such as Company Chat.','If it’s fake, change nothing (no shipment, reset, lock or wipe) and escalate to Security with the caller details.']},
+  purpose:'Make sure the person asking for a change to an account really is the account owner.',
+  prereq:['You have the account open in Directory, with the person’s Mobile, extension and Employee ID visible on Profile.'],
+  steps:['Never reset a password or MFA, enable an account, or ship a device for an unverified caller.',
+    'Select Verify identity… on Profile or Authentication.',
+    'Preferred: “Callback to number on record” (the desk extension or mobile already in Directory) or “Code to registered mobile”.',
+    '“Callback to number the caller gave” proves nothing: an attacker can give their own number.',
+    'A code to a phone the caller says is lost won’t work. Use a callback to another number on record.',
+    '“Manager attestation” is acceptable only when the manager confirms through a channel you trust, such as Company Chat.',
+    'A message typed from someone else’s account (a colleague’s chat) proves nothing about the person it’s about.',
+    'Write the verification method in the ticket notes.'],
+  verify:['Identity check reads Verified with the method you used.'],
+  escalate:['The caller can’t be verified but pushes for urgency, uses an executive’s name, or offers a new phone number or address: change nothing and escalate to Security.']},
+
+ {id:'kb15', cat:'Server', title:'DNS outage: names fail, IP addresses work', tools:['Remote Desktop','Server Room'], rel:['INC-1066'],
+  purpose:'Restore name resolution when people can’t reach servers by name even though the network is up.',
+  prereq:['A user PC on the office network to test from (Remote Desktop).'],
+  steps:['From the PC’s Terminal run ping 10.0.0.20 (works) and ping file01 (“could not find host”). Names failing while IPs work means DNS.',
+    'Run nslookup file01: “DNS request timed out” from dc01.northstar.local points at DC01.',
+    'Optional: nslookup file01 10.0.0.11 answers from DC02; ipconfig /all shows DNS Servers lists only 10.0.0.10, which is why PCs don’t fail over.',
+    'Open Tools › Server Room › Servers › Services on DC01: DNS Server reads stopped. Read the event (7031) under “Event log & scheduled tasks”.',
+    'Select Start next to DNS Server. Don’t Reboot a domain controller for one stopped service, and never stop DNS on DC02.',
+    'On the PC run ipconfig /flushdns to clear the cached failure, then nslookup intranet.northstar.local.'],
+  verify:['nslookup returns an Address (10.0.0.40 for the intranet) from DC01.','Mapped drives open again in File Explorer.'],
+  escalate:['DNS Server stops again after starting: send it to the server team with the event ID.','Both DCs fail to answer: major incident; tell the service desk manager.']},
+
+ {id:'kb16', cat:'Security', title:'Reported phishing: analyse, purge, block', tools:['Mail Security','Mail Admin'], rel:['INC-1072'],
+  purpose:'Contain a phishing campaign that staff have reported, without destroying the evidence.',
+  prereq:['A message is listed under Mail Security › Reported messages.'],
+  steps:['Never select Open link on a reported message. Select Analyze and read the verdict (domain age, SPF, DKIM, reply-to, clicks).',
+    'Mail Admin › Message trace: search the sender domain to see every recipient of the campaign.',
+    'Mail Security › Reported messages: select Report to Security so they have the headers and indicators.',
+    'Select Search & purge…, Scope “Every copy, all recipients”, Mode “Soft delete (recoverable by admins)”, then Purge.',
+    'Select Block sender, or block the whole lookalike domain on Blocked senders (@domain.example). Never block northstar.example.',
+    'Trace the sender again.'],
+  verify:['Every copy shows Purged in Message trace, and the sender or domain is on Blocked senders.'],
+  escalate:['Anyone clicked the link or entered credentials (the verdict shows clicks): escalate to Security immediately and reset that user’s password with them.','A legitimate newsletter was reported: tell the user it’s safe instead of purging it.']},
+
+ {id:'kb17', cat:'Hardware', title:'Dead PC: swap or repair?', tools:['Asset Management','PC Shelf','Computer Deployment','Company Chat'], rel:['INC-1052'],
+  purpose:'Decide quickly between repairing and replacing a PC that won’t power on, and keep the asset register accurate.',
+  prereq:['The user has tried another socket, and the monitor works (so building power is fine).'],
+  steps:['Asset Management › Open › Health: Power, Heartbeat and the Last event show when it died and why.',
+    'Details: the warranty and User data (where the user’s files live). If folders are redirected to a server, a swap loses nothing.',
+    'Out of warranty or business-critical: deploy a clean spare (Available and Wiped) rather than wait for a repair.',
+    'Set the dead unit’s State to “Retired, awaiting disposal” so the disk goes through certified destruction. The owner clears automatically.',
+    'Never set it straight to Disposed, and never set an out-of-warranty unit to In repair while the desk is down.',
+    'Company Chat: ask the user to confirm they can work on the new PC.'],
+  verify:['New host In use for the user; old unit Retired, awaiting disposal with no owner.'],
+  escalate:['User data is stored locally on the dead PC: send the disk to the hardware team for recovery before retiring it.']},
+
+ {id:'kb18', cat:'Hardware', title:'Updates fail and the PC is slow (full disk)', tools:['Remote Desktop','Company Chat'], rel:['INC-1055'],
+  purpose:'Free enough disk space for updates to install, without touching the user’s own files.',
+  prereq:['Remote Desktop session to the PC; the user knows you are working on it.'],
+  steps:['Remote Desktop › System Update: read Status and Last error. 0x80070070 means not enough free space; the line shows how much updates need.',
+    'Settings › Storage shows what uses the disk. Documents is Protected.',
+    'Select Clean up on Temporary files and Update cache, and Empty Recycle Bin.',
+    'Ask the user in Company Chat before selecting “Remove downloads older than 30 days”: downloads are theirs.',
+    'System Update › Retry install, then Restart now once the user has saved their work.',
+    'Never select Pause updates for 7 days to hide the prompt.'],
+  verify:['System Update reads Up to date and Storage shows at least the space updates need.'],
+  escalate:['Space is still short after safe clean-up: the disk is too small for the role. Raise a hardware request rather than deleting user data.']},
+
+ {id:'kb19', cat:'Hardware', title:'Second screen shows “No signal”', tools:['Remote Desktop','Company Chat'], rel:['INC-1056'],
+  purpose:'Bring back an external monitor when the hardware is fine but Windows isn’t using it.',
+  prereq:['The user can tell you what changed (a presentation, a projector, a new dock).'],
+  steps:['Remote Desktop › Device Manager: if the dock and monitor read Working, the hardware is fine.',
+    'Settings › Display: compare “displays detected” with “active”.',
+    'In Multiple displays choose “Extend these displays” (Duplicate mirrors the screen, which isn’t what most people want at a desk).',
+    'Select Keep changes before the 15-second timer reverts it.',
+    'Ask the user in Company Chat to confirm both screens work.'],
+  verify:['Settings › Display reads 2 displays detected · 2 active.'],
+  escalate:['Device Manager shows the monitor or dock with an error that a rescan doesn’t clear: then it’s hardware, so issue a replacement.']},
+
+ {id:'kb20', cat:'Hardware', title:'Laptop not charging while plugged in', tools:['Remote Desktop','PC Shelf','Asset Management','Company Chat'], rel:['INC-1058'],
+  purpose:'Find out whether the battery, the laptop or the charger is at fault, and fix it with the cheapest correct part.',
+  prereq:['Remote Desktop session to the laptop.'],
+  steps:['Settings › Power & battery: read Status, Power adapter wattage, Battery health and Charge cycles.',
+    'Device Manager › Batteries shows the USB-C power source.',
+    'A Northbook needs a 65 W charger. Any USB-C plug fits, so a weaker charger lights up but can’t keep up.',
+    'Battery health above 80% with few cycles is healthy: don’t replace the battery or the laptop.',
+    'Asset Management › Accessories shows what was issued or reported missing.',
+    'PC Shelf › Accessories: choose the device on the USB-C charger 65 W row and select Issue, so the asset record stays accurate.',
+    'Ask the user in Company Chat to swap chargers, then check Power & battery again.'],
+  verify:['Power & battery reads Charging with a 65 W adapter, and the user confirms the percentage is rising.'],
+  escalate:['Status stays Not charging on a 65 W charger, or battery health is poor: send the laptop for hardware repair.']},
+
+ {id:'kb21', cat:'Security', title:'Urgent requests to send devices or passwords somewhere new', tools:['Voicemails','Directory','Asset Management','Company Chat'], rel:['INC-1057','INC-1065'],
+  purpose:'Spot pretexting (social engineering by phone or voicemail) and stop it without harming the real user.',
+  prereq:['A request arrives by phone or voicemail asking for a password, an MFA reset or a device to be sent to a new address or number.'],
+  steps:['Urgency + authority (an executive or their “assistant”) + a new address or phone number is the classic pattern.',
+    'Never use contact details the requester gives you. Compare the caller ID with Directory › Profile.',
+    'Look for evidence: Directory › Authentication shows a recent sign-in; Asset Management › Health shows whether the “lost” device is online.',
+    'Search Directory for the named assistant or caller; check Profile › Assistant.',
+    'Contact the real person through a trusted channel (Company Chat) using the ticket’s quick action.',
+    'If it’s fake, change nothing: no shipment, reset, lock, wipe or asset change. Don’t delete the voicemail.',
+    'On the voicemail select Save to the ticket and Forward to Security, then escalate the ticket.'],
+  verify:['The real person has denied the request in chat and the ticket is escalated with the caller details.'],
+  escalate:['Always escalate a confirmed fake to Security, with the caller ID, time, what was asked for and the facts that contradict it.']},
+
  {id:'kb22', cat:'Identity', title:'Offboarding a leaver', tools:['Directory','Mail Admin','Asset Management'], rel:['INC-1061'],
-  steps:['Follow the HR leaver record in Directory › Leavers, not habit.','Cut access first: Disable account, then Sessions › Revoke all sessions. Disabling alone leaves existing sessions working.','Remove department groups.','Convert the mailbox to shared and grant the manager Full Access before removing licences, or the mailbox is deleted in 30 days.','Set the auto-reply. Don’t forward unless HR asks for it, and don’t delete accounts under retention.','Return the laptop to the shelf for wiping, then verify: Test sign-in fails and Test access as the manager works.']},
- {id:'kb23', cat:'Identity', title:'Lost phone and MFA reset', tools:['Directory','Asset Management'], rel:['INC-1062'],
-  steps:['Verify first. A code to the registered phone won’t work if that phone is lost, and a number the caller gives proves nothing.','Use Verify identity… › Callback to number on record (desk extension or another number already on file).','Only then select Reset MFA…. The user re-enrols at next sign-in.','Contain the lost device: revoke its session and set it to Lost/Stolen in Asset Management › Mobiles.','Record the verification method in the ticket notes.']},
- {id:'kb24', cat:'Identity', title:'Returning from long leave', tools:['Directory','Remote Desktop','Company Chat'], rel:['INC-1063'],
-  steps:['A request typed from someone else’s account proves nothing. Verify the returner through their own record: callback to the number on record, or a code to their registered mobile.','Read the HR note in Directory: leave workflows often disable the account, let the password expire and release licences.','Enable the account, then Reset password… with “must change at next sign-in”, read to the user on the verified call.','If a licence pool is full, reclaim a seat from a disabled leaver (Licence pools shows each holder’s state and last sign-in). Never take one from an active colleague.','Test sign-in, then refresh the Office licence on the user’s PC.']},
+  purpose:'Remove a leaver’s access completely while keeping their mail and data as HR requires.',
+  prereq:['An HR leaver record (Directory › Leavers) with the last day and instructions.'],
+  steps:['Directory › Leavers: read the HR instructions, then select Open account.',
+    'Authentication: read the sign-in log for activity after the last day, then select Disable account.',
+    'Sessions › Revoke all sessions. Disabling alone leaves existing sessions working.',
+    'Groups: Remove the department groups (Domain Users stays).',
+    'Mail Admin › Mailboxes: Convert to shared, then Grant the manager Full Access with the expiry HR asked for. Don’t add Send As unless asked.',
+    'Automatic replies: On, with HR’s text, then Save. Leave Forwarding empty unless HR asks for it.',
+    'Back in Directory › Licences: Remove each licence (the mailbox is shared now, so it isn’t deleted).',
+    'Asset Management › Open › Health › Return to shelf for the laptop, so it’s wiped before reuse.',
+    'Never select Delete account for an account under retention.'],
+  verify:['Test sign-in fails with “the account is disabled”.','Mail Admin › Test access as… the manager reads “can open”.'],
+  escalate:['The sign-in log shows activity after the last day from an unknown place: escalate to Security before anything else.']},
+
+ {id:'kb23', cat:'Identity', title:'Lost phone and MFA reset', tools:['Voicemails','Directory','Asset Management','Company Chat'], rel:['INC-1062'],
+  purpose:'Let someone who lost their phone sign in again, and make sure the lost phone can’t be used.',
+  prereq:['The request is logged as a ticket (voicemails: Log as ticket and Save to the ticket).'],
+  steps:['Verify first. A code to the registered phone won’t work if that phone is lost, and a number the caller gives proves nothing.',
+    'Directory › Verify identity… › “Callback to number on record” (the desk extension or another number already on file) › Run check.',
+    'Only then select Reset MFA… and confirm. The user re-enrols at next sign-in.',
+    'Sessions: Revoke the session belonging to the lost phone.',
+    'Asset Management › Mobiles: set the phone’s state to Lost/Stolen; optionally Queue remote wipe for a company phone.',
+    'Ask the user in Company Chat to sign in and re-enrol.'],
+  verify:['Identity check reads Callback to number on record, MFA re-enrolled, the phone reads Lost/Stolen, and the user confirms.'],
+  escalate:['The caller can’t be reached on any number on record: don’t reset MFA; ask the manager to vouch through Company Chat or escalate to Security.']},
+
+ {id:'kb24', cat:'Identity', title:'Returning from long leave', tools:['Company Chat','Directory','Remote Desktop'], rel:['INC-1063'],
+  purpose:'Reactivate a returner’s own account safely, rather than creating a new identity.',
+  prereq:['A Directory HR note confirms the return date.'],
+  steps:['A request typed from someone else’s chat account proves nothing. Verify the returner through their own record: callback to the number on record, or a code to their registered mobile.',
+    'Read the HR note in Directory: leave workflows often disable the account, let the password expire and release licences.',
+    'Authentication: Enable account, then Reset password… with “must change at next sign-in”, read to the user on the verified call.',
+    'Licences: if Assign is greyed out, the pool is full. Follow “Licence pools: assigning and reclaiming seats”.',
+    'Test sign-in, then Remote Desktop › the user’s PC › Office Suite › Refresh licence.'],
+  verify:['Test sign-in passes and Office Suite reads Licensed (“Product activated”).'],
+  escalate:['You can’t verify the returner: leave the account disabled and ask HR or the manager to confirm through a trusted channel.']},
+
  {id:'kb25', cat:'Email', title:'Shared mailbox access requests', tools:['Mail Admin','Company Chat'], rel:['INC-1064'],
-  steps:['Mail Admin › Shared mailboxes shows each mailbox’s owner and access policy.','Approval comes from the mailbox owner, not the requester’s line manager. Ask in Company Chat so it is written down.','Grant exactly what was approved: Full Access and Send As are separate rights.','Set an expiry for temporary cover.','Test access as the person, then ask them to confirm.']},
- {id:'kb26', cat:'Network', title:'Internet down, internal services fine', tools:['Server Room','Remote Desktop','Company Chat'], rel:['INC-1068'],
-  steps:['If drives and the intranet work but websites don’t, the break is at or beyond the edge.','tracert to an outside host shows the last hop that answers. If our firewall and edge router answer, don’t reboot them.','Server Room › MetroFiber ISP: Check provider status, then Log fault with provider against the main circuit.','Post a Full status update in #office-announcements (impact, workaround, next update). Never tell everyone to restart.','Check the provider again, then verify with ping web.example from an office PC.']},
- {id:'kb27', cat:'Server', title:'File server volume full', tools:['Server Room'], rel:['INC-1069'],
-  steps:['Reads work but every save fails on every share: a full volume on the file server.','Server Room › Storage shows each folder’s size and how much is older than 30 days.','Purge old files from the folder that grew. Don’t delete whole folders, and never delete shadow copies to free space: they are your restore points.','Find out why it grew: Events & tasks often shows a clean-up task left disabled after maintenance. Enable it again.','Select Test write to confirm saving works.']},
- {id:'kb28', cat:'Server', title:'Restoring a deleted file from a share', tools:['Server Room','Company Chat'], rel:['INC-1070'],
-  steps:['Deletes on network drives skip the Recycle Bin. Server Room › Shadow copies › File audit shows who deleted what and when.','Open the share, select the file and compare its previous versions by modified time, not snapshot label.','Restore the one file to its original location. Never revert the entire share to recover one file.','If the snapshots are gone, request a restore from the nightly backup.','Ask the user to open it and confirm the content is right.']},
+  purpose:'Grant exactly the shared-mailbox access the owner approved, for as long as they approved it.',
+  prereq:['Mail Admin › Shared mailboxes shows the mailbox owner and access policy.'],
+  steps:['Approval comes from the mailbox owner, not from the requester or their line manager. Ask the owner in Company Chat so it’s written down.',
+    'Grant exactly what was approved: Full Access and Send As are separate rights.',
+    'Under Permissions choose the person, the right and the Expiry for temporary cover, then select Grant.',
+    'Under Test access as…, choose the person and select Test access.',
+    'Ask the person to confirm the mailbox appears, and quote the approval in your notes.'],
+  verify:['The permission row reads Owner approved with the right expiry, and Test access reads “can open”.'],
+  escalate:['The owner refuses or can’t be reached: don’t grant anything; tell the requester and their manager.']},
+
+ {id:'kb26', cat:'Network', title:'Internet down, internal services fine', tools:['Remote Desktop','Server Room','Company Chat'], rel:['INC-1068'],
+  purpose:'Handle a provider outage: prove where the break is, get the provider working on it and keep staff informed.',
+  prereq:['Drives and internal servers still work while websites don’t.'],
+  steps:['From an office PC’s Terminal: ping 10.0.0.1 and ping file01 work; ping web.example fails.',
+    'tracert web.example shows the last hop that answers. If fw01 and edge01 answer, don’t reboot them.',
+    'Server Room › Overview or Topology › MetroFiber ISP: Check provider status and note the incident.',
+    'Keep the main circuit selected and select Log fault with provider. Note the reference.',
+    'Company Chat › office-announcements: post Full status update (impact, workaround, next update). Never post “Ask everyone to restart”.',
+    'Check provider status again until the circuit is restored, then post Resolved.'],
+  verify:['ping web.example from an office PC gets replies.'],
+  escalate:['The outage passes the provider’s next-update time with no progress: escalate with the provider through your manager and consider the backup circuit.']},
+
+ {id:'kb27', cat:'Server', title:'File server volume full', tools:['Server Room','Remote Desktop'], rel:['INC-1069'],
+  purpose:'Free space on a full file-server volume safely and stop it filling again.',
+  prereq:['Reads work but every save fails on every share.'],
+  steps:['Server Room › Servers › Services on FILE01: if both services run, it isn’t an outage.',
+    'Storage (server FILE01): find the full volume and the folder that grew, using the “Older than 30 days” column.',
+    'Select Purge older than 30 days on that folder. Don’t use Delete entire folder.',
+    'Never select Delete all shadow copies to free space: they are everyone’s restore points.',
+    'Events & tasks (choose FILE01 in the Server list): find why it grew, often a clean-up task left Disabled after maintenance, and select Enable.',
+    'Back on Storage select Test write.'],
+  verify:['Test write reads “Test file written to D: and removed”, and a user can save to a share.'],
+  escalate:['Purging old files doesn’t free enough space: ask the server team to extend the volume or add storage.']},
+
+ {id:'kb28', cat:'Server', title:'Restoring a deleted file from a share', tools:['Server Room','Remote Desktop','Company Chat'], rel:['INC-1070'],
+  purpose:'Bring back one deleted or damaged file without disturbing anything else on the share.',
+  prereq:['You know the share and the file name.'],
+  steps:['Deletes on network drives skip the Recycle Bin. Server Room › Shadow copies › File audit shows who deleted what and when.',
+    'Set Share, select the file and compare its previous versions by modified time and size, not by snapshot label.',
+    'Select Restore to original location on the right version (or Restore as a copy if the user wants to compare).',
+    'Never select Revert entire share to recover one file: it overwrites everyone’s changes since the snapshot.',
+    'If no snapshot holds the file, select Request restore from nightly backup.',
+    'Ask the user in Company Chat to open it and confirm the content.'],
+  verify:['File Explorer lists the file again and the user confirms it holds the expected content.'],
+  escalate:['No snapshot or backup holds the version needed: tell the user honestly and involve the server team.']},
+
  {id:'kb29', cat:'Email', title:'Approving a new phone for company mail', tools:['Mail Admin','Company Chat'], rel:['INC-1071'],
-  steps:['New phones wait in quarantine until IT approves them (Mail Admin › Mobile devices).','Ask the user for the Device ID in Settings › About and match it before approving.','Approve only the Northstar Mail app. Block third-party mail apps that store passwords in someone else’s cloud.','Remove the old phone’s partnership. Use account-only wipe for personal or traded-in phones; full wipe is for lost company phones.','Test sync, then ask the user to confirm mail and calendar. Never switch quarantine off for everyone.']}
+  purpose:'Let a user’s new phone sync company mail, using the approved app, and retire the old one correctly.',
+  prereq:['The new phone is listed as Quarantined in Mail Admin › Mobile devices.'],
+  steps:['Ask the user in Company Chat for the Device ID from Settings › About and match it before approving.',
+    'Select Approve only on the Northstar Mail row. Select Block on third-party mail apps that store the password in someone else’s cloud.',
+    'Ask what happened to the old phone. Use Remove partnership or Account-only wipe for personal or traded-in phones; Remote wipe is for lost company phones only.',
+    'Select Test sync on the approved row.',
+    'Never select Disable quarantine for all to fix one phone.'],
+  verify:['Test sync reads “sync test passed” and the user confirms mail and calendar.'],
+  escalate:['The Device ID doesn’t match what the user reads out: don’t approve; treat it as unknown and tell Security.']},
+
+ {id:'kb30', cat:'Network', title:'DHCP scope full (169.254 address)', tools:['Remote Desktop','Server Room'], rel:['INC-1067'],
+  purpose:'Get a PC a valid address when the floor’s DHCP scope has run out, without disrupting working devices.',
+  prereq:['The affected PC is reachable in Remote Desktop.'],
+  steps:['Terminal › ipconfig: a 169.254.x.x (Autoconfiguration) address with no gateway means no DHCP lease. ping 10.0.0.1 fails with General failure.',
+    'Server Room › Servers › Services on DC01: DHCP Server should be running. Its event log shows the scope-full event.',
+    'DHCP tab: read the floor’s “in use” count and lease time, then View leases to find stale, inactive clients.',
+    'Select Delete inactive leases. Never Delete all leases: every working device on the floor drops.',
+    'Choose a shorter lease (8 hours or 1 day) and select Set lease duration, so one-day guests can’t fill the scope again.',
+    'Never widen the range over fixed addresses below .100 (printers live there).',
+    'On the PC run ipconfig /renew, then ping 10.0.0.1.'],
+  verify:['ipconfig shows a 10.0.x.1xx address with gateway 10.0.0.1, and ping 10.0.0.1 replies.'],
+  escalate:['The scope fills with active devices: the floor has outgrown it. Ask the network team to plan a bigger scope.']},
+
+ {id:'kb31', cat:'Identity', title:'New starter: account, access and day-one handover', tools:['Directory','Documentation','Computer Deployment','Company Chat'], rel:['INC-1053','INC-1059'],
+  purpose:'Have a new starter able to sign in, reach their team’s files and use the right laptop on day one, with no more access than the role needs.',
+  prereq:['An HR starter record (Directory › Starters) or role template on the account.'],
+  steps:['Directory › Starters: read the start date, department, manager, licences and equipment.',
+    'Read the Username standard; search Directory for the surname to catch clashes, including leavers.',
+    'Select Create account from this record…, fix the Username if the hint shows it’s taken, tick the licences HR listed, keep “Add the department share group”, and select Create user.',
+    'Compare Groups with the role template or the manager’s groups, and add nothing extra.',
+    'Deploy a laptop with the role’s image (see “Deploying a computer from the PC Shelf”).',
+    'Day-one password: the starter gets it in person after an ID check. Where the starter record says the manager is meeting them, use Reset password… with “Company Chat to their manager”. Never personal email, and never type a password into a chat yourself.',
+    'Select Test sign-in, then confirm with HR or the manager.'],
+  verify:['Groups and licences match the template, the laptop is In use for the starter, and Test sign-in passes.'],
+  escalate:['The starter record is missing details or conflicts with the role template: ask HR before creating anything.']},
+
+ {id:'kb32', cat:'Identity', title:'Name change: display name and email alias', tools:['Directory','Mail Admin','Company Chat'], rel:['INC-1060'],
+  purpose:'Update someone’s name everywhere people see it, without breaking their sign-in or losing mail sent to the old address.',
+  prereq:['HR has recorded the new name (Profile shows “Pending HR change”).'],
+  steps:['Directory › Profile › Edit profile…: change Display name. Leave Username as it is.',
+    'Email addresses: type the new first.last@northstar.example, select Add address, then Make primary on it.',
+    'Keep the old address as an alias: suppliers and colleagues still use it.',
+    'Mail Admin › Mailboxes › Send test to: the old address, then Send test message.',
+    'Ask the person in Company Chat to confirm.'],
+  verify:['The test to the old address reads “delivered to <new name>’s mailbox” and Profile shows the new display name.'],
+  escalate:['The person asks for a new username too: explain the impact (new profile, mapped drives, saved sign-ins) and get their manager’s agreement first.']},
+
+ {id:'kb33', cat:'Identity', title:'Licence pools: assigning and reclaiming seats', tools:['Directory','Remote Desktop'], rel:['INC-1059','INC-1061','INC-1063'],
+  purpose:'Keep licences with the people who need them, and free seats correctly when a pool runs out.',
+  prereq:['Directory › person › Licences shows what they have and how many seats are free.'],
+  steps:['Assign the licences the role needs: Office Suite (which also provisions the mailbox), Endpoint Protection, and department licences such as Sales Hub CRM.',
+    'If Assign is greyed out, select View licence pools and read each holder’s Account state and Last sign-in.',
+    'Reclaim a seat only from a Disabled leaver. Never take one from an active colleague.',
+    'For a leaver, convert their mailbox to shared before removing Office Suite, or the mailbox is scheduled for deletion.',
+    'After assigning Office Suite to someone who was unlicensed, refresh it on their PC: Remote Desktop › Office Suite › Refresh licence.'],
+  verify:['The pool never goes negative, the user reads Assigned and Office reads Licensed.'],
+  escalate:['No disabled leaver holds a seat: ask the licence owner (IT manager) to buy more rather than taking one from a colleague.']},
+
+ {id:'kb34', cat:'Service desk', title:'Escalating to Security with evidence', tools:['Mail Admin','Directory','Voicemails'], rel:['INC-1049','INC-1057','INC-1065'],
+  purpose:'Hand a suspected compromise or social-engineering attempt to Security fast, with the evidence intact.',
+  prereq:['You have a security concern: a compromise indicator, an unverifiable urgent request, or a confirmed fake.'],
+  steps:['Stop changing things on the affected account or device. Evidence (rules, voicemails, sign-in logs) must stay as it is.',
+    'Collect the facts: who, what, when, from where (caller ID, address, rule target, timestamps) and what contradicts the request.',
+    'Save voicemails to the ticket and Forward to Security; don’t delete them.',
+    'Add work notes as you go so the timeline is on the ticket.',
+    'Select Escalate to Security, write the evidence (at least 15 characters) and select Escalate.'],
+  verify:['Past tickets shows Routed to Security, and the preview included “Correct security escalation +12”.'],
+  escalate:['Escalation is the end of your part. Don’t escalate routine fixes: a needless escalation costs 8 points.']},
+
+ {id:'kb35', cat:'Service desk', title:'Logging chat messages and voicemails as tickets', tools:['Company Chat','Voicemails'], rel:['INC-1054','INC-1056','INC-1057','INC-1058','INC-1062','INC-1063','INC-1065','INC-1067','INC-1068','INC-1071'],
+  purpose:'Turn a request that arrives outside the queue into a ticket, so it’s tracked and scored.',
+  prereq:['The dashboard shows it under Incoming contacts, or the Voicemails badge has a new message.'],
+  steps:['Dashboard › Incoming contacts: select Open chat or Open voicemails to read the full message.',
+    'Read the caller ID or chat sender, and compare it with who the request is about. A chat sent from someone else’s account isn’t proof of identity.',
+    'Select Log as ticket (or Log as INC-… in the chat). The ticket joins the Incidents queue.',
+    'Voicemails: select Save to INC-… so the transcript is on the ticket. Never delete a suspicious voicemail.',
+    'Open the ticket and select Assign to me.'],
+  verify:['The ticket is in My Queue and the contact no longer appears under Incoming contacts.'],
+  escalate:['A voicemail asks for something risky for someone else (an executive’s password, a device to a new address): see “Urgent requests to send devices or passwords somewhere new”.']},
+
+ {id:'kb36', cat:'Service desk', title:'Verifying, documenting and closing a ticket', tools:['Company Chat'], rel:[],
+  purpose:'Close tickets only when the fix is proven, with notes the next technician can use.',
+  prereq:['You have made the fix.'],
+  steps:['Select Check fix. Every requirement must be green; if not, the list tells you what’s missing.',
+    'Where the ticket offers it, ask the requester in Company Chat to confirm (“Ask to confirm the fix”).',
+    'Select Close ticket. In Resolution notes write cause, action and verification: at least 40 characters, a specific name (user, host or service) and a verification word (verified, confirmed or tested) earn up to +3.',
+    'Check the points preview, then select Close ticket. “Close anyway” means it’s still unresolved and costs points.',
+    'Security cases use Escalate to Security instead.'],
+  verify:['Past tickets shows Resolved with your notes and the model answer for comparison.'],
+  escalate:['You can’t make Check fix go green without a risky change: ask a colleague, use the hint ladder (free), or read the solution guide in Documentation.']},
+
+ {id:'kb37', cat:'Email', title:'Following a message with Message trace', tools:['Mail Admin'], rel:['INC-1047','INC-1048','INC-1060','INC-1072'],
+  purpose:'Find out what happened to a message: delivered, quarantined, failed, pending or purged.',
+  prereq:['A sender, recipient, display name or domain to search for.'],
+  steps:['Open Tools › Mail Admin › Message trace.',
+    'Type part of an address, a display name or a domain in “Sender, recipient or display name”; optionally set Status and Received.',
+    'Select Search and read each row’s status and detail line (for example 550 5.2.2 Recipient mailbox full, or Held by the content filter).',
+    'After a fix, select Search again: the new status is the evidence.'],
+  verify:['The status matches what you expect after the fix (Delivered, or Purged for phishing).'],
+  escalate:['Messages fail for many recipients at once: check MAIL01 in Server Room and tell the messaging team.']}
 ];
 
 const DEPT_LIC = {Sales:['crm'], Marketing:['design']};
@@ -2787,7 +3405,7 @@ const TOOLS = {
   shelf:{name:'PC Shelf', grp:'Infrastructure', desc:'Spares, reservations, wipes and accessories'},
   mailadmin:{name:'Mail Admin', grp:'Email', desc:'Trace, mailboxes, permissions, lists and phones'},
   mailsec:{name:'Mail Security', grp:'Email', desc:'Quarantine, reported phishing and blocked senders'},
-  docs:{name:'Documentation', grp:'Knowledge', desc:'Search procedures and troubleshooting notes'},
+  docs:{name:'Documentation', grp:'Knowledge', desc:'Runbooks and a solution guide for every ticket'},
   assets:{name:'Asset Management', grp:'Management', desc:'Hardware register, health, lock and wipe'},
   ship:{name:'Ship Manager', grp:'Management', desc:'Ship devices and send return labels'}
 };
@@ -2797,7 +3415,7 @@ const stat = (ok, word, warn) => `<span class="st ${ok?'ok':warn?'warn':'bad'}">
 const kv = rows => `<dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 const tab = (group, id, label) => `<button class="tab ${curTab(group)===id?'on':''}" data-act="tab" data-id="${group}" data-arg="${id}" aria-pressed="${curTab(group)===id}">${label}</button>`;
 const curTab = (g, d) => S.ui.tab[g] || d || TABDEF[g];
-const TABDEF = {dir:'auth', srv:'overview', mail:'trace', split:'tool'};
+const TABDEF = {dir:'auth', srv:'overview', mail:'trace', split:'tool', docs:'kb'};
 
 function render(){
   const a = document.activeElement, roots=[app, $('chat')];
@@ -2919,7 +3537,7 @@ function vTicket(){
                 :`<span class="pill none"><span class="avatar">${icon('user',15)}</span><i>Unassigned</i></span><button class="assign" data-act="claim" data-id="${ref}">${icon('user',16)} Assign to me</button>`}</div>
       </div><div class="tcbd">${descHtml(T)}</div></article>
       ${S.settings.hints?`<div class="idk"><button class="linkbtn" data-act="hintToggle" data-id="${ref}" aria-expanded="${hOpen}">${icon('help',20)} I don’t know how to fix this</button></div>
-        ${hOpen?`<section class="card hintcard"><div class="bd"><div class="label blue">Hint ladder</div>${hintsHtml(ref)}</div></section>`:''}`:''}
+        ${hOpen?`<section class="card hintcard"><div class="bd"><div class="label blue">Hint ladder</div>${hintsHtml(ref)}<button class="linkbtn small" data-act="guideGo" data-id="${ref}">Read the full solution guide ${icon('chev',14)}</button></div></section>`:''}`:''}
     </div>
     <aside class="twork" aria-label="Work this ticket">
       ${resolved?`<div class="banner ok" role="status" style="margin-bottom:16px"><b>Solution complete.</b><span>Every requirement is met. Review your work, then close the ticket.</span></div>`:''}
@@ -2978,7 +3596,7 @@ function vPast(){
       <p><span class="chip ${r.outcome==='Closed unresolved'||r.outcome==='Escalated'?'bad':'ok'}">${esc(r.outcome)}</span> <span class="muted small">at ${r.at}</span></p>
       <div class="prev">${r.lines.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p>=0?'+':''}${p}</span></div>`).join('')}<div class="tot"><span>Total</span><span class="mono">${r.total>=0?'+':''}${r.total}</span></div></div>
       <div class="label" style="margin-top:16px">Your resolution notes</div><p>${r.notes?esc(r.notes):'<span class="muted">None recorded.</span>'}</p>
-      <div class="label" style="margin-top:16px">Model answer</div><div class="note">${esc(sel.model)}</div>
+      <div class="row" style="margin-top:16px"><span class="label">Model answer</span><span class="spacer"></span><button class="linkbtn small" data-act="guideGo" data-id="${sel.ref}">Solution guide ${icon('chev',14)}</button></div><div class="note">${esc(sel.model)}</div>
       <div class="label" style="margin-top:16px">Action log</div>${ticketLog(sel.ref)}`; }
   return `<div class="wrap"><div class="tbar"><button class="back" data-act="go" data-id="dash">${icon('back',18)} Back to queue</button></div><h1 style="margin:0 0 18px">Past tickets</h1>
     <div class="tlayout pastgrid">
@@ -3104,7 +3722,7 @@ function guideDialog(welcome){
     <p>You’re on the service desk at <b>Northstar Office Group</b>. Every account, device and mailbox here is simulated, so nothing you do touches a real system.</p>
     <ol class="steps"><li>Pick an incident from the queue and select <b>Assign to me</b>.</li><li>Read the evidence, then open <b>Tools</b> to investigate.</li>
       <li>Make the fix in the right console. <b>Check fix</b> shows what’s still missing.</li><li>Use <b>Company Chat</b> to ask the requester to test, and check <b>Voicemails</b> for calls that came in overnight.</li><li>Close the ticket with short notes. Security cases get escalated instead.</li></ol>
-    <p class="muted small">Hints are free. Closing unresolved tickets, risky changes and needless escalations cost points.</p>
+    <p class="muted small">Hints are free, and so are the runbooks and solution guides in Tools › Documentation. Closing unresolved tickets, risky changes and needless escalations cost points.</p>
     ${welcome?`<label class="label" for="nameIn">Your display name</label><input type="text" id="nameIn" data-bind="name" value="${esc(S.profile.name)}" maxlength="40" style="width:100%">`:''}</div>
     <div class="df"><button class="btn primary" data-act="${welcome?'startShift':'dlgCancel'}">${welcome?'Start shift':'Got it'}</button></div>`);
 }
@@ -3293,7 +3911,7 @@ function cDirectory(){
     pane = !m ? `<p class="muted">No mailbox. Assigning ${LICS.office} provisions one.</p>` : kv([['Mailbox', m.enabled?stat(1,'Enabled'):stat(0,'Disabled')],['Type', m.type==='shared'?'Shared mailbox':'User mailbox'],['Storage', `${m.usedGB} GB of ${m.quotaGB} GB ${usedBar(m.usedGB,m.quotaGB,!canReceive(m)).replace('margin-top:4px','margin-top:4px;max-width:240px')}`],
       ['Archive', m.archive?'Enabled':'Not enabled'],['Delivery', canReceive(m)?stat(1,'Receiving'):stat(0,'Blocked: over quota')]]) +
       (m.pendingDelete?'<div class="note bad">No licence: this mailbox will be deleted in 30 days. Reassign the licence or convert it to shared.</div>':'') +
-      (fw?`<div class="note warn">${fw} inbox rule forwards mail outside the organization. Review it in Mail Admin › Inbox Rules.</div>`:'<p class="muted small">Inbox rules and permissions are managed in Mail Admin.</p>'); }
+      (fw?`<div class="note warn">${fw} inbox rule forwards mail outside the organization. Review it in Mail Admin › Inbox rules.</div>`:'<p class="muted small">Inbox rules and permissions are managed in Mail Admin.</p>'); }
   return `<div class="dir">${list}${rail}<div><div class="label blue">${esc(u.dept)}</div><h3 style="font-size:18px;margin:4px 0 8px">${esc(u.name)} <span class="mono muted">${esc(loginOf(u))}</span></h3>${pane}</div></div>`;
 }
 function topology(){
@@ -3478,13 +4096,67 @@ function cRdp(){
     ${rows.map(w=>{ const n=netState(S,w); return `<tr><td class="mono"><b>${w.host}</b><div class="small muted">${w.tag}</div></td><td>${w.owner?esc(S.users[w.owner].name):'<span class="muted">Shared</span>'}</td><td>${esc(w.site)}</td>
       <td>${stat(n.up,n.up?'Online':'Offline')}<div class="small muted">${esc(n.why)}</div></td><td>${btn('rdpConnect',w.host,'','Connect',n.up?'primary':'',n.up?'':'disabled')}</td></tr>`; }).join('')||'<tr><td colspan="5" class="muted">No matching machines.</td></tr>'}</tbody></table></div></div>`;
 }
-function cDocs(){
-  const q=(S.ui.q.kb||'').toLowerCase();
-  const list=KB.filter(a=>!q || [a.title,a.cat,a.tools.join(' '),a.steps.join(' ')].some(x=>x.toLowerCase().includes(q)));
+/* ===== Documentation: runbooks (KB) and per-ticket solution guides ===== */
+const TOOL_NAMES = Object.values(TOOLS).map(t=>t.name).concat(['Company Chat','Voicemails']);
+const ticketTools = T => TOOL_NAMES.filter(n=>T.guide.perfectSteps.some(x=>x.includes(n))); // tools the perfect solution touches
+const runbooksFor = ref => KB.filter(a=>a.rel.includes(ref));
+const topCat = T => T.cat.split(' / ')[0];
+/* Scoring summary for a guide: what a correct finish earns and what each trap costs (pure: no S). */
+function scoreGuide(T){
+  const P=PRI[T.pri], escal=(T.expect||(T.security?'escalate':'close'))==='escalate', rows=[[`${P.w} ticket resolved`, '+'+P.pts]];
+  if (escal) rows.push(['Correct security escalation', '+12']);
+  rows.push(['Resolution notes: 40+ characters, a ticket keyword, and “verified”, “confirmed” or “tested”', 'up to +3']);
+  [...new Map(Object.values(T.penalties||{}).map(([p,why])=>[why,p]))].forEach(([why,p])=>rows.push([why, '−'+p]));
+  rows.push([`Closed while unresolved (${P.w})`, '−'+P.pen]);
+  if (!escal) rows.push(['Escalated to Security when it didn’t need it', '−8']);
+  return {rows, best:Math.min(42, P.pts+(escal?12:0)+3), finish:escal?'Escalate to Security':'Close ticket'};
+}
+const gsec = (h, body) => `<h4 class="label blue gsec">${h}</h4>${body}`;
+const glist = (a, tag='ul') => `<${tag} class="steps">${a.map(x=>`<li>${esc(x)}</li>`).join('')}</${tag}>`;
+function guidePage(T){
+  const t=S.tickets[T.ref], G=T.guide, done=isDone(S,T.ref), live=['open','assigned'].includes(t.status), shown=done || (S.ui.reveal||{})[T.ref], sc=scoreGuide(T);
+  const where = live ? `<button class="btn sm primary" data-act="open" data-id="${T.ref}">Open ticket</button>`
+    : t.status==='intake' ? `<span class="small muted">Waiting under Incoming contacts on the dashboard. Log it as a ticket first.</span>`
+    : t.status==='waiting' ? `<span class="small muted">Not arrived yet: ${(T.shift||1)>S.shift?`arrives in shift ${T.shift}`:`arrives once ${T.after} is finished`}.</span>`
+    : `<span class="chip ${t.result.total>=0?'ok':'bad'}">${esc(t.result.outcome)} · ${t.result.total>=0?'+':''}${t.result.total}</span>`;
+  const head = `<div class="label blue">Solution guide · Shift ${T.shift||1}</div><h3 class="gtitle"><span class="mono">${T.ref}</span> ${esc(T.title)}</h3>
+    <div class="row">${priTag(T.pri)}<span class="chip">${esc(T.cat)}</span><span class="chip ${done?'ok':live?'blue':''}">${statusWord(T.ref)}</span><span class="spacer"></span>${where}</div>`;
+  if (!shown) return head + `<div class="note warn gate"><b>Spoiler: ${T.ref} isn’t closed yet.</b><p class="small" style="margin:6px 0 10px">The full solution is hidden so you can try the ticket first. Reading it is free: it doesn’t change your score, your hint count or your rank.</p>
+    <button class="btn primary" data-act="reveal" data-id="${T.ref}">Reveal full solution</button></div>`;
+  return head + `${done?'':`<div class="row" style="margin-top:6px"><button class="linkbtn small" data-act="reveal" data-id="${T.ref}">Hide solution</button></div>`}
+    <div class="row small" style="margin-top:10px"><span class="label">Tools</span>${ticketTools(T).map(n=>`<span class="chip blue">${n}</span>`).join('')}</div>
+    <div class="row small" style="margin-top:6px"><span class="label">Runbooks</span>${runbooksFor(T.ref).map(a=>`<button class="linkbtn small" data-act="kbGo" data-id="${a.id}">${esc(a.title)}</button>`).join('')}</div>
+    <p class="small muted">Finish with <b>${sc.finish}</b>. Best possible score +${sc.best}.</p>
+    ${gsec('Symptoms to notice', glist(G.symptomsToNotice))}${gsec('Diagnosis', `<p>${esc(G.diagnosis)}</p>`)}${gsec('Perfect steps', glist(G.perfectSteps,'ol'))}
+    ${gsec('Verify', glist(G.verify))}${gsec('Common mistakes', glist(G.commonMistakes))}${gsec('In the real world', `<p>${esc(G.realWorldNote)}</p>`)}
+    ${gsec('Hint ladder', glist(T.hints,'ol')+`<div class="note"><b>Model answer.</b> ${esc(T.model)}</div>`)}
+    ${gsec('Scoring', `<div class="prev">${sc.rows.map(([l,p])=>`<div><span>${esc(l)}</span><span class="mono">${p}</span></div>`).join('')}<div class="tot"><span>Best possible</span><span class="mono">+${sc.best}</span></div></div>
+      <p class="small muted">Penalties are charged once each, when you close or escalate. Every ticket is capped at −20…+42.${done?` Your result: <b>${esc(t.result.outcome)}</b>, ${t.result.total>=0?'+':''}${t.result.total}.`:''}</p>`)}
+    ${gsec('Ideal resolution note', `<div class="note ok">${esc(G.idealNotes)}</div><p class="small muted">Earns +${notesBonus(T,G.idealNotes)} of 3 for notes. Keywords for this ticket: ${T.keys.map(esc).join(', ')}.</p>`)}`;
+}
+function docGuides(){
+  const q=(S.ui.q.guide||'').toLowerCase(), cat=S.ui.q.gcat||'', pri=S.ui.q.gpri||'';
+  const list=TICKETS.filter(T=>(!cat||topCat(T)===cat) && (!pri||T.pri===pri) && (!q || [T.ref,T.title,T.cat,T.desc,T.keys.join(' ')].some(x=>x.toLowerCase().includes(q))));
+  const T=list.find(x=>x.ref===S.ui.sel.guide) || list[0];
+  return `<div class="kb"><div>${search('guide','Ref, title or keyword','Search solution guides')}
+    <div class="row" style="margin-top:8px"><select data-bind="q" data-id="gcat" data-key="q-gcat" aria-label="Filter by category"><option value="">All categories</option>${[...new Set(TICKETS.map(topCat))].sort().map(c=>`<option ${c===cat?'selected':''}>${esc(c)}</option>`).join('')}</select>
+      <select data-bind="q" data-id="gpri" data-key="q-gpri" aria-label="Filter by priority"><option value="">All priorities</option>${Object.entries(PRI).map(([k,p])=>`<option value="${k}" ${k===pri?'selected':''}>${p.w}</option>`).join('')}</select></div>
+    <div class="small muted" style="margin-top:8px">${list.length} of ${TICKETS.length} guides</div>
+    <ul class="ulist">${list.map(x=>`<li><button class="${T&&T.ref===x.ref?'on':''}" data-act="sel" data-id="guide" data-arg="${x.ref}"><span class="mono">${x.ref}</span> ${esc(x.title)}<small>${PRI[x.pri].w} · ${esc(x.cat)} · Shift ${x.shift||1} · ${statusWord(x.ref)}</small></button></li>`).join('')||'<li class="muted small">No guides match.</li>'}</ul></div>
+    <div>${T?guidePage(T):'<p class="muted">No guide matches these filters.</p>'}</div></div>`;
+}
+function docKb(){
+  const q=(S.ui.q.kb||'').toLowerCase(), text=a=>[a.title,a.cat,a.purpose,a.tools.join(' '),a.rel.join(' '),...a.prereq,...a.steps,...a.verify,...a.escalate].join(' ').toLowerCase();
+  const list=KB.filter(a=>!q || text(a).includes(q));
   const a=KB.find(x=>x.id===S.ui.sel.kb) || list[0];
-  return `<div class="kb"><div>${search('kb','Search articles','Search documentation')}<ul class="ulist">${list.map(x=>`<li><button class="${a&&a.id===x.id?'on':''}" data-act="sel" data-id="kb" data-arg="${x.id}">${esc(x.title)}<small>${x.cat}</small></button></li>`).join('')||'<li class="muted small">No articles match.</li>'}</ul></div>
-    <div>${a?`<div class="label blue">${a.cat}</div><h3 style="font-size:19px;margin:4px 0 10px">${esc(a.title)}</h3><ol class="steps">${a.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
-      <div class="row" style="margin-top:12px"><span class="label">Tools</span>${a.tools.map(t=>`<span class="chip blue">${t}</span>`).join('')}<span class="label" style="margin-left:10px">Related</span>${a.rel.map(r=>`<span class="chip">${r}</span>`).join('')}</div>`:'<p class="muted">No article selected.</p>'}</div></div>`;
+  return `<div class="kb"><div>${search('kb','Search runbooks','Search documentation')}<ul class="ulist">${list.map(x=>`<li><button class="${a&&a.id===x.id?'on':''}" data-act="sel" data-id="kb" data-arg="${x.id}">${esc(x.title)}<small>${x.cat}</small></button></li>`).join('')||'<li class="muted small">No runbooks match.</li>'}</ul></div>
+    <div>${a?`<div class="label blue">${a.cat} · runbook</div><h3 class="gtitle">${esc(a.title)}</h3><p>${esc(a.purpose)}</p>
+      ${gsec('Before you start', glist(a.prereq))}${gsec('Steps', glist(a.steps,'ol'))}${gsec('Verify', glist(a.verify))}${gsec('Escalate when', glist(a.escalate))}
+      <div class="row" style="margin-top:14px"><span class="label">Tools</span>${a.tools.map(t=>`<span class="chip blue">${t}</span>`).join('')}</div>
+      <div class="row" style="margin-top:6px"><span class="label">Used in</span>${a.rel.length?a.rel.map(r=>`<button class="linkbtn small mono" data-act="guideGo" data-id="${r}">${r}</button>`).join(''):'<span class="small muted">Every ticket</span>'}</div>`:'<p class="muted">No runbook selected.</p>'}</div></div>`;
+}
+function cDocs(){
+  return `<div class="tabs">${tab('docs','kb',`Runbooks (${KB.length})`)}${tab('docs','guides',`Solution guides (${TICKETS.length})`)}</div>${curTab('docs')==='guides'?docGuides():docKb()}`;
 }
 
 /* ===== Mail admin ===== */
@@ -3730,6 +4402,9 @@ const ACT = {
   confirmOk(){ const f=pendingConfirm; pendingConfirm=null; closeDlg(); if (f) f(); },
   guide(){ hidePops(); guideDialog(false); },
   achDlg(){ hidePops(); achDialog(); },
+  reveal(d){ const r=S.ui.reveal||(S.ui.reveal={}); r[d.id]=!r[d.id]; render(); },
+  kbGo(d){ S.ui.tab.docs='kb'; S.ui.sel.kb=d.id; S.ui.q.kb=''; render(); },
+  guideGo(d){ Object.assign(S.ui, {view:'tool', tool:'docs', flash:null}); Object.assign(S.ui.tab, {docs:'guides', split:'tool'}); S.ui.sel.guide=d.id; Object.assign(S.ui.q, {guide:'', gcat:'', gpri:''}); hidePops(); render(); scrollTo(0,0); },
   hintToggle(d){ const t=S.tickets[d.id]; S.ui.hintOpen = S.ui.hintOpen===d.id ? null : d.id; if (S.ui.hintOpen && !t.hints) t.hints=1; render(); },
   heard(d){ act('Voicemails', d.id, 'heard', s=>ENV.heard(s,d.id)); },
   chat(){ const c=S.ui.chat; c.open=!c.open; hidePops(); render(); if (c.open){ const f=$('chatIn')||$('chat').querySelector('input'); if (f) f.focus(); } else $('chatBtn').focus(); },
@@ -4022,7 +4697,11 @@ function selfTest(){
   TICKETS.filter(T=>T.shift===2).forEach(T=>{ s.tickets[T.ref].status='closed'; }); ENV.nextShift(s);
   ok(s.shift===3 && ['INC-1059','INC-1060','INC-1061'].every(r=>s.tickets[r].status==='open') && s.tickets['INC-1062'].status==='intake','shift 3: tickets arrive');
   ok(Object.keys(LICS).every(l=>licFree(s,l)>=0) && licFree(s,'crm')===1 && validSave(JSON.parse(JSON.stringify(s))),'shifts 2–3: licence pools never negative, state JSON-safe');
-  ok(TICKETS.filter(T=>(T.shift||1)>1).every(T=>T.guide && ['symptomsToNotice','diagnosis','perfectSteps','verify','commonMistakes','realWorldNote','idealNotes'].every(k=>T.guide[k])),'every shift 2+ ticket carries a full guide');
+  ok(TICKETS.every(T=>T.guide && ['symptomsToNotice','diagnosis','perfectSteps','verify','commonMistakes','realWorldNote','idealNotes'].every(k=>T.guide[k] && T.guide[k].length)),'every ticket carries a full guide');
+  ok(TICKETS.every(T=>notesBonus(T,T.guide.idealNotes)===3),'docs: every ideal note earns the full notes bonus');
+  ok(TICKETS.every(T=>runbooksFor(T.ref).length && ticketTools(T).length),'docs: every ticket has a runbook and at least one tool in its guide');
+  ok(KB.every(a=>a.purpose && ['prereq','steps','verify','escalate'].every(k=>a[k].length) && a.rel.every(r=>TK[r])) && new Set(KB.map(a=>a.id)).size===KB.length,'docs: every runbook has purpose, prerequisites, steps, verification and escalation');
+  ok(scoreGuide(TK['INC-1049']).best===42 && scoreGuide(TK['INC-1042']).best===25 && scoreGuide(TK['INC-1045']).rows.some(r=>r[1]==='−4'),'docs: guide scoring summary');
   // 1052 dead desktop
   s=fresh('INC-1052'); ok(!done(s,'INC-1052') && !netState(s,s.workstations['NS-OPS-030']).up,'1052 not complete; dead PC unreachable');
   asg(s,'INC-1052'); ok(penaltyHits(s,'deploy','NSA-S201').length===1,'1052 deploying unwiped NSA-S201 is penalised');
