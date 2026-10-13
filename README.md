@@ -15,6 +15,7 @@ New here? Read [docs/HOW_TO_PLAY.md](docs/HOW_TO_PLAY.md) for the core loop, sco
 Progress (points, tickets, notes, chat, and every change you make to the simulated environment) is saved in your browser's local storage on that computer, under the key `deskops-lab-v3`. Saves from older versions are ignored, so you start a fresh shift. A `v3` save made before a ticket existed keeps its progress: the new ticket is added in its "not arrived" state when the save loads.
 
 - **Reset:** click your name (top right), select **Reset progress…** and confirm.
+- **Skip to the boss (dev shortcut):** on the dashboard, type `iamimpatient` anywhere outside a text box. On a phone, type it into any text box instead, such as the Company Chat search. After you confirm, every unfinished shift 1–3 ticket is closed as if solved perfectly, the boss stage starts and Avery Farmwell's ticket (INC-1073) opens.
 - **Storage blocked:** the game still runs and shows a banner saying progress lasts only until the tab closes.
 - **Corrupted save:** detected on load. The game starts a fresh shift and tells you.
 
