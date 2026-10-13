@@ -5052,7 +5052,10 @@ document.addEventListener('click', e=>{
   const el=e.target.closest('[data-act]'); if (!el || el.disabled) return;
   const f=ACT[el.dataset.act]; if (f) { e.preventDefault(); f(el.dataset); }
 });
-document.addEventListener('input', e=>{ const el=e.target, f=el.dataset && BIND[el.dataset.bind]; if (f) f(el); });
+document.addEventListener('input', e=>{ const el=e.target, f=el.dataset && BIND[el.dataset.bind];
+  // Dev skip on phones: their keyboards only open in a text field, so "iamimpatient" typed into any text field also works.
+  if (/^\s*iamimpatient\s*$/i.test(el.value||'')) { el.value=''; if (f) f(el); ACT.devSkip(); return; }
+  if (f) f(el); });
 document.addEventListener('keydown', e=>{
   const el=e.target;
   if (e.key==='Enter' && el.dataset && el.dataset.term) { e.preventDefault(); runTerm(el); return; }
