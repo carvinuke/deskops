@@ -746,12 +746,12 @@ function bossArrive(s){
   thread(s,'afarmwell').push({from:'afarmwell', text:'Hi, INC-1073 is mine. I’m on x4426 and in here, from a browser session that’s still alive. Ask me for anything: timestamps, error codes, what I’ve checked. One request: don’t make me change my password again unless you can tell me why it would help.', t:'09:36'});
   s.chat.unread.afarmwell=1; touchChat(s,'afarmwell'); if (!s.chat.pinned.includes('afarmwell')) s.chat.pinned.push('afarmwell');
   Object.assign(bossT(s), {stage:1, quietRun:false, at:s.clock||CLOCK0}); }
-/* Test helper (selfTest and the blind-test boss_setup.js only): clears shifts 1–3 the worst way (nothing fixed, every ticket scored at its guide's best)
+/* Fast-forward used by selfTest, the blind-test boss_setup.js and the “iamimpatient” dev skip: clears shifts 1–3 the worst way (nothing fixed, every ticket scored at its guide's best)
    and stops on the dashboard with the boss stage unlocked. It never touches INC-1073. */
 function ffBoss(s){
   const clear=()=>{ for (let live; (live=TICKETS.filter(T=>!T.boss && (T.shift||1)===s.shift && ['intake','open','assigned'].includes(s.tickets[T.ref].status))).length;){
     live.forEach(T=>{ const t=s.tickets[T.ref], sc=scoreGuide(T), esc=sc.finish!=='Close ticket';
-      t.status=esc?'escalated':'closed'; t.result={mode:esc?'escalate':'close', outcome:esc?'Routed to Security':'Resolved', lines:[['Fast-forward (test helper)', sc.best]], total:sc.best, notes:'', at:hhmm(s.clock||CLOCK0), model:T.model};
+      t.status=esc?'escalated':'closed'; t.result={mode:esc?'escalate':'close', outcome:esc?'Routed to Security':'Resolved', lines:[['Skipped with the fast-forward to the boss', sc.best]], total:sc.best, notes:'', at:hhmm(s.clock||CLOCK0), model:T.model};
       s.profile.points+=sc.best; });
     arrivals(s); } };
   clear(); while (s.shift<3){ ENV.nextShift(s); clear(); }
@@ -5009,6 +5009,11 @@ const ACT = {
   reserveDlg(d){ reserveDialog(d.id); },
   purgeDlg(d){ purgeDialog(d.id); },
   briefDlg(){ briefDialog(false); },
+  devSkip(){ const B=TICKETS.find(T=>T.boss);
+    if (S.shift>=B.shift) return ACT.open({id:B.ref}); // already at the boss stage
+    confirmDlg('Skip to the boss?', '<p>Dev shortcut: every unfinished shift 1–3 ticket is closed for you as if solved perfectly, and the boss stage starts. Your current run continues from there.</p>', 'Skip to the boss', true,
+      ()=>{ act('Service Desk','dev','devSkip', s=>{ ffBoss(s); ENV.nextShift(s); return 'Dev skip: shifts 1–3 cleared. The boss stage has started.'; });
+            ACT.open({id:B.ref}); briefDialog(false); }); },
   nextShiftDlg(){ briefDialog(true); },
   startNext(){ closeDlg(); act('Service Desk','shift','nextShift', s=>ENV.nextShift(s)); toast((SHIFTS[S.shift]||{}).boss ? 'The boss stage has started. INC-1073 is in the queue.' : `Shift ${S.shift} started. New tickets are in the queue.`); scrollTo(0,0); },
   qAct(d){ const q=S.mail.quarantine.find(x=>x.id===d.id), run=()=>act('Mail Security', d.id, d.arg, s=>ENV[d.arg](s,d.id));
@@ -5059,7 +5064,13 @@ document.addEventListener('keydown', e=>{
       if (f.length && (i<0 || (e.shiftKey ? i===0 : i===f.length-1))) { e.preventDefault(); f[e.shiftKey ? f.length-1 : 0].focus(); return; } } }
   if (e.key==='Escape' && !dlg.open && S.ui.rdp && S.ui.rdp.max) { S.ui.rdp.max=false; render(); const b=app.querySelector('[data-act=rdpMax]'); if (b) b.focus(); return; }
   if (e.key==='Escape' && !dlg.open && S.ui.chat.open && !document.querySelector(':popover-open')) { ACT.chat(); }
+  // Dev skip: typing "iamimpatient" on the dashboard (not inside a text field) jumps to the boss stage.
+  if (S.ui.view==='dash' && !dlg.open && e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey && !(el.closest && el.closest('input,textarea,select,[contenteditable]'))) {
+    typed=(typed+e.key.toLowerCase()).slice(-12);
+    if (typed==='iamimpatient') { typed=''; ACT.devSkip(); }
+  }
 });
+let typed='';
 /* Place popovers under the button that opened them. */
 document.addEventListener('toggle', e=>{
   const p=e.target; if (p.id==='toolsPop' && e.newState==='open') { const b=p.querySelector('[data-act=tool]'); if (b) b.focus(); return; }
