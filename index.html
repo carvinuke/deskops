@@ -154,6 +154,7 @@ tr.sel td{background:var(--blue-bg)}
 .prof .pmenu{border-top:1px solid var(--line);margin:10px -14px 0;padding:6px 4px 0}
 /* Tools modal: a popover centred over a blurred backdrop */
 #toolsPop{position:fixed;inset:0;margin:auto;width:min(512px,calc(100vw - 24px));height:fit-content;max-height:calc(100vh - 40px);overflow:auto;padding:22px 18px 14px;background:#121519;border-color:var(--line2)}
+.nopop [popover]:not(.pop-open){display:none} .nopop [popover].pop-open{position:fixed;z-index:60}
 #toolsPop::backdrop{background:rgba(4,6,8,.62);backdrop-filter:blur(5px)}
 #toolsPop .x{position:absolute;top:10px;right:10px;width:30px;height:30px;padding:0;justify-content:center;color:var(--text2)}
 #toolsPop .grp{padding:4px 0 10px;border-top:1px solid #1e3a4a;margin-top:6px}
@@ -2423,6 +2424,218 @@ const TICKETS = [
   idealNotes:'Cause: old laptop NS-FIN-033 (NSA-2033), marked Returned by DPL-3190 but never collected, woke on Floor 3. Its LedgerlineExport robocopy (saved FILE01 credential) locked afarmwell (DC01 4740), overwrote Supplier_Payments.xlsx at Oct 14 18:00, and its client-only rule moved 6 Ledgerline mails into a PST. Fix: disabled the task, unlocked; moved the PST items back; revoked only that session, deleted the rule; restored sb3 as a copy and Samir merged (Larkspur …7731); wiped the laptop last. Verified: clean quarter-hour, sign-in test passed, Avery confirmed.'}}
 ];
 const TK = Object.fromEntries(TICKETS.map(t=>[t.ref,t]));
+/* =====================================================================
+   ENDLESS MODE. After the boss, each endless shift is a normal shift holding 4 tickets generated from the templates
+   below, which reuse mechanics the scripted tickets already teach. Only {ref, tpl, shift, p} is saved;
+   registerEndless() rebuilds the ticket objects from it, so the same save always yields the same tickets.
+   ===================================================================== */
+const rng = n => () => { n = n + 0x6D2B79F5 | 0; let t = Math.imul(n ^ n >>> 15, 1 | n); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; // mulberry32
+const pickOne = (a, r) => a[Math.floor(r()*a.length)];
+const eUsers = (s, used, f) => Object.values(s.users).filter(u=>u.enabled && !u.locked && !u.deleted && !u.pwdExpired && u.id!=='afarmwell' && s.workstations[u.host] && s.mail.mailboxes[u.id] && !used.has(u.id) && (!f || f(u, s.workstations[u.host])));
+const ePerson = u => ({uid:u.id, name:u.name, first:first(u.name), dept:u.dept, host:u.host, floor:u.floor, email:u.email});
+const eGuide = (symptomsToNotice, diagnosis, perfectSteps, verify, commonMistakes, realWorldNote, idealNotes) => ({symptomsToNotice, diagnosis, perfectSteps, verify, commonMistakes, realWorldNote, idealNotes});
+const ePen = why => ({'reboot:edge':[4,`Rebooted the edge router for ${why}`],'off:edge':[4,`Powered off the edge router for ${why}`],'reboot:fw':[4,`Rebooted the main firewall for ${why}`],'off:fw':[4,`Powered off the main firewall for ${why}`]});
+const SUPPLIERS = [['Brightwave Logistics','dispatch@brightwave-logistics.example','Delivery schedule and signed POD sheets'],['Copperline Print','orders@copperline-print.example','Proof approval: Q4 brochure (PDF)'],
+  ['Harbor & Finch Legal','contracts@harborfinch.example','Countersigned services agreement'],['Meadowgate Catering','events@meadowgate.example','Event order confirmation and invoice'],
+  ['Northfield Tooling','quotes@northfield-tooling.example','Quotation NT-5521 with spec sheets'],['Quayside Freight','customs@quayside-freight.example','Customs paperwork for the Oct 19 shipment']];
+const ETPL = {
+  lockout:{ like:'INC-1042',
+    pick:(s,r,used)=>{ const c=eUsers(s,used); return c.length ? Object.assign(ePerson(pickOne(c,r)),{v:Math.floor(r()*3), pri:r()<.5?'high':'medium'}) : null; },
+    solve:(s,p)=>{ ENV.unlock(s,p.uid); ENV.testSignIn(s,p.uid); }, wrong:(s,p)=>{ ENV.resetPassword(s,p.uid,true,'tech'); ENV.testSignIn(s,p.uid); },
+    make:p=>{ const U=s=>s.users[p.uid]; return {pri:p.pri, cat:'Access / Account lockout', req:p.uid, asset:p.host, assetType:'Windows workstation',
+      title:['Locked out of my account','Account locked: can’t sign in','Can’t log in: it says my account is locked'][p.v],
+      desc:[`My account says it’s locked and I can’t get into ${p.host} or my email. I mistyped my password a few times this morning before I noticed Caps Lock was on.`,
+        `${p.host} keeps saying “The referenced account is currently locked out and may not be logged on to.” The people around me can sign in fine, so I don’t think it’s the network.`,
+        `I came back from a meeting to a locked-out message. I haven’t changed my password recently. Could you unlock me?`][p.v],
+      impact:`${p.first} can’t sign in to their laptop or email.`, tried:['Restarted the laptop.','Waited ten minutes and tried again.'],
+      hints:['“Locked” plus colleagues who can still sign in points at the account, not the network.',`Directory › search ${p.uid} › Authentication.`,`Unlock ${p.uid}, then run Test sign-in.`],
+      model:`Checked ${p.uid} in Directory, cleared the lockout and confirmed the account works with a sign-in test.`, keys:[p.uid, p.first.toLowerCase(), 'unlock', 'locked'],
+      arrive:s=>{ const u=U(s); u.locked=true; u.signInOk=false; },
+      obj:[O(s=>!U(s).locked && U(s).enabled, `${p.first}’s account is unlocked`, `${p.first}’s account is still locked`),
+        O(s=>U(s).signInOk, 'Sign-in test passed after the unlock', 'Sign-in hasn’t been tested since the fix')],
+      guide:eGuide([`${p.first}’s message says “locked”, and colleagues can still sign in.`, `Directory › ${p.name} › Authentication shows Lockout: Locked.`],
+        'A lockout after a few bad attempts is an account state, not a network or device fault. Clear it, then prove the account can sign in.',
+        [`Directory › search ${p.uid} › select ${p.name} › Authentication.`, 'Select Unlock account.', 'Select Test sign-in and check that it passes.', 'Close the ticket with short notes.'],
+        ['Authentication shows Not locked.','Test sign-in passes.'],
+        ['Resetting the password instead: a reset doesn’t clear a lockout.','Rebooting network equipment for a one-person problem.'],
+        'Ask whether the user changed their password recently. An old password saved on a phone or a second device can keep relocking the account.',
+        `Unlocked ${p.uid} in Directory after repeated bad attempts. The sign-in test passed, so I confirmed the account works again.`)}; }},
+  expired:{ like:'INC-1043',
+    pick:(s,r,used)=>{ const c=eUsers(s,used); return c.length ? Object.assign(ePerson(pickOne(c,r)),{v:Math.floor(r()*2)}) : null; },
+    solve:(s,p)=>{ ENV.unlock(s,p.uid); ENV.resetPassword(s,p.uid,true,'tech'); ENV.testSignIn(s,p.uid); }, wrong:(s,p)=>{ ENV.unlock(s,p.uid); ENV.testSignIn(s,p.uid); },
+    make:p=>{ const U=s=>s.users[p.uid]; return {pri:'high', cat:'Access / Password', req:p.uid, asset:p.host, assetType:'Windows laptop',
+      title:['Password expired and now I’m locked out','Locked out after my password expired'][p.v],
+      desc:[`It kept asking me to change my password yesterday and I kept skipping it. This morning it says my password has expired, and after a few tries it says my account is locked.`,
+        `My password expired over the weekend. I tried my old one a few times on ${p.host} and now I’m locked out completely.`][p.v],
+      impact:`${p.first} can’t reach their laptop, email or files.`, tried:['Tried the old password several times.','Restarted the laptop.'],
+      hints:['Locked and expired are two separate problems on the same account.',`Open ${p.first}’s Authentication tab in Directory and read every flag.`,`Unlock ${p.uid}, reset the password with “must change at next sign-in”, then run a sign-in test.`],
+      model:`Unlocked ${p.uid}, reset the expired password with a change required at next sign-in, read the temporary password to the user on a verified call and confirmed with a sign-in test.`,
+      keys:[p.uid, p.first.toLowerCase(), 'expired', 'unlock'],
+      penalties:{['resetPassword:'+p.uid]:[3,'Sent the temporary password by chat or to a personal email address', (s,a)=>['chat','personal'].includes(a[2])]},
+      arrive:s=>{ const u=U(s); u.locked=true; u.pwdExpired=true; u.mustChange=false; u.signInOk=false; },
+      obj:[O(s=>!U(s).locked, `${p.first}’s account is unlocked`, `${p.first}’s account is still locked`),
+        O(s=>!U(s).pwdExpired, 'Expired password was reset', `${p.first}’s password is still expired`),
+        O(s=>U(s).mustChange, 'Must change password at next sign-in', 'The new password isn’t set to change at next sign-in'),
+        O(s=>U(s).signInOk, 'Sign-in test passed after the fix', 'Sign-in hasn’t been tested since the fix')],
+      guide:eGuide(['The message mentions both “expired” and “locked”.', `Directory › ${p.name} › Authentication: Lockout Locked and Password Expired.`],
+        'An expired password and a lockout are separate flags. Unlocking leaves the password expired, and a reset doesn’t clear the lock, so both are needed.',
+        [`Directory › search ${p.uid} › Authentication.`, 'Select Unlock account.', 'Select Reset password…, keep “User must change password at next sign-in” ticked and choose to read it to the user on a verified call.', 'Select Test sign-in and check that it passes.', 'Close the ticket.'],
+        ['Authentication shows Not locked and Password Current, with must change at next sign-in.','Test sign-in passes.'],
+        ['Fixing only one of the two flags.','Sending the temporary password by chat or to a personal email address.'],
+        'Expiry reminders are easy to dismiss. Many teams send an email a few days before expiry to cut down on this exact ticket.',
+        `Unlocked ${p.uid} and reset the expired password with a change required at next sign-in. The sign-in test passed, so I confirmed access.`)}; }},
+  group:{ like:'INC-1044',
+    pick:(s,r,used)=>{ const c=eUsers(s,used,u=>DEPT_GROUP[u.dept] && u.groups.includes(DEPT_GROUP[u.dept]) && SHARES.some(x=>x.group===DEPT_GROUP[u.dept]));
+      if (!c.length) return null; const u=pickOne(c,r), g=DEPT_GROUP[u.dept]; return Object.assign(ePerson(u),{g, path:SHARES.find(x=>x.group===g).path}); },
+    solve:(s,p)=>{ ENV.addGroup(s,p.uid,p.g); ENV.refreshSession(s,p.uid); }, wrong:(s,p)=>{ ENV.addGroup(s,p.uid,p.g); },
+    make:p=>{ const U=s=>s.users[p.uid]; return {pri:'medium', cat:'Access / Permissions', req:p.uid, asset:p.path, assetType:'Department file share',
+      title:`Access denied on ${p.path}`,
+      desc:`I can sign in fine, but ${p.path} says “Access is denied” since this morning. My teammates can still open it, and I need it for today’s work.`,
+      impact:`${p.first} can’t open their department share. Sign-in works.`, tried:['Signed out and back in.','Restarted File Explorer.'],
+      hints:['The login works, so this is authorisation, not authentication.',`Compare ${p.first}’s groups in Directory with the group ${p.path} needs.`,`Add ${p.uid} to ${p.g}, then ask them to sign out and back in.`],
+      model:`Confirmed ${p.uid} can sign in, found ${p.g} missing from their groups, restored it, had them sign out and back in, and confirmed the share opens.`,
+      keys:[p.uid, p.first.toLowerCase(), p.g.toLowerCase(), 'group'],
+      penalties:{['addGroup:'+p.uid]:[3,`Added share groups ${p.first}’s role doesn’t need (least privilege)`, (s,a)=>a[1]!==p.g]},
+      arrive:s=>{ const u=U(s); u.groups=u.groups.filter(x=>x!==p.g); u.tokenStale=false; },
+      obj:[O(s=>U(s).groups.includes(p.g), `${p.first} is a member of ${p.g}`, `${p.first} isn’t a member of ${p.g}`),
+        O(s=>U(s).groups.includes(p.g) && !U(s).tokenStale, `Group change applied to ${p.first}’s session`, `${p.first}’s session hasn’t picked up the group change`)],
+      guide:eGuide(['Sign-in works, but one share says Access is denied.', `Directory › ${p.name} › Groups: ${p.g} is missing.`],
+        'If the password works and only one share fails, the account is fine and the authorisation is missing. Group changes only apply after a fresh sign-in.',
+        [`Directory › search ${p.uid} › Groups.`, `Add ${p.g} (and nothing else).`, 'Select Ask user to sign out & back in.', 'Optional: Remote Desktop › File Explorer to confirm the share opens.', 'Close the ticket.'],
+        [`${p.g} is in the group list.`, 'The session refresh is done, so the share opens.'],
+        ['Resetting the password: it doesn’t change permissions.','Adding extra share groups “just in case”.'],
+        'Access reviews and role changes often remove a group by mistake. Check the ticket history or HR record if it happens again.',
+        `Restored ${p.g} for ${p.uid} and had them sign out and back in. I verified that ${p.path} opens.`)}; }},
+  mailbox:{ like:'INC-1048',
+    pick:(s,r,used)=>{ const c=eUsers(s,used,u=>s.mail.mailboxes[u.id].enabled!==false); return c.length ? Object.assign(ePerson(pickOne(c,r)),{sender:pickOne(SUPPLIERS,r)}) : null; },
+    solve:(s,p)=>{ ENV.enableArchive(s,p.uid); ENV.testMail(s,p.uid); }, wrong:(s,p)=>{ ENV.testMail(s,p.uid); },
+    make:p=>{ const M=s=>s.mail.mailboxes[p.uid]; return {pri:'medium', cat:'Email / Mailbox', req:p.uid, asset:p.email, assetType:'Mailbox',
+      title:'People get “mailbox full” bounces when they email me',
+      desc:`${p.sender[0]} told me their email to me bounced with a “mailbox full” error. I can still read my old mail, but nothing new has arrived since this morning.`,
+      impact:`${p.first} can’t receive new mail.`, tried:['Deleted a few old emails.','Emptied Deleted Items.'],
+      hints:['Sign-in works and old mail is readable, so this is storage, not identity.',`Mail Admin › Mailboxes › ${p.email}: look at storage.`,'Enable the online archive (or raise the quota to 10 GB), then send a test message.'],
+      model:`Found ${p.email} at 99% of its 5 GB quota with receiving blocked, enabled the online archive and confirmed delivery with a test message.`,
+      keys:[p.uid, p.first.toLowerCase(), 'quota', 'archive'],
+      penalties:{['setQuota:'+p.uid]:[2,'Gave a user mailbox the 50 GB shared-mailbox quota, which isn’t an approved remedy', (s,a)=>Number(a[1])===50]},
+      arrive:s=>{ const m=M(s); Object.assign(m,{quotaGB:5, usedGB:4.94, archive:false, testOk:false});
+        s.mail.messages.unshift({id:'eb-'+p.uid, time:'08:12', from:p.sender[1], fromName:p.sender[0], to:p.email, subject:'Re: '+p.sender[2], status:'Failed', detail:'550 5.2.2 Recipient mailbox full'}); },
+      obj:[O(s=>canReceive(M(s)), 'Mailbox has room to receive mail', `${p.first}’s mailbox is still full`),
+        O(s=>M(s).testOk, 'Test message delivered', 'No test message has been delivered yet')],
+      guide:eGuide(['Senders get “mailbox full”, but the user can still read old mail.', `Mail Admin › Message trace: a Failed message to ${p.email} with 550 5.2.2.`, 'Mail Admin › Mailboxes: storage at 99% of 5 GB.'],
+        'A full mailbox blocks delivery without touching sign-in. Free up space with an approved remedy and prove delivery works.',
+        [`Mail Admin › Mailboxes › ${p.email}.`, 'Select Enable online archive (or apply the 10 GB quota).', 'Select Send test message and check that it is delivered.', 'Close the ticket.'],
+        ['Delivery shows Receiving.','The test message is delivered.'],
+        ['Resetting the password: identity is fine.','Applying the 50 GB shared-mailbox quota to a user mailbox.'],
+        'Archiving keeps old mail searchable and is usually the approved first step before any quota increase.',
+        `Enabled the online archive for ${p.email}, which freed space under the quota. A test message was delivered, so I confirmed mail flow.`)}; }},
+  wifi:{ like:'INC-1046',
+    pick:(s,r,used,floors)=>{ const c=eUsers(s,used,(u,w)=>!w.remote && w.power && !w.wiped && !w.wired && !/Desk/.test(w.model) && !(w.ip && w.ip.mode==='apipa') && w.wifi && !floors.has(u.floor) && netState(s,w).up);
+      return c.length ? Object.assign(ePerson(pickOne(c,r)),{pri:r()<.5?'medium':'low'}) : null; },
+    solve:(s,p)=>{ ENV.forgetWifi(s,p.host,'Northstar-Staff'); ENV.connectWifi(s,p.host,'Northstar-Staff'); ENV.term(s,p.host,'ping 10.0.0.1'); }, wrong:(s,p)=>{ ENV.connectWifi(s,p.host,'Northstar-Staff'); ENV.term(s,p.host,'ping 10.0.0.1'); },
+    make:p=>{ const W=s=>s.workstations[p.host]; return {pri:p.pri, cat:'Network / Wi-Fi', req:p.uid, asset:p.host, assetType:'Windows laptop',
+      title:'Wi-Fi keeps dropping on my laptop',
+      desc:`My laptop keeps losing the Wi-Fi and won’t reconnect to Northstar-Staff. Everyone near me on Floor ${p.floor} is fine, so it seems to be just my machine.`,
+      impact:`${p.first} has no reliable network connection.`, tried:['Turned Wi-Fi off and on.','Restarted the laptop.'],
+      hints:['One device failing while neighbours work points at the device, not the network.',`Remote Desktop › ${p.host} › Network & Wi-Fi: check the saved profiles.`,'Forget the broken Northstar-Staff profile, reconnect, then ping the gateway (10.0.0.1) from Terminal.'],
+      model:`Confirmed the floor network was healthy, removed the corrupt saved Wi-Fi profile on ${p.host}, reconnected to Northstar-Staff and verified the gateway answers.`,
+      keys:[p.uid, p.first.toLowerCase(), p.host.toLowerCase(), 'wi-fi', 'wifi'],
+      penalties:ePen('a single-user Wi-Fi problem'),
+      arrive:s=>{ const w=W(s); w.wifi={profiles:[{ssid:'Northstar-Staff', broken:true}], connected:null}; w.netOk=false; },
+      obj:[O(s=>!W(s).wifi.profiles.some(x=>x.broken), 'Broken saved Wi-Fi profile removed', `A broken saved Wi-Fi profile is still on ${p.host}`),
+        O(s=>W(s).wifi.connected==='Northstar-Staff', 'Connected to Northstar-Staff', `${p.host} isn’t connected to Northstar-Staff`),
+        O(s=>W(s).netOk, 'Internal connectivity tested', `Connectivity hasn’t been tested from ${p.host}`)],
+      guide:eGuide(['Only this laptop drops; colleagues nearby are fine.', `Remote Desktop › ${p.host} › Network & Wi-Fi: the Northstar-Staff profile fails authentication.`],
+        'A single device failing on a healthy floor is a device problem. A corrupt saved profile can’t connect until it is removed and recreated.',
+        [`Remote Desktop › connect to ${p.host}.`, 'Open Network & Wi-Fi and select Forget on the broken Northstar-Staff profile.', 'Connect to Northstar-Staff again.', 'Open Terminal and run ping 10.0.0.1.', 'Close the ticket.'],
+        ['Network & Wi-Fi shows Connected to Northstar-Staff.','ping 10.0.0.1 gets replies.'],
+        ['Rebooting the edge router or firewall for one laptop.','Connecting to guest Wi-Fi, which has no internal access.'],
+        'Profiles pushed by policy can go stale after a certificate or password change. Recreating the profile is the usual fix.',
+        `Removed the corrupt Northstar-Staff profile on ${p.host}, reconnected and tested: ping to 10.0.0.1 replied, so I verified connectivity.`)}; }},
+  spooler:{ like:'INC-1050',
+    pick:(s,r,used)=>{ if (!svcUp(s,'PRINT01','Print Spooler')) return null; const c=eUsers(s,used); return c.length ? ePerson(pickOne(c,r)) : null; },
+    solve:s=>{ ENV.restartService(s,'PRINT01','Print Spooler'); ENV.testPage(s); }, wrong:s=>{ ENV.reboot(s,'prn1'); ENV.testPage(s); },
+    make:p=>({pri:'high', cat:'Server / Printing', req:p.uid, asset:'PRINT01', assetType:'Print server',
+      title:'Nothing is printing anywhere',
+      desc:`Every print job I send just sits on “Printing”, and people on other floors say the same. The printers themselves look fine and are switched on.`,
+      impact:'Printing is down across the office.', tried:['Turned the nearest printer off and on.','Tried a different printer.'],
+      hints:['Every printer at once means a shared dependency.','Look at the print server in Server Room › Servers.','Start the Print Spooler on PRINT01, then send a test page.'],
+      model:'Identified the shared print server rather than a printer, started the stopped Print Spooler on PRINT01 and confirmed a test page printed.',
+      keys:['print01','spooler'],
+      penalties:{'reboot:PRINT01':[3,'Rebooted the whole print server for one stopped service: the Print Web Portal dropped for everyone']},
+      arrive:s=>{ const x=s.net.servers.PRINT01; x.services['Print Spooler']='stopped'; x.testPageOk=false; },
+      obj:[O(s=>svcUp(s,'PRINT01','Print Spooler'), 'Print Spooler running on PRINT01', 'Print Spooler on PRINT01 is stopped'),
+        O(s=>s.net.servers.PRINT01.testPageOk, 'Test page printed', 'No test page has printed')],
+      guide:eGuide(['Every printer is affected, on every floor.', 'Server Room › Servers: PRINT01 shows a service alert.'],
+        'When every printer stops at once, the fault is in what they share: the print server’s spooler.',
+        ['Server Room › Servers › PRINT01 › Services.', 'Start the Print Spooler.', 'Select Send test page and check that it prints.', 'Close the ticket.'],
+        ['PRINT01 shows Healthy.','The test page prints.'],
+        ['Power-cycling individual printers.','Rebooting the whole print server for one service.'],
+        'Spoolers often stop on a corrupt job. If it keeps happening, clear the spool folder and find the job that crashes it.',
+        'Started the stopped Print Spooler on PRINT01. A test page printed, so I confirmed printing works.')}) },
+  switch:{ like:'INC-1045',
+    pick:(s,r,used,floors)=>{ const f=pickOne([1,2,3].filter(n=>!floors.has(n) && s.net.devices['sw'+n] && s.net.devices['sw'+n].status==='online'), r); if (!f) return null;
+      const c=eUsers(s,used,u=>u.floor===f); return c.length ? Object.assign(ePerson(pickOne(c,r)),{f}) : null; },
+    solve:(s,p)=>{ ENV.on(s,'sw'+p.f); }, wrong:s=>{ ENV.reboot(s,'edge'); },
+    make:p=>({pri:'critical', cat:'Network / Outage', req:p.uid, asset:`Floor ${p.f} network`, assetType:'Shared network segment',
+      title:`Nobody on Floor ${p.f} can get online`,
+      desc:`Everyone on Floor ${p.f} lost the network a few minutes ago: no internet and no shared drives. People on the other floors are working normally.`,
+      impact:`A whole floor is offline.`, tried:['People reconnected to Wi-Fi.','A few of us restarted our PCs.'],
+      hints:['One floor down while others work means the narrowest shared device.',`Server Room › Topology: follow the path down to the Floor ${p.f} branch.`,`Power on the Floor ${p.f} Switch.`],
+      model:`Compared the outage scope with the topology, found the Floor ${p.f} Switch down, powered it back on and confirmed the floor came back online.`,
+      keys:[`floor ${p.f}`, 'switch', `10.0.${p.f}.1`],
+      penalties:ePen('a single-floor outage'),
+      arrive:s=>{ s.net.devices['sw'+p.f].status='offline'; },
+      obj:[O(s=>s.net.devices['sw'+p.f].status==='online', `Floor ${p.f} Switch is back online`, `Floor ${p.f} Switch is still down`)],
+      guide:eGuide([`Only Floor ${p.f} is affected.`, `Server Room › Topology shows the Floor ${p.f} Switch offline.`],
+        'A whole floor failing while the others work points at the floor’s switch, not the edge router or firewall.',
+        [`Server Room › Topology › select the Floor ${p.f} Switch.`, 'Select Power on.', 'Check that it reports Online.', 'Close the ticket.'],
+        [`Floor ${p.f} Switch shows Online.`],
+        ['Rebooting the edge router or firewall, which drops every floor.'],
+        'Find out why the switch went down. A tripped power strip or a failing PSU will do it again.',
+        `Powered the Floor ${p.f} Switch (10.0.${p.f}.1) back on and confirmed it reports Online and the floor is reachable.`)}) },
+  quarantine:{ like:'INC-1047',
+    pick:(s,r,used,floors,ref)=>{ const c=eUsers(s,used); return c.length ? Object.assign(ePerson(pickOne(c,r)),{sup:pickOne(SUPPLIERS,r), mid:'em-'+ref, qid:'eq-'+ref}) : null; },
+    solve:(s,p)=>{ ENV.release(s,p.qid); ENV.trace(s,{who:p.email}); }, wrong:(s,p)=>{ ENV.release(s,p.qid); },
+    make:p=>{ const M=s=>msg(s,p.mid); return {pri:'medium', cat:'Email / Delivery', req:p.uid, asset:p.email, assetType:'Mailbox',
+      title:`Email from ${p.sup[0]} never arrived`,
+      desc:`${p.sup[0]} says they sent “${p.sup[2]}” this morning, but it never reached me. They didn’t get a bounce, and it isn’t in Junk.`,
+      impact:`${p.first} is missing a business email they need today.`, tried:['Checked Junk and Deleted Items.','Asked the sender to check the address.'],
+      hints:['No bounce and not in Junk: find out where the message stopped.',`Run a Message trace in Mail Admin for ${p.email}. “Quarantined” means the filter is holding it.`,'Release the legitimate message in Mail Security, then re-run the trace to confirm delivery.'],
+      model:`Traced the message from ${p.sup[1]}, found it held by the content filter, released the verified legitimate item and confirmed delivery with a second trace.`,
+      keys:[p.uid, p.first.toLowerCase(), 'quarantine', p.sup[1].split('@')[1]],
+      arrive:s=>{ s.mail.messages.unshift({id:p.mid, time:'08:20', from:p.sup[1], fromName:p.sup[0], to:p.email, subject:p.sup[2], status:'Quarantined', detail:'Held by the content filter: strict attachment policy', verified:false, endless:true});
+        s.mail.quarantine.unshift({id:p.qid, msg:p.mid, reason:'Strict attachment policy (score 5.3)', kind:'policy', state:'held'}); },
+      obj:[O(s=>M(s).status==='Delivered', 'Supplier message released', 'The message is still quarantined'),
+        O(s=>M(s).verified, 'Delivery confirmed in Message trace', 'Delivery hasn’t been confirmed in Message trace')],
+      guide:eGuide(['No bounce and nothing in Junk.', `Mail Admin › Message trace for ${p.email}: the message shows Quarantined.`],
+        'A message that never bounced but never arrived was held somewhere. The trace shows where, and Mail Security holds the quarantine.',
+        [`Mail Admin › Message trace › search ${p.email}.`, `Mail Security › find the message from ${p.sup[1]} and select Release.`, 'Mail Admin › Message trace › search again and check that it shows Delivered.', 'Close the ticket.'],
+        ['The trace shows Delivered.'],
+        ['Releasing every quarantined item, phishing included.','Resetting the mailbox password.'],
+        'Strict attachment policies catch legitimate supplier mail. If one sender is caught repeatedly, ask Security about an allow rule.',
+        `Traced the message from ${p.sup[1]}, released it from quarantine and confirmed delivery to ${p.email} with a second trace.`)}; }}
+};
+function endlessShift(n){ return {title:`Endless shift ${n-4}`, endless:true,
+  brief:'Endless mode: four fresh tickets, generated for this shift from problems you already know how to solve, with different people, devices and details. Finish them all and another endless shift is ready whenever you are.'}; }
+/* Rebuild the generated tickets listed in s.endless into TICKETS/TK, dropping any that belong to another state. */
+function registerEndless(s){
+  for (let i=TICKETS.length-1; i>=0; i--) if (TICKETS[i].endless) { delete TK[TICKETS[i].ref]; TICKETS.splice(i,1); }
+  const list=(s.endless && s.endless.list) || [], keep=new Set(list.map(e=>e.ref));
+  Object.keys(s.tickets||{}).forEach(r=>{ if (/^INC-2\d{3,}$/.test(r) && !keep.has(r)) delete s.tickets[r]; });
+  list.forEach(e=>{ const T=Object.assign({ref:e.ref, shift:e.shift, endless:true, tpl:e.tpl, like:ETPL[e.tpl].like, created:e.p.created}, ETPL[e.tpl].make(e.p));
+    TICKETS.push(T); TK[T.ref]=T; if (s.tickets && !s.tickets[T.ref]) s.tickets[T.ref]=newTk(); if (!SHIFTS[e.shift]) SHIFTS[e.shift]=endlessShift(e.shift); });
+}
+/* Generate the next endless shift's 4 tickets (deterministic for a given save). Returns how many were made. */
+function endlessBatch(s){
+  const shift=s.shift+1, r=rng((s.endless.seed ^ Math.imul(shift, 2654435761)) >>> 0), used=new Set(), floors=new Set(), out=[];
+  const order=Object.keys(ETPL).map(k=>[r(),k]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  for (const k of order){ if (out.length>=4) break;
+    const ref='INC-'+(2001+s.endless.n), p=ETPL[k].pick(s, r, used, floors, ref); if (!p) continue;
+    p.created=hhmm(485+out.length*13); used.add(p.uid); if (k==='wifi' || k==='switch') floors.add(p.f||p.floor);
+    s.endless.n++; out.push({ref, tpl:k, shift, p}); }
+  s.endless.list.push(...out); registerEndless(s); return out.length;
+}
+
 
 /* Runbooks: one per distinct procedure used across the tickets (purpose, prerequisites, steps, verification, escalation). rel lists the tickets that use it. */
 const KB = [
@@ -3051,7 +3264,8 @@ function seed(){
     hr:{starters:[], leavers:[]},
     fs:{Sales:{files:{'Pricing_2026.pdf':{state:'ok', versions:[{id:'v2', shadow:'sc3', t:'Oct 12 07:00', size:'2.4 MB'},{id:'v1', shadow:'sc1', t:'Oct 11 07:00', size:'2.3 MB'}]}}}},
     clock:CLOCK0,
-    tickets:Object.fromEntries(TICKETS.map(t=>[t.ref,newTk()])),
+    tickets:Object.fromEntries(TICKETS.filter(t=>!t.endless).map(t=>[t.ref,newTk()])),
+    endless:{n:0, seed:(Math.random()*2**31)>>>0, list:[]},
     log:[],
     chat:{threads:{dokafor:[{from:'dokafor', text:'Morning! The queue is busy today. Work the critical tickets first and ping me here if you get stuck.', t:'08:05'}]}, recent:['dokafor'], pinned:['dokafor','okeane'], unread:{dokafor:1},
       confirmed:{}, approvals:{}, verified:{}, facts:{}, announce:[]},
@@ -3095,14 +3309,15 @@ function validSave(s){
     s.voicemails && s.shelf && s.ship && s.deploy && s.hr && s.licences && s.fs && typeof s.shift==='number' && TICKETS.every(t=>s.tickets[t.ref]));
 }
 /* A v3 save from before a ticket existed gets that ticket in its untouched 'waiting' state; everything else it needs is created when it arrives. */
-function backfill(s){ if (!s || !s.tickets || !s.ui) return; TICKETS.forEach(T=>{ if (!s.tickets[T.ref]) s.tickets[T.ref]=newTk(); }); if (!s.ui.alerts) s.ui.alerts=[]; }
+function backfill(s){ if (!s || !s.tickets || !s.ui) return; TICKETS.forEach(T=>{ if (!s.tickets[T.ref]) s.tickets[T.ref]=newTk(); }); if (!s.ui.alerts) s.ui.alerts=[]; if (!s.endless) s.endless={n:0, seed:7331, list:[]}; }
+const freshGame = () => { const s=seed(); registerEndless(s); return s; };
 function load(){
   let raw;
-  try { raw = localStorage.getItem(KEY); } catch(e){ memoryOnly = true; return seed(); }
-  if (!raw) return seed();
-  try { const s = JSON.parse(raw); backfill(s); if (validSave(s)) return s; } catch(e){}
+  try { raw = localStorage.getItem(KEY); } catch(e){ memoryOnly = true; return freshGame(); }
+  if (!raw) return freshGame();
+  try { const s = JSON.parse(raw); backfill(s); registerEndless(s); if (validSave(s)) return s; } catch(e){}
   bootNote = 'Saved progress couldn’t be read, so a fresh shift was started.';
-  return seed();
+  return freshGame();
 }
 function save(){
   if (memoryOnly) return;
@@ -3117,7 +3332,7 @@ const CLOCK0 = 580;
 const hhmm = m => String(Math.floor((m%1440)/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 const now = () => hhmm((S && S.clock) || CLOCK0);
 const tick = () => { if (S) S.clock=(S.clock||CLOCK0)+1; };
-const gameDate = (s=S) => `2026-10-${11+((s && s.shift) || 1)}`; // shift 1 is Monday Oct 12, 2026; the boss stage (shift 4) is Thursday Oct 15
+const gameDate = (s=S) => new Date(Date.UTC(2026, 9, 11+((s && s.shift) || 1))).toISOString().slice(0,10); // shift 1 is Monday Oct 12, 2026; the boss stage (shift 4) is Thursday Oct 15
 const msg = (s,id) => s.mail.messages.find(m=>m.id===id);
 const rule = (s,id) => s.mail.rules.find(r=>r.id===id);
 const first = name => name.split(' ')[0];
@@ -3527,7 +3742,7 @@ const ENV = {
   trace(s,f){ const q=(f.who||'').toLowerCase();
     const res = s.mail.messages.filter(m=>
       (!q || (m.from+' '+m.to+' '+(m.fromName||'')).toLowerCase().includes(q)) && (!f.status || m.status===f.status) && (!f.time || m.time>=f.time));
-    res.forEach(m=>{ if (m.id==='m1' && m.status==='Delivered') m.verified=true; m.traced = m.status==='Purged';
+    res.forEach(m=>{ if ((m.id==='m1' || m.endless) && m.status==='Delivered') m.verified=true; m.traced = m.status==='Purged';
       if (m.resolve){ const r=resolveAddr(s,m.to); m.status = r ? 'Delivered' : 'Failed'; m.detail = r ? `Delivered to ${mbAddr(s,r.box)}${r.alias?' (alias)':''}` : '550 5.1.1 Recipient address rejected: no such user'; } });
     return res.map(m=>m.id); },
   release(s,qid){ const q=s.mail.quarantine.find(x=>x.id===qid), m=msg(s,q.msg); q.state='released'; q.reported=false; m.status='Delivered'; m.verified=false;
@@ -3712,9 +3927,9 @@ const ENV = {
     return `Voicemail from ${v.from} saved${v.ref?' to '+v.ref:''}.`; },
   vmForward(s,id){ const v=s.voicemails.find(x=>x.id===id); v.forwarded=true; v.heard=true; return `Voicemail from ${v.from} forwarded to Security with caller ID ${v.callerId||'x'+v.ext}.`; },
   vmDelete(s,id){ const v=s.voicemails.find(x=>x.id===id); v.deleted=true; v.heard=true; return `Voicemail from ${v.from} deleted.`; },
-  nextShift(s){ if (!shiftDone(s)) return 'Finish or escalate every ticket on this shift first.'; if (!hasNextShift(s)) return 'No more shifts scheduled.';
+  nextShift(s){ if (!shiftDone(s)) return 'Finish or escalate every ticket on this shift first.'; if (!hasNextShift(s) && !(endlessNext(s) && endlessBatch(s))) return 'No more shifts scheduled.';
     s.shift++; s.clock=CLOCK0; Object.values(s.users).forEach(u=>{ u.verified=null; }); // a new day: no caller is verified yet
-    arrivals(s); return (SHIFTS[s.shift]||{}).boss ? 'The boss stage started.' : `Shift ${s.shift} started.`; },
+    arrivals(s); return (SHIFTS[s.shift]||{}).boss ? 'The boss stage started.' : `${SHIFTS[s.shift] ? SHIFTS[s.shift].title : 'Shift '+s.shift} started.`; },
   /* Remote Desktop › Task Scheduler. op: disable | enable | run | runas (arg: account) | delete */
   wsTask(s,host,name,op,arg){ const w=s.workstations[host], k=(w.tasks||[]).find(x=>x.name.toLowerCase()===String(name||'').toLowerCase());
     if (!k) return `ERROR: The system cannot find the task “${name}” on ${host}.`;
@@ -3768,6 +3983,7 @@ function statusWord(ref){ const t=S.tickets[ref];
 const isDone = (s, ref) => ['closed','escalated'].includes(s.tickets[ref].status);
 const shiftDone = s => TICKETS.filter(T=>(T.shift||1)===s.shift).every(T=>isDone(s,T.ref));
 const hasNextShift = s => TICKETS.some(T=>(T.shift||1)>s.shift);
+const endlessNext = s => !hasNextShift(s) && s.shift >= TICKETS.find(T=>T.boss).shift; // after the boss, the next shift is generated
 /* check() as if the ticket had already been escalated (for scoring an escalation before it happens). */
 function asEscalated(s, ref){ const t=s.tickets[ref], st=t.status; t.status='escalated'; try { return check(s,ref).complete; } finally { t.status=st; } }
 
@@ -3835,6 +4051,21 @@ function finishTicket(ref, mode, notes){
    6. VIEWS — template strings rendered from S. render() rebuilds #app.
    ===================================================================== */
 const $ = id => document.getElementById(id);
+/* Popover fallback for browsers without the Popover API (Safari before 17, Firefox before 125): class-toggled menus with light dismiss. */
+const HAS_POPOVER = HTMLElement.prototype.hasOwnProperty('popover');
+const popOpen = el => el.matches(HAS_POPOVER ? ':popover-open' : '.pop-open');
+if (!HAS_POPOVER) {
+  document.documentElement.classList.add('nopop');
+  const autoOpen = () => document.querySelectorAll('.pop-open:not([popover=manual])'), fire = (p, newState) => p.dispatchEvent(Object.assign(new Event('toggle'), {newState}));
+  Object.assign(HTMLElement.prototype, {
+    showPopover(){ if (this.classList.contains('pop-open')) return; if (this.getAttribute('popover')!=='manual') autoOpen().forEach(x=>x.hidePopover()); this.classList.add('pop-open'); fire(this,'open'); },
+    hidePopover(){ if (!this.classList.contains('pop-open')) return; this.classList.remove('pop-open'); fire(this,'closed'); },
+    togglePopover(){ this.classList.contains('pop-open') ? this.hidePopover() : this.showPopover(); } });
+  document.addEventListener('click', e=>{ const b=e.target.closest && e.target.closest('[popovertarget]'), p=b && $(b.getAttribute('popovertarget'));
+    if (p) return b.getAttribute('popovertargetaction')==='hide' ? p.hidePopover() : p.togglePopover();
+    autoOpen().forEach(x=>{ if (!x.contains(e.target)) x.hidePopover(); }); });
+  document.addEventListener('keydown', e=>{ if (e.key==='Escape') autoOpen().forEach(x=>x.hidePopover()); });
+}
 const app = $('app'), dlg = $('dlg');
 const IC = { // original line icons (24px viewBox)
   directory:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M15 6h6M15 10h6M17 14h4"/>',
@@ -3968,12 +4199,13 @@ function vDash(){
   const open=TICKETS.filter(T=>S.tickets[T.ref].status==='open').sort(byPri);
   const mine=TICKETS.filter(T=>S.tickets[T.ref].status==='assigned').sort(byPri);
   const cur=TICKETS.filter(T=>(T.shift||1)===S.shift), fin=cur.filter(T=>isDone(S,T.ref)).length, sh=SHIFTS[S.shift]||{title:'Shift '+S.shift};
-  const next=shiftDone(S) && hasNextShift(S), bossNext=next && !!(SHIFTS[S.shift+1]||{}).boss, bossLater=!bossNext && TICKETS.some(T=>T.boss && (T.shift||1)>S.shift);
+  const next=shiftDone(S) && (hasNextShift(S) || endlessNext(S)), endN=next && endlessNext(S), bossNext=next && !!(SHIFTS[S.shift+1]||{}).boss, bossLater=!bossNext && TICKETS.some(T=>T.boss && (T.shift||1)>S.shift);
   const queue = open.length ? open.map(T=>qrow(T)).join('') :
     `<div class="empty">${mine.length?'No unclaimed incidents. Finish the tickets in My Queue.':next?'This shift’s queue is clear. Start the next shift when you’re ready.':'All available incidents are cleared. Nice shift.'}<br><button class="btn" style="margin-top:12px" data-act="go" data-id="past">Review past tickets</button></div>`;
   return `<div class="wrap">
     <div class="shiftbar"><span class="shiftno">${esc(sh.title)}</span>${sh.boss?'<span class="chip boss">Boss</span>':''}<span class="muted small">${fin} of ${cur.length} tickets finished</span><span class="spacer"></span><button class="linkbtn small" data-act="briefDlg">${icon('clip',14)} Shift briefing</button></div>
     ${bossNext?`<section class="nextshift boss" aria-label="Boss stage unlocked"><div><div class="label boss">Shift ${S.shift} complete · The boss stage is unlocked</div><b>One last ticket <span class="chip boss">Boss</span></b><div class="small muted">${S.profile.points} points so far · rank ${rankOf(S.profile.points)}</div></div><span class="spacer"></span><button class="btn primary" data-act="nextShiftDlg">Start the boss stage ${icon('chev',14)}</button></section>`
+     :endN?`<section class="nextshift" aria-label="Endless mode"><div><div class="label blue">${sh.boss?'Boss stage complete · Endless mode unlocked':esc(sh.title)+' complete'}</div><b>Keep going: four new tickets, generated from problems you already know.</b><div class="small muted">${S.profile.points} points so far · rank ${rankOf(S.profile.points)}</div></div><span class="spacer"></span><button class="btn primary" data-act="nextShiftDlg">Start endless shift ${S.shift-3} ${icon('chev',14)}</button></section>`
      :next?`<section class="nextshift" aria-label="Shift complete"><div><div class="label blue">Shift complete</div><b>Every ticket on this shift is closed or escalated.</b><div class="small muted">${S.profile.points} points so far · rank ${rankOf(S.profile.points)}</div></div><span class="spacer"></span><button class="btn primary" data-act="nextShiftDlg">Start next shift ${icon('chev',14)}</button></section>`:''}
     ${intakeHtml()}
     <section class="qcard" aria-labelledby="mq"><div class="qhd"><h2 id="mq" class="sect">${icon('user',20)} My Queue <span class="cnt">${mine.length}</span></h2><span class="label">Assigned to you</span></div>
@@ -4013,7 +4245,7 @@ function ticketLog(ref){
 }
 /* Requester's own words, laid out like a service-desk intake form. */
 function descHtml(T){
-  const r=reqInfo(T), tried=(Array.isArray(T.tried)?T.tried:T.tried.split(/(?<=[.!?])\s+/)).filter(Boolean).map(x=>'- '+esc(x)).join('<br>'), [d0,...dn]=T.desc.split('\n\n');
+  const r=reqInfo(T), tried=(Array.isArray(T.tried)?T.tried:T.tried.replace(/([.!?])\s+/g,'$1\n').split('\n')).filter(Boolean).map(x=>'- '+esc(x)).join('<br>'), [d0,...dn]=T.desc.split('\n\n');
   const I=T.intake, ch = !I ? '' : I.via==='chat' ? `<br>Channel: Company Chat${I.from!==T.req?` · sent from ${esc(uName(I.from))}’s account`:''}` : `<br>Channel: Voicemail · caller ID ${esc(I.callerId||(S.users[I.from]?'Internal x'+S.users[I.from].ext:'Withheld'))}`;
   return `<div class="desc"><p>Reported by: ${esc(r.name)} (${esc(r.email)})<br>Department: ${esc(r.dept)} | Location: ${esc(r.loc)}<br>Contact: x${esc(r.ext)}<br>Affected asset: ${esc(T.asset)} (${esc(T.assetType)})${ch}</p>
     <p>Issue Description:<br>${esc(d0)}</p>${dn.map(x=>`<p>${esc(x)}</p>`).join('')}<p>Troubleshooting performed by user:<br>${tried}</p><p>Business Impact:<br>${esc(T.impact)}</p></div>`;
@@ -4105,8 +4337,9 @@ function vPast(){
 }
 
 /* ----- Voicemails (transcripts only, no audio) ----- */
+let speaking = null; // id of the voicemail being read aloud
 function vVoice(){
-  const vms=S.voicemails.filter(v=>!v.deleted), o={tool:'Voicemails'};
+  const vms=S.voicemails.filter(v=>!v.deleted), o={tool:'Voicemails'}, tts='speechSynthesis' in window;
   return `<div class="wrap"><div class="tbar"><button class="back" data-act="go" data-id="dash">${icon('back',18)} Back to queue</button></div>
     <h1 style="margin:0 0 6px">Voicemails</h1><p class="muted" style="margin:0 0 18px">${vms.filter(v=>!v.heard).length} new · transcripts from the service desk line</p>
     <div class="vmlist">${vms.map(v=>{ const st=v.ref&&S.tickets[v.ref]?S.tickets[v.ref].status:null;
@@ -4115,7 +4348,8 @@ function vVoice(){
       <div><div class="row"><b style="font-size:15.5px">${esc(v.from)}</b>${v.heard?'<span class="chip">Listened</span>':'<span class="chip blue">New</span>'}${v.saved?'<span class="chip ok">Saved to ticket</span>':''}${v.forwarded?'<span class="chip warn">Forwarded to Security</span>':''}<span class="spacer"></span><span class="mono muted">${v.time} · ${v.dur}</span></div>
         <div class="small muted">${esc(v.role)} · ext. ${esc(v.ext||'—')} · caller ID <span class="mono">${esc(v.callerId||'x'+v.ext)}</span></div>
         <blockquote>${esc(v.text)}</blockquote>
-        <div class="row">${v.heard?'':`<button class="btn sm" data-act="heard" data-id="${v.id}">${icon('check',14)} Mark as listened</button>`}
+        <div class="row">${tts?`<button class="btn sm" data-act="vmSpeak" data-id="${v.id}" aria-pressed="${speaking===v.id}" aria-label="${speaking===v.id?'Stop reading':'Play'} the voicemail from ${esc(v.from)}">${icon(speaking===v.id?'x':'play',14)} ${speaking===v.id?'Stop':'Play'}</button>`:''}
+          ${v.heard?'':`<button class="btn sm" data-act="heard" data-id="${v.id}">${icon('check',14)} Mark as listened</button>`}
           ${st==='intake'?envBtn('convertIntake',[v.ref],'Log as ticket','primary',o):''}
           ${st && !['waiting','intake'].includes(st)?`<button class="btn sm" data-act="open" data-id="${v.ref}">Open ${v.ref}</button>`:''}
           ${v.ref && st && !['waiting','intake'].includes(st) && !v.saved?envBtn('vmSave',[v.id],`Save to ${v.ref}`,'',o):''}
@@ -4191,7 +4425,7 @@ function confirmDlg(title, body, ok, danger, fn){
     <div class="df"><button class="btn" data-act="dlgCancel">Cancel</button><button class="btn ${danger?'danger solid':'primary'}" data-act="confirmOk">${esc(ok)}</button></div>`);
 }
 /* #toasts is a manual popover so it sits in the top layer, above an open dialog's backdrop. */
-function raiseToasts(){ const t=$('toasts'); if (!t.children.length) return; try { if (t.matches(':popover-open')) t.hidePopover(); t.showPopover(); } catch(e){} }
+function raiseToasts(){ const t=$('toasts'); if (!t.children.length) return; try { if (popOpen(t)) t.hidePopover(); t.showPopover(); } catch(e){} }
 function toast(text, kind){
   const t=$('toasts'), el=document.createElement('div'); el.className='toast '+(kind||''); el.textContent=text; t.appendChild(el); raiseToasts();
   setTimeout(()=>{ el.remove(); if (!t.children.length) try { t.hidePopover(); } catch(e){} }, 5000);
@@ -4250,7 +4484,7 @@ function achievements(s){
     ['By the book', 'Resolve a ticket with no penalties', res.some(r=>r.outcome==='Resolved' && !r.lines.some(l=>l[1]<0))],
     ['Paper trail', 'Earn the full resolution-notes bonus', res.some(r=>r.lines.some(l=>l[0]==='Resolution notes' && l[1]===3))],
     ['Security minded', 'Route a compromise to Security with evidence intact', res.some(r=>r.outcome==='Routed to Security') && !rule(s,'r1').deleted],
-    ['Inbox zero', 'Finish every ticket in shifts 1–3', TICKETS.filter(T=>!T.boss).every(T=>s.tickets[T.ref].result)],
+    ['Inbox zero', 'Finish every ticket in shifts 1–3', TICKETS.filter(T=>!T.boss && !T.endless).every(T=>s.tickets[T.ref].result)],
     ['Boss defeated', 'Resolve INC-1073, the final boss', TICKETS.some(T=>T.boss && (s.tickets[T.ref].result||{}).outcome==='Resolved')],
     ['Flawless boss', 'Defeat the boss with no penalties, without revealing its guide first', TICKETS.some(T=>T.boss && ((s.tickets[T.ref].result||{}).lines||[]).some(l=>/^Flawless boss/.test(l[0])))]];
 }
@@ -4319,10 +4553,10 @@ function purgeDialog(mid){ const m=msg(S,mid), same=S.mail.messages.filter(x=>(m
     <label class="fld" style="margin-top:10px">Mode<select id="pgMode"><option value="soft">Soft delete (recoverable by admins)</option><option value="hard">Hard delete (permanent)</option></select></label>`, 'Purge', true,
     ()=>{ const sc=val('pgScope'), md=val('pgMode'); act('Mail Security', mid, 'purge', s=>ENV.purge(s,mid,sc,md), [mid,sc,md]); });
 }
-function briefDialog(next){ const n=next?S.shift+1:S.shift, sh=SHIFTS[n]||{title:'Shift '+n, brief:''}, list=TICKETS.filter(T=>(T.shift||1)===n);
+function briefDialog(next){ const n=next?S.shift+1:S.shift, sh=SHIFTS[n]||(next && endlessNext(S) ? endlessShift(n) : {title:'Shift '+n, brief:''}), list=TICKETS.filter(T=>(T.shift||1)===n);
   openDlg(`<div class="dh">${sh.boss?'<span class="chip boss">Boss · final stage</span>':''}<h2 id="dlgTitle"${sh.boss?' style="margin-top:8px"':''}>${esc(sh.title)}</h2></div><div class="db"><p>${esc(sh.brief||'')}</p>
-    <p class="muted small">${sh.boss?'One ticket: the final boss. Your score for it is capped at −30…+70.':`${list.length} ticket${list.length===1?'':'s'} expected on this shift${list.some(T=>T.intake)?', some arriving by chat or voicemail':''}.`}</p></div>
-    <div class="df"><button class="btn" data-act="dlgCancel">${next?'Not yet':'Close'}</button>${next?`<button class="btn primary" data-act="startNext">${sh.boss?'Start the boss stage':'Start shift '+n}</button>`:''}</div>`);
+    <p class="muted small">${sh.boss?'One ticket: the final boss. Your score for it is capped at −30…+70.':sh.endless && !list.length ? 'Up to 4 tickets will be generated when the shift starts.' : `${list.length} ticket${list.length===1?'':'s'} expected on this shift${list.some(T=>T.intake)?', some arriving by chat or voicemail':''}.`}</p></div>
+    <div class="df"><button class="btn" data-act="dlgCancel">${next?'Not yet':'Close'}</button>${next?`<button class="btn primary" data-act="startNext">${sh.boss?'Start the boss stage':sh.endless?'Start endless shift '+(n-4):'Start shift '+n}</button>`:''}</div>`);
 }
 /* ----- Consoles. Each reads shared state S; mutations go through act(). ----- */
 const btn = (act, id, arg, label, cls='', extra='') => `<button class="btn sm ${cls}" data-act="${act}" data-id="${esc(id)}" data-arg="${esc(arg)}" ${extra}>${label}</button>`;
@@ -4621,7 +4855,8 @@ function cRdp(){
 /* ===== Documentation: runbooks (KB) and per-ticket solution guides ===== */
 const TOOL_NAMES = Object.values(TOOLS).map(t=>t.name).concat(['Company Chat','Voicemails']);
 const ticketTools = T => TOOL_NAMES.filter(n=>T.guide.perfectSteps.some(x=>x.includes(n))); // tools the perfect solution touches
-const runbooksFor = ref => KB.filter(a=>a.rel.includes(ref));
+const shiftLabel = T => T.boss ? 'Boss stage' : T.endless ? SHIFTS[T.shift].title : 'Shift '+(T.shift||1);
+const runbooksFor = ref => KB.filter(a=>a.rel.includes(ref) || (TK[ref] && TK[ref].like && a.rel.includes(TK[ref].like)));
 const topCat = T => T.cat.split(' / ')[0];
 /* Scoring summary for a guide: what a correct finish earns and what each trap costs (pure: no S). */
 function scoreGuide(T){
@@ -4643,7 +4878,7 @@ function guidePage(T){
     : t.status==='intake' ? `<span class="small muted">Waiting under Incoming contacts on the dashboard. Log it as a ticket first.</span>`
     : t.status==='waiting' ? `<span class="small muted">Not arrived yet: ${T.boss?'unlocks after every shift 3 ticket is closed or escalated':(T.shift||1)>S.shift?`arrives in shift ${T.shift}`:`arrives once ${T.after} is finished`}.</span>`
     : `<span class="chip ${t.result.total>=0?'ok':'bad'}">${esc(t.result.outcome)} · ${t.result.total>=0?'+':''}${t.result.total}</span>`;
-  const head = `<div class="label blue">Solution guide · ${T.boss?'Boss stage':'Shift '+(T.shift||1)}</div><h3 class="gtitle"><span class="mono">${T.ref}</span> ${esc(T.title)}</h3>
+  const head = `<div class="label blue">Solution guide · ${shiftLabel(T)}</div><h3 class="gtitle"><span class="mono">${T.ref}</span> ${esc(T.title)}</h3>
     <div class="row">${T.boss?'<span class="chip boss">Boss</span>':''}${priTag(T.pri)}<span class="chip">${esc(T.cat)}</span><span class="chip ${done?'ok':live?'blue':''}">${statusWord(T.ref)}</span><span class="spacer"></span>${where}</div>`;
   if (!shown) return head + `<div class="note warn gate"><b>Spoiler: ${T.ref} isn’t closed yet.</b><p class="small" style="margin:6px 0 10px">The full solution is hidden so you can try the ticket first. ${T.boss?'Reading it doesn’t cost points, but it forfeits the Flawless boss bonus (+5).':'Reading it is free: it doesn’t change your score, your hint count or your rank.'}</p>
     <button class="btn primary" data-act="reveal" data-id="${T.ref}">Reveal full solution</button></div>`;
@@ -4666,7 +4901,7 @@ function docGuides(){
     <div class="row" style="margin-top:8px"><select data-bind="q" data-id="gcat" data-key="q-gcat" aria-label="Filter by category"><option value="">All categories</option>${[...new Set(TICKETS.map(topCat))].sort().map(c=>`<option ${c===cat?'selected':''}>${esc(c)}</option>`).join('')}</select>
       <select data-bind="q" data-id="gpri" data-key="q-gpri" aria-label="Filter by priority"><option value="">All priorities</option>${Object.entries(PRI).map(([k,p])=>`<option value="${k}" ${k===pri?'selected':''}>${p.w}</option>`).join('')}</select></div>
     <div class="small muted" style="margin-top:8px">${list.length} of ${TICKETS.length} guides</div>
-    <ul class="ulist">${list.map(x=>`<li><button class="${T&&T.ref===x.ref?'on':''}" data-act="sel" data-id="guide" data-arg="${x.ref}"><span class="mono">${x.ref}</span> ${esc(x.title)}<small>${PRI[x.pri].w} · ${esc(x.cat)} · ${x.boss?'Boss stage':'Shift '+(x.shift||1)} · ${statusWord(x.ref)}</small></button></li>`).join('')||'<li class="muted small">No guides match.</li>'}</ul></div>
+    <ul class="ulist">${list.map(x=>`<li><button class="${T&&T.ref===x.ref?'on':''}" data-act="sel" data-id="guide" data-arg="${x.ref}"><span class="mono">${x.ref}</span> ${esc(x.title)}<small>${PRI[x.pri].w} · ${esc(x.cat)} · ${shiftLabel(x)} · ${statusWord(x.ref)}</small></button></li>`).join('')||'<li class="muted small">No guides match.</li>'}</ul></div>
     <div>${T?guidePage(T):'<p class="muted">No guide matches these filters.</p>'}</div></div>`;
 }
 function docKb(){
@@ -4940,6 +5175,15 @@ const ACT = {
   guideGo(d){ Object.assign(S.ui, {view:'tool', tool:'docs', flash:null}); Object.assign(S.ui.tab, {docs:'guides', split:'tool'}); S.ui.sel.guide=d.id; Object.assign(S.ui.q, {guide:'', gcat:'', gpri:''}); hidePops(); render(); scrollTo(0,0); },
   hintToggle(d){ const t=S.tickets[d.id]; S.ui.hintOpen = S.ui.hintOpen===d.id ? null : d.id; if (S.ui.hintOpen && !t.hints) t.hints=1; render(); },
   heard(d){ act('Voicemails', d.id, 'heard', s=>ENV.heard(s,d.id)); },
+  /* Reads the transcript with the browser's speech engine, preferring an on-device English voice. Playing counts as listening. */
+  vmSpeak(d){ const ss=speechSynthesis, v=S.voicemails.find(x=>x.id===d.id), again=speaking!==v.id;
+    ss.cancel(); speaking=null;
+    if (again){ const u=new SpeechSynthesisUtterance(`Voicemail from ${v.from}, ${v.role}. ${v.text}`), local=ss.getVoices().filter(x=>x.localService && /^en/i.test(x.lang));
+      if (local.length) u.voice=local.find(x=>x.default)||local.find(x=>/en-US/i.test(x.lang))||local[0];
+      u.onend=u.onerror=()=>{ if (speaking===v.id){ speaking=null; render(); } };
+      speaking=v.id; ss.speak(u);
+      if (!v.heard) return act('Voicemails', v.id, 'heard', s=>ENV.heard(s,v.id)); }
+    render(); },
   chat(){ const c=S.ui.chat; c.open=!c.open; hidePops(); render(); if (c.open){ const f=$('chatIn')||$('chat').querySelector('input'); if (f) f.focus(); } else $('chatBtn').focus(); },
   chatTab(d){ S.ui.chat.tab=d.id; render(); },
   chatOpen(d){ S.ui.chat.sel=d.id; delete S.chat.unread[d.id]; render(); const f=$('chatIn'); if (f) f.focus(); },
@@ -4948,7 +5192,7 @@ const ACT = {
   chatSend(d){ const v=$('chatIn').value; if (!v.trim()) return; act('Company Chat', d.id, 'chat', s=>ENV.chatSend(s,d.id,v)); $('chatIn').focus(); },
   startShift(){ closeDlg(); renderMenus(); render(); },
   resetDlg(){ hidePops(); danger('Reset all progress?', 'This clears your points, ticket history and every change to the simulated environment, then starts a fresh shift. It can’t be undone.', 'Reset progress',
-    ()=>{ S=seed(); S.profile.firstRun=false; renderMenus(); render(); guideDialog(true); toast('Progress reset. Fresh shift started.'); }); },
+    ()=>{ S=freshGame(); S.profile.firstRun=false; renderMenus(); render(); guideDialog(true); toast('Progress reset. Fresh shift started.'); }); },
 
   dir(d){ const id=d.id, u=S.users[id], run=op=>act('Directory', id, op, s=>ENV[op](s,id));
     if (d.arg==='disable') return danger(`Disable ${u.id}?`, `${esc(u.name)} won’t be able to sign in until the account is enabled again.`, 'Disable account', ()=>run('disable'));
@@ -5016,7 +5260,7 @@ const ACT = {
       ()=>{ act('Service Desk','dev','devSkip', s=>{ ffBoss(s); ENV.nextShift(s); return 'Dev skip: shifts 1–3 cleared. The boss stage has started.'; });
             ACT.open({id:B.ref}); briefDialog(false); }); },
   nextShiftDlg(){ briefDialog(true); },
-  startNext(){ closeDlg(); act('Service Desk','shift','nextShift', s=>ENV.nextShift(s)); toast((SHIFTS[S.shift]||{}).boss ? 'The boss stage has started. INC-1073 is in the queue.' : `Shift ${S.shift} started. New tickets are in the queue.`); scrollTo(0,0); },
+  startNext(){ closeDlg(); act('Service Desk','shift','nextShift', s=>ENV.nextShift(s)); toast((SHIFTS[S.shift]||{}).boss ? 'The boss stage has started. INC-1073 is in the queue.' : `${(SHIFTS[S.shift]||{title:'Shift '+S.shift}).title} started. New tickets are in the queue.`); scrollTo(0,0); },
   qAct(d){ const q=S.mail.quarantine.find(x=>x.id===d.id), run=()=>act('Mail Security', d.id, d.arg, s=>ENV[d.arg](s,d.id));
     if (d.arg==='release' && q.kind==='phish') return danger('Release a phishing message?', 'The filter scored this as a credential-harvest attempt. Releasing it puts a live phishing link in a user’s inbox. Keep it blocked or report it to Security instead.', 'Release anyway', run);
     run(); }
@@ -5063,11 +5307,11 @@ document.addEventListener('keydown', e=>{
   if (e.key==='Enter' && el.id==='noteIn') { e.preventDefault(); ACT.addNote({id:S.ui.ticket}); return; }
   if (e.key==='Enter' && el.id==='chatIn') { e.preventDefault(); ACT.chatSend({id:S.ui.chat.sel}); return; }
   if ((e.key==='Enter'||e.key===' ') && el.getAttribute && el.getAttribute('role')==='button' && el.tagName!=='BUTTON') { e.preventDefault(); el.dispatchEvent(new MouseEvent('click',{bubbles:true})); return; }
-  if (e.key==='Tab'){ const box=$('toolsPop').matches(':popover-open') ? $('toolsPop') : app.querySelector('.rdp.max'); // keep Tab inside a modal surface
+  if (e.key==='Tab'){ const box=popOpen($('toolsPop')) ? $('toolsPop') : app.querySelector('.rdp.max'); // keep Tab inside a modal surface
     if (box && !dlg.open){ const f=[...box.querySelectorAll('button,input,select,textarea,[tabindex="0"]')].filter(x=>!x.disabled && x.getClientRects().length), i=f.indexOf(el);
       if (f.length && (i<0 || (e.shiftKey ? i===0 : i===f.length-1))) { e.preventDefault(); f[e.shiftKey ? f.length-1 : 0].focus(); return; } } }
   if (e.key==='Escape' && !dlg.open && S.ui.rdp && S.ui.rdp.max) { S.ui.rdp.max=false; render(); const b=app.querySelector('[data-act=rdpMax]'); if (b) b.focus(); return; }
-  if (e.key==='Escape' && !dlg.open && S.ui.chat.open && !document.querySelector(':popover-open')) { ACT.chat(); }
+  if (e.key==='Escape' && !dlg.open && S.ui.chat.open && ![...document.querySelectorAll('[popover]')].some(popOpen)) { ACT.chat(); }
   // Dev skip: typing "iamimpatient" on the dashboard (not inside a text field) jumps to the boss stage.
   if (S.ui.view==='dash' && !dlg.open && e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey && !(el.closest && el.closest('input,textarea,select,[contenteditable]'))) {
     typed=(typed+e.key.toLowerCase()).slice(-12);
@@ -5087,7 +5331,9 @@ document.addEventListener('toggle', e=>{
 /* =====================================================================
    8. SELF-TEST — runs every scenario from a fresh seed (open index.html#selftest).
    ===================================================================== */
-function selfTest(){
+/* Runs against the scripted tickets only; the player's endless tickets are put back afterwards. */
+function selfTest(){ registerEndless({tickets:{}}); try { return selfTestCore(); } finally { registerEndless(S); } }
+function selfTestCore(){
   const out=[], ok=(c,n)=>out.push([!!c,n]), done=(s,r)=>check(s,r).complete;
   /* fresh(ref): new seed with only this ticket (and its after-chain) arrived, so one ticket's arrive() can't leak into another's test. */
   const fresh=ref=>{ const s=seed(); s.shift=Math.max(s.shift, TK[ref].shift||1);
@@ -5569,6 +5815,27 @@ function selfTest(){
   s2.tickets[R].penalties={a:[8,'a'],b:[6,'b']}; ok(scoreFor(s2,R,'close','').total===-30 && scoreFor(s2,R,'close','').lines.slice(-1)[0][0].includes('−30…+70'),'boss score: capped at −30…+70');
   s.tickets[R].status='closed'; s.tickets[R].result={outcome:'Resolved', lines:bsc.lines, total:bsc.total}; ok(achievements(s).filter(a=>/^(Boss defeated|Flawless boss|Inbox zero)$/.test(a[0])).every(a=>a[2]),'achievements: Inbox zero, Boss defeated and Flawless boss');
   ok(TICKETS.length===32 && KB.length===38 && runbooksFor(R).some(a=>a.id==='kb38'),'32 tickets and 38 runbooks, including the lockout-tracing runbook');
+  /* Endless mode */
+  const pastBoss=()=>{ const x=ffBoss(freshGame()); ENV.nextShift(x); x.tickets[R].status='closed'; return x; };
+  s=pastBoss(); ok(shiftDone(s) && !hasNextShift(s) && endlessNext(s) && !endlessNext(seed()),'endless: nothing is scripted after the boss, so endless mode is next (and only then)');
+  ENV.nextShift(s); const EL=TICKETS.filter(T=>T.endless);
+  ok(s.shift===5 && SHIFTS[5].endless && EL.length===4 && new Set(EL.map(T=>T.tpl)).size===4 && EL.every(T=>T.shift===5 && s.tickets[T.ref].status==='open' && !done(s,T.ref) && runbooksFor(T.ref).length),
+    'endless: the next shift generates 4 different tickets that arrive open, unsolved and with runbooks');
+  s2=pastBoss(); s2.endless.seed=s.endless.seed; ENV.nextShift(s2); ok(JSON.stringify(s2.endless.list)===JSON.stringify(s.endless.list),'endless: generation is deterministic for a save');
+  { registerEndless(s); const j=JSON.parse(JSON.stringify(s)), key=()=>TICKETS.filter(T=>T.endless).map(T=>T.ref+T.title+T.req).join('|'), k0=key(); registerEndless({tickets:{}}); backfill(j); registerEndless(j);
+    ok(validSave(j) && key()===k0 && EL.every(T=>j.tickets[T.ref].status==='open'),'endless: generated tickets rebuild identically from a saved game'); }
+  { const old=JSON.parse(JSON.stringify(pastBoss())); delete old.endless; backfill(old); registerEndless(old); ok(validSave(old) && ENV.nextShift(old).startsWith('Endless shift 1') && TICKETS.filter(T=>T.endless).length===4,'endless: a save from before endless mode can start it'); }
+  ok(gameDate({shift:25})==='2026-11-05','calendar: game dates roll over into November');
+  /* Each template on a repaired world: unsolved on arrival, the common mistake doesn't solve it, the model fix does. */
+  const healed=()=>{ const x=pastBoss(); Object.values(x.net.devices).forEach(d=>{ d.status='online'; }); Object.values(x.net.servers).forEach(v=>Object.keys(v.services).forEach(n=>{ v.services[n]='running'; })); return x; };
+  const one=(k,f)=>{ const x=healed(), ref='INC-'+(2001+x.endless.n), p=ETPL[k].pick(x, rng(k.length*7919), new Set(), new Set(), ref); if (!p) return null;
+    p.created=hhmm(485); x.endless.n++; x.endless.list.push({ref, tpl:k, shift:x.shift+1, p}); registerEndless(x); ENV.nextShift(x);
+    const T=TK[ref], docs=Object.values(T.guide).every(v=>v && v.length) && notesBonus(T,T.guide.idealNotes)===3 && ticketTools(T).length && runbooksFor(ref).length && shiftLabel(T)==='Endless shift 1';
+    const pre=done(x,ref); if (f) f(x,p); return [pre, done(x,ref), docs]; };
+  const badT=Object.keys(ETPL).filter(k=>{ try { const a=one(k), b=one(k,ETPL[k].wrong), c=one(k,ETPL[k].solve); return !a || a[0] || !a[2] || b[1] || !c[1]; } catch(e){ return true; } });
+  ok(Object.keys(ETPL).length===8 && !badT.length,'endless: all 8 templates have a full guide, tools and runbooks, arrive unsolved, fail on their common mistake and complete with the model fix'+(badT.length?' ('+badT.join(', ')+')':''));
+  { const x=pastBoss(); let made=0; for (let i=0;i<6;i++){ ENV.nextShift(x); const cur=TICKETS.filter(T=>T.shift===x.shift); made+=cur.length; cur.forEach(T=>{ x.tickets[T.ref].status='closed'; }); }
+    ok(x.shift===10 && made>=20 && new Set(TICKETS.filter(T=>T.endless).map(T=>T.ref)).size===made,'endless: six shifts in a row keep generating tickets with unique refs, even when nothing gets fixed'); }
   return {pass: out.every(r=>r[0]), results: out};
 }
 window.selfTest = selfTest;

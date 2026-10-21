@@ -23,9 +23,10 @@ Progress (points, tickets, notes, chat, and every change you make to the simulat
 
 - **32 tickets: three shifts and a boss stage.** Shift 1 (10 tickets): lockouts, an expired password, share permissions, a floor outage, Wi-Fi, quarantined mail, a full mailbox, a malicious forwarding rule, a crashed print spooler and a VPN profile. Shift 2 (10): hardware swaps, new starters, a remote laptop replacement, a full disk, displays, a social-engineering voicemail, a weak charger, a full DHCP scope, a new phone and shared-mailbox access. Shift 3 (11): joiner, name change, leaver, MFA reset, a returner, a vishing call, a DNS outage, a provider outage, a full file server, a file restore and reported phishing. The boss stage (1): see below.
 - **A final boss.** INC-1073 unlocks only after every shift 3 ticket is closed or escalated, with its own briefing, and is marked BOSS in the queue and on the ticket page. The requester, Avery Farmwell (they/them), has security and IT certifications and has already ruled out every user-side fix, so the ticket is built to be the hardest in the game while staying fair: every cause can be proved from the consoles, and every fix Avery already tried really doesn't work. It has several layers that appear one at a time, red herrings that the evidence refutes, a requester you can question in Company Chat, an in-game clock that matters, actions that can't be undone, a five-step hint ladder with no model answer, +60 points (capped at −30…+70), a +5 Flawless bonus, a Diamond rank at 760 points and two achievements.
+- **Endless mode after the boss.** Once the boss ticket is closed or escalated, the dashboard offers **Start endless shift 1**. Each endless shift holds four tickets generated from eight templates built on problems the earlier shifts teach (a lockout, an expired password, missing share access, a full mailbox, a broken Wi-Fi profile, a stopped print spooler, a floor switch down and a quarantined supplier email). Each ticket has a different person, device and details, and comes with its own hints, solution guide and linked runbooks. Shifts keep coming for as long as you want to play. Generation is seeded per save, so a reload brings back the same tickets.
 - **Ticket intake like a real desk:** a queue sorted by priority, plus requests that arrive as Company Chat messages or voicemails and must be logged first. Some tickets only appear after another is finished.
 - **Ten consoles:** Directory, Server Room, Remote Desktop, Computer Deployment, PC Shelf, Mail Admin, Mail Security, Documentation, Asset Management and Ship Manager. Every action in them is real within the simulation, and tickets are checked against that shared state.
-- **Company Chat and Voicemails:** 16 fictional staff at the start (more join as tickets arrive), with presence, scripted replies, ticket quick actions (ask to confirm the fix, ask for approval) and an #office-announcements channel. Voicemails are transcripts with caller ID, and you can log, save, forward or delete them.
+- **Company Chat and Voicemails:** 16 fictional staff at the start (more join as tickets arrive), with presence, scripted replies, ticket quick actions (ask to confirm the fix, ask for approval) and an #office-announcements channel. Voicemails are transcripts with caller ID, and you can log, save, forward or delete them. **Play** reads a voicemail aloud with your browser's built-in speech engine, preferring a voice installed on your device, and marks it as listened.
 - **Documentation:**
   - 38 runbooks, one per procedure the tickets use, each with purpose, prerequisites, steps, verification and when to escalate.
   - A solution guide for every ticket: symptoms to notice, diagnosis, click-by-click steps, how to verify, common mistakes, a real-world note, the hint ladder, scoring with every penalty, and an ideal resolution note.
@@ -49,12 +50,13 @@ Progress (points, tickets, notes, chat, and every change you make to the simulat
 
 ## Checks performed
 
-- **Self-test:** `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, and all 369 checks pass. They cover:
+- **Self-test:** `index.html#selftest` runs every scenario from a fresh state through the same functions the consoles use, and all 377 checks pass. They cover:
   - wrong paths: a password reset alone doesn't unlock, rebooting a printer doesn't fix the spooler, and deleting the suspicious rule isn't rewarded;
   - scoring rules, and a model fix plus at least one tempting wrong action for every shift 2–3 ticket;
   - the consoles, chat replies, voicemails, shifts, ranks and save schema;
   - the documentation: every ticket has a full guide whose ideal note earns the full notes bonus and at least one runbook, and every runbook has all five sections;
-  - the boss: it stays locked until shift 3 is cleared, it isn't complete when it arrives, every fix the requester already tried and every red herring leaves it unsolved, each layer advances only with its real fix, the risky actions carry penalties, old saves keep their progress, and the model solution completes it for 68 points. The boss tests start from a worst-case world in which shifts 1–3 were cleared without fixing anything.
+  - the boss: it stays locked until shift 3 is cleared, it isn't complete when it arrives, every fix the requester already tried and every red herring leaves it unsolved, each layer advances only with its real fix, the risky actions carry penalties, old saves keep their progress, and the model solution completes it for 68 points. The boss tests start from a worst-case world in which shifts 1–3 were cleared without fixing anything;
+  - endless mode: it only starts after the boss, a shift generates four different tickets that arrive unsolved, generation is repeatable for a save, generated tickets survive a reload and older saves can start it. For each of the eight templates, the common mistake leaves the ticket unsolved and the model fix completes it, and six shifts in a row keep generating tickets even when nothing gets fixed.
 - **Headless Chromium, from `file://`:** every non-file request and console error counts as a failure, and none occurred. The run covers:
   - the first-run welcome and queue order;
   - claiming and closing tickets, including the unresolved-close penalty;
@@ -62,16 +64,18 @@ Progress (points, tickets, notes, chat, and every change you make to the simulat
   - every console, Company Chat and Voicemails;
   - Documentation: runbooks, filters, the spoiler gate, links between guides and runbooks, and opening a ticket from its guide;
   - screenshots at 1366, 1024 and 390 px wide, with no sideways scrolling at 390 px;
-  - the boss: the locked teaser, an old save loading with the boss added, the briefing, the BOSS queue row and ticket, and every new boss panel at all three widths.
+  - the boss: the locked teaser, an old save loading with the boss added, the briefing, the BOSS queue row and ticket, and every new boss panel at all three widths;
+  - endless mode at 1366 and 390 px: the unlock banner, the briefing, four generated tickets in the queue, a generated ticket page and the tickets surviving a reload;
+  - voicemail Play buttons, and the menus with the Popover API removed (the fallback used by older browsers);
+  - every console and every tab with the whole game world loaded, at 390 px wide, for sideways scrolling, clipped content and tap targets under 24 px. None were found, and the densest shift 2–3 screens were also reviewed by eye.
 - **Play-throughs:** every ticket has been played in the browser to a clean resolution with no penalties. The 10 shift 1 guides, six of the shift 2–3 guides and the boss guide were followed click by click and reached the best possible score (the boss: 68, ending at 810 points and Diamond). The boss has not had a blind playtest yet, so its difficulty is untested.
 
 ## Not built, and known limits
 
-- Only tested in Chromium. The Tools menu and Escape-to-close-chat rely on the Popover API, so check older Firefox and Safari versions.
-- Voicemails are transcripts only: no audio and no live calls.
+- Only run in Chromium. The code was reviewed for Firefox and Safari: it needs Safari 16 or Firefox 110 or newer, and menus fall back to a simpler version where the Popover API is missing (Safari before 17, Firefox before 125). On those older browsers, notifications can appear behind an open dialog.
+- Spoken voicemails use whatever voices the browser and operating system provide, so the voice varies by device. The Play button is hidden in browsers without speech synthesis. There are no live calls.
 - Chat replies are scripted. Typing to a requester gets a reply based on the ticket's state, but confirmations that a ticket requires only come from the quick-action buttons.
-- The 32 tickets are fixed and play out the same way every time. There's no random or procedurally generated content and nothing after the boss stage.
+- The 32 scripted tickets play out the same way every time. Endless tickets reuse eight problem types, so they get repetitive faster than the scripted shifts. They don't count towards Inbox zero, and there are no endless-specific achievements.
 - The boss's in-game clock only moves when you act (one minute per action), so waiting means acting or asking the requester to watch the next scheduled run.
 - PCs only use DC01 for DNS, so when DC01's DNS stops, name lookups fail even though DC02 is running. `nslookup <name> dc02` is the only way to query DC02.
 - No save export or import. Progress lives in one browser on one computer.
-- Phone-width (390 px) layouts are checked automatically for sideways scrolling, but most shift 2 and 3 screens haven't been reviewed by eye at that width.

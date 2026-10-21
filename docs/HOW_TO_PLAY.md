@@ -66,6 +66,7 @@ Your rank shows under your name in the top bar. **Achievements** (the trophy ico
 | 2 · Tuesday | 10 | Hardware: dead PCs, new starters, remote replacements, displays, chargers, DHCP, phones, mailbox access |
 | 3 · Wednesday | 11 | Identity and infrastructure: joiners, leavers, name changes, MFA, DNS, a provider outage, storage, file restores, phishing |
 | Boss stage · Thursday | 1 | The final boss: one requester who has already tried everything |
+| Endless shifts | 4 each | Generated after the boss: familiar problems with new people, devices and details |
 
 - When every ticket on the shift is closed or escalated, the dashboard offers **Start next shift** with a briefing. **Shift briefing** on the dashboard shows the current one again.
 - Some tickets only arrive after another is finished, because the second problem only shows once the first is fixed.
@@ -80,6 +81,10 @@ Until shift 3 is cleared, the dashboard shows a locked **Final boss** card. When
 - Talk to the requester. Type to them in Company Chat: they answer what they've already checked, and they can give you exact times and error codes. Their measurements are reliable; their conclusions are hypotheses.
 - Some actions can't be undone, and the order you do things in matters. Wrong actions here cost up to −8 each.
 - The hint ladder has five hints and no model answer. The solution guide stays behind its spoiler gate, and revealing it before you finish forfeits the Flawless boss bonus.
+
+## Endless mode
+
+After the boss ticket is closed or escalated, the dashboard offers **Start endless shift 1**. Every endless shift has four new tickets (INC-2001 onwards) generated from problems the earlier shifts teach. Each one has a different requester, device and details, plus hints, a solution guide and linked runbooks. Finish or escalate them all and the next endless shift is ready. Anything you leave broken stays broken, so a later ticket may land in a world you didn't clean up.
 
 ## Tools tour
 
@@ -101,7 +106,7 @@ Open them from **Tools** in the top bar or **Open Tools** on a ticket.
 Also in the top bar:
 
 - **Company Chat:** message any member of staff, use ticket quick actions, and post to #office-announcements during outages.
-- **Voicemails:** transcripts with caller ID. You can Log as ticket, Save to the ticket, Forward to Security or Delete.
+- **Voicemails:** transcripts with caller ID. **Play** reads one aloud with your browser's speech engine and marks it as listened. You can Log as ticket, Save to the ticket, Forward to Security or Delete.
 - **Past tickets** and **Achievements.**
 - **Your name:** opens the profile menu. From there you can change your display name, show or hide hint buttons, keep the ticket beside tools (split view), or Reset progress….
 
