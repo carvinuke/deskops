@@ -68,7 +68,7 @@ Hints and these guides are free.
 | [INC-1069](#inc-1069) | “Not enough space” when saving to any shared drive | High | Server / Storage | Server Room, Remote Desktop | 3 |
 | [INC-1070](#inc-1070) | Starters spreadsheet vanished from the HR drive | Medium | Server / File restore | Server Room, Remote Desktop, Company Chat | 3 |
 | [INC-1072](#inc-1072) | Reported email: “Mailbox storage limit reached, revalidate within 24 hours” | High | Security / Phishing | Mail Admin, Mail Security, Company Chat | 3 |
-| [INC-1073](#inc-1073) | Locked out every quarter-hour since my 06:41 password change, and Ledgerline mail keeps vanishing | Boss | Identity / Lockout and missing mail | Directory, Server Room, Remote Desktop, Computer Deployment, PC Shelf, Mail Admin, Asset Management, Company Chat | Boss |
+| [INC-1073](#inc-1073) | Account locks out every 15 minutes; Ledgerline emails missing | Boss | Identity / Lockout and missing mail | Directory, Server Room, Remote Desktop, Computer Deployment, PC Shelf, Mail Admin, Asset Management, Company Chat | Boss |
 
 <a id="shift-1"></a>
 
@@ -2896,11 +2896,11 @@ The user-reported phishing playbook is: analyse safely (headers and URL reputati
 
 ## Boss stage · Thursday
 
-Final boss. One ticket, and a requester who has already tried everything you would try first. Avery Farmwell (they/them), Senior Finance Systems Analyst, holds security analyst and IT support certifications and has ruled out every user-side fix. Today is the 12:00 supplier payment run and Avery is the approver. Expect layers: fixing one thing shows you the next. Avery’s measurements are reliable; their conclusions are hypotheses. Hints are vaguer, the solution guide stays behind its spoiler gate, and some actions here can’t be undone.
+Final boss. One ticket, and a requester who has already tried everything you would try first. Avery Farmwell (they/them), Senior Finance Systems Analyst, holds security analyst and IT support certifications and has ruled out every user-side fix. Today is the 12:00 supplier payment run, and Avery is the approver. Expect layers: fixing one thing shows you the next. Avery’s measurements are reliable; their conclusions are hypotheses. Hints are vaguer, the solution guide stays behind its spoiler gate, and some actions here can’t be undone.
 
 <a id="inc-1073"></a>
 
-### INC-1073 · Locked out every quarter-hour since my 06:41 password change, and Ledgerline mail keeps vanishing · BOSS
+### INC-1073 · Account locks out every 15 minutes; Ledgerline emails missing · BOSS
 
 **Priority:** Boss (60 points) · **Category:** Identity / Lockout and missing mail · **Arrives:** as the boss stage, after every shift 3 ticket is closed or escalated (start it from the dashboard) · **Finish with:** Close ticket · **Best score:** +68
 
@@ -2909,29 +2909,45 @@ Final boss. One ticket, and a requester who has already tried everything you wou
 
 **The ticket**
 
-> My account (afarmwell) has locked out on every quarter-hour since 06:45 today: 06:45, 07:00, 07:15 and so on to 09:30, twelve lockouts in all. My password was due to expire today, so I changed it at the expiry prompt at 06:41, and the first lockout came four minutes later. Each lockout is five bad attempts about 5 seconds apart, which is exactly our 5-attempt threshold. So something is replaying my pre-06:41 password in a retry loop on a 15-minute timer. Self-service unlock works every time (I’ve used it 11 times), and the account relocks at the next :00, :15, :30 or :45 whichever device I’m on. My Sign-ins page shows every lockout failure as “Northstar HQ network”, with no device name. The only outside IPs are two blocked attempts from 198.51.100.23 and .24. I reported those to Security on Tuesday (SEC-2231), and they don’t line up with any lockout. MFA is intact and I’ve had no unexpected prompts.
+> Since I changed my password at 06:41 this morning, afarmwell has locked out on a fixed 15-minute schedule, and Ledgerline mail sent to me is disappearing. I think the two problems are linked. I need both fixed before today’s 12:00 PR-1015 supplier payment run, which I approve.
 >
-> Separately, and I suspect it’s related, Ledgerline mail is disappearing. Six messages since Wednesday 16:10 are gone from every folder. They include the 02:00 PR-1014 payment confirmation, the 09:15 PR-1015 pre-run check, and even the 16:10 message I had already read on my new laptop. Ledgerline’s send log has “250 2.0.0 OK queued” from MAIL01 for every one of them, and webmail shows no rules, no forwarding and no delegates.
+> Lockouts
+• 06:41: changed my password at the expiry prompt on NS-FIN-041.
+• 06:45: first lockout. Since then it has relocked at 07:00, 07:15 and every quarter-hour through 09:30, twelve lockouts in total.
+• Each lockout is five failed attempts about five seconds apart, which is exactly our five-attempt threshold. That looks like a retry loop replaying my pre-06:41 password, not a person guessing.
+• It follows the account, not the device: it relocks on schedule on NS-FIN-041, on hot desk NS-MKT-011 and on every network I’ve tried.
+• Lock screen: “The referenced account is currently locked out and may not be logged on to.” Webmail: “Your account has been locked” (50053).
 >
-> I’ve ruled out everything I can see (list below). Whatever holds my old password is inside our network and runs on a timer, and users can’t see which machine it is. You can. Today is the 12:00 PR-1015 supplier payment run, and I’m the approver.
+> What I can and can’t see
+• My Sign-ins page lists every failure that locks me as “Northstar HQ network”, with no device name or IP.
+• The only outside activity is two blocked attempts from 198.51.100.23 and .24, which I reported to Security on Tuesday (SEC-2231). Neither lines up with a lockout.
+• MFA is intact, and I haven’t had a single unexpected prompt.
+• I’m not a local admin on NS-FIN-041, so I can’t read its Security log, and I have no view of the domain controllers’ lockout events. Whatever holds my old password is inside our network. You can see which machine it is; I can’t.
 >
-> *Business impact:* Avery is the approver of today’s 12:00 PR-1015 supplier payment run (51 payees, $1,842,300) and can’t stay signed in for more than 15 minutes. Six Ledgerline ERP messages are missing from their mailbox, including the PR-1014 payment confirmation and the PR-1015 pre-run check.
+> Missing Ledgerline mail
+• Six messages from ledgerline@northstar.example since Wednesday 16:10 are gone from every folder, including the 02:00 PR-1014 payment confirmation and the 09:15 PR-1015 pre-run check. One of them, the Wednesday 16:10 reconciliation, I had already opened on my new laptop before it vanished.
+• Ledgerline’s send log shows “250 2.0.0 OK queued” from MAIL01 for all six, so they were delivered. Webmail shows no rules, no forwarding and no delegates.
+>
+> What I need
+Find whatever is presenting my old password and stop it, then get the six messages back. Everything I’ve already ruled out is listed below. Please don’t ask me to change my password again unless you can tell me why it would help.
+>
+> *Business impact:* Avery approves today’s 12:00 PR-1015 supplier payment run (51 payees, $1,842,300) and can’t stay signed in for more than 15 minutes at a time. Six Ledgerline ERP messages are missing from their mailbox, including the PR-1014 payment confirmation and the PR-1015 pre-run check.
 >
 > *Already tried:*
 >
-> - Changed my password at the expiry prompt at 06:41, and again through self-service at 08:05. Both times I was locked again within 15 minutes, on the quarter-hour.
-> - Used self-service unlock 11 times, after every lockout from 06:45 to 09:15. It relocks at the next :00, :15, :30 or :45 every time, so I stopped after 09:30.
-> - On NS-FIN-041 I ran cmdkey /list (empty), ran klist purge, cleared Credential Manager and removed the saved credentials for my F: and P: drives.
-> - Rebooted NS-FIN-041 twice. The second was a full cold boot at 07:40, and it still locked at 07:45 on schedule.
-> - Checked Task Scheduler, services and startup items on NS-FIN-041: nothing runs as afarmwell. A full Endpoint Protection scan was clean.
-> - Repaired Office Suite, then reinstalled it at 08:20. Neither the lockouts nor the mail changed.
-> - Removed the Northstar Mail account from my Pixelon 8 at 07:31 and put the phone in airplane mode. Lockouts continued at 07:45, 08:00 and 08:15.
-> - Signed in on hot desk NS-MKT-011 (Floor 3) at 07:50, and it locked at 08:00 like everywhere else. Also tried wired on my Floor 2 dock and on Northstar-Staff Wi-Fi. I’m not on VPN.
-> - Webmail › “Sign out of other web sessions” at 08:06. It’s the only session control users get, and it only covers browser sessions.
-> - Webmail shows no inbox rules, no forwarding and no delegates. I searched Inbox, Deleted Items, Recoverable Items, Junk and the online archive for the Ledgerline messages, and none of them are there.
-> - Asked the Ledgerline admin for delivery evidence: every message got 250 OK from MAIL01.
-> - Reported the 198.51.100.23 attempts to Security on Tuesday (SEC-2231).
-> - Had a hardware refresh on Tuesday. NS-FIN-041 is a clean Finance image and nothing was migrated, so none of my old Ledgerline helpers came across.
+> - Password: changed it at the expiry prompt at 06:41 and again through self-service at 08:05. Both times it locked again within 15 minutes, on the quarter-hour.
+> - Unlocks: used self-service unlock 11 times, after every lockout from 06:45 to 09:15. It relocks at the next :00, :15, :30 or :45, so I stopped after 09:30.
+> - Cached credentials on NS-FIN-041: cmdkey /list is empty. I ran klist purge, cleared Credential Manager and removed the saved credentials for my F: and P: drives.
+> - Restarts: rebooted NS-FIN-041 twice, the second time a full cold boot at 07:40. It still locked at 07:45, on schedule.
+> - Startup items and malware: checked Task Scheduler, services and startup items on NS-FIN-041 and found nothing running as afarmwell. A full Endpoint Protection scan came back clean.
+> - Office: repaired Office Suite, then reinstalled it at 08:20. Neither the lockouts nor the mail changed.
+> - Phone: removed the Northstar Mail account from my Pixelon 8 at 07:31 and put the phone in airplane mode. Lockouts continued at 07:45, 08:00 and 08:15.
+> - Other devices and networks: signed in on hot desk NS-MKT-011 (Floor 3) at 07:50, and it locked at 08:00 like everywhere else. I also tried wired on my Floor 2 dock and Northstar-Staff Wi-Fi. I’m not on VPN.
+> - Sessions: used “Sign out of other web sessions” in webmail at 08:06. It’s the only session control users get, and it only covers browser sessions.
+> - Mailbox: webmail shows no inbox rules, no forwarding and no delegates. I searched Inbox, Deleted Items, Recoverable Items, Junk and the online archive, and none of the Ledgerline messages are there.
+> - Delivery: the Ledgerline admin confirmed a 250 OK from MAIL01 for every message.
+> - Security: reported the 198.51.100.23 attempts on Tuesday (SEC-2231).
+> - Hardware: my laptop was refreshed on Tuesday. NS-FIN-041 is a clean Finance image with nothing migrated, so none of my old Ledgerline helpers came across.
 
 #### Symptoms to notice
 
